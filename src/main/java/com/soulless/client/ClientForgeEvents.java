@@ -112,6 +112,15 @@ public final class ClientForgeEvents {
             ModNetwork.sendToServer(new com.soulless.network.RendReleasePacket());
         }
 
+        // a held Soul Forged sheds a few souls along its blade
+        if (level.getGameTime() % 4 == 0) {
+            for (Player p : level.players()) {
+                if (!(p.getMainHandItem().getItem() instanceof SoulForgedItem) || p.isInvisible() || p.distanceToSqr(player) > 32 * 32) continue;
+                boolean firstPerson = p == player && mc.options.getCameraType() == CameraType.FIRST_PERSON;
+                spawnHeldSouls(level, p, firstPerson, level.getRandom());
+            }
+        }
+
         // a dropped Soul Forged smoulders with souls
         if (level.getGameTime() % 3 == 0) {
             for (Entity e : level.entitiesForRendering()) {
@@ -183,6 +192,33 @@ public final class ClientForgeEvents {
                 level.addParticle(ParticleTypes.ELECTRIC_SPARK, entity.getX() + Math.cos(a) * r,
                         entity.getY() + entity.getBbHeight() + 0.25, entity.getZ() + Math.sin(a) * r, 0, 0, 0);
             }
+        }
+    }
+
+    /**
+     * One soul drifting up from somewhere along the held blade. Third person: along the raised blade in front
+     * of the body. First person: off to the right of the view, where the blade stands, so it never blocks aim.
+     */
+    private static void spawnHeldSouls(ClientLevel level, Player p, boolean firstPerson, RandomSource rnd) {
+        Vec3 at;
+        if (firstPerson) {
+            Vec3 look = p.getLookAngle();
+            Vec3 flat = new Vec3(look.x, 0, look.z).normalize();
+            Vec3 right = new Vec3(-flat.z, 0, flat.x);
+            at = p.getEyePosition().add(flat.scale(0.9 + rnd.nextDouble() * 0.4)).add(right.scale(0.6 + rnd.nextDouble() * 0.2))
+                    .add(0, -0.6 + rnd.nextDouble() * 1.1, 0);
+        } else {
+            float yaw = p.yBodyRot * Mth.DEG_TO_RAD;
+            Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
+            Vec3 right = new Vec3(-forward.z, 0, forward.x);
+            Vec3 hand = p.position().add(0, p.isCrouching() ? 0.85 : 1.05, 0).add(forward.scale(0.55)).add(right.scale(-0.05));
+            Vec3 blade = forward.scale(0.5).add(0, 0.866, 0);
+            at = hand.add(blade.scale(0.4 + rnd.nextDouble() * 1.6)).add(right.scale((rnd.nextDouble() - 0.5) * 0.3));
+        }
+        if (rnd.nextInt(3) == 0) {
+            level.addParticle(ParticleTypes.SOUL, at.x, at.y, at.z, 0, 0.015 + rnd.nextDouble() * 0.015, 0);
+        } else {
+            level.addParticle(ModParticles.SOUL_EMBER.get(), at.x, at.y, at.z, 0, 0.01 + rnd.nextDouble() * 0.02, 0);
         }
     }
 
