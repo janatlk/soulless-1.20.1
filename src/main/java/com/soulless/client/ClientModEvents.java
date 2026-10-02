@@ -31,6 +31,11 @@ public final class ClientModEvents {
     }
 
     @SubscribeEvent
+    public static void onTooltipFactories(net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent event) {
+        event.register(SectionTooltip.class, s -> s);
+    }
+
+    @SubscribeEvent
     public static void onOverlays(RegisterGuiOverlaysEvent event) {
         event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "abilities", new AbilityHud());
     }

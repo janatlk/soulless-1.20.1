@@ -57,7 +57,36 @@ public final class RendManager {
 
     private static final UUID SLOW_UUID = UUID.fromString("2b7d0e55-3c1a-4a8e-9f6d-7c4b1a2e9d30");
 
-    private static final Map<UUID, Long> ACTIVE = new HashMap<>();
+    private static final class State {
+        /** Game time the (possibly fast-forwarded) timeline started. */
+        long start;
+        float power = 1;
+        /** Wind-up age at which the player let go of right click, or -1 while still held. */
+        long releaseAt = -1;
+        boolean released;
+
+        State(long start) {
+            this.start = start;
+        }
+    }
+
+    private static final Map<UUID, State> ACTIVE = new HashMap<>();
+
+    /** The player let go of right click during the wind-up: cut now, weaker the earlier it is. */
+    public static void release(ServerPlayer player) {
+        State s = ACTIVE.get(player.getUUID());
+        if (s == null || s.released || s.releaseAt >= 0) return;
+        long age = player.serverLevel().getGameTime() - s.start;
+        if (age >= RendTimeline.WINDUP) return;
+        s.releaseAt = Math.max(age, RendTimeline.HEAVE);
+        s.power = Math.max(RendTimeline.MIN_POWER, age / (float) RendTimeline.WINDUP);
+    }
+
+    /** Stop the ability without a cut (the sword left the hand). */
+    private static void abort(ServerPlayer player) {
+        setSlow(player, 0);
+        ModNetwork.sendTrackingAndSelf(player, new RendStartPacket(player.getId(), RendTimeline.TOTAL));
+    }
 
     /** Clears the Soul Rend cooldown ({@code /soulless resetcd}). */
     public static void resetCooldown(ServerPlayer player) {
@@ -83,9 +112,9 @@ public final class RendManager {
             player.displayClientMessage(Component.translatable("message.soulless.rend_cooldown", Mth.ceil((ready - now) / 20F)), true);
             return;
         }
-        ACTIVE.put(player.getUUID(), now);
+        ACTIVE.put(player.getUUID(), new State(now));
         setSlow(player, -0.55);
-        ModNetwork.sendTrackingAndSelf(player, new RendStartPacket(player.getId()));
+        ModNetwork.sendTrackingAndSelf(player, new RendStartPacket(player.getId(), 0));
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PORTAL_TRIGGER, SoundSource.PLAYERS, 0.5F, 1.4F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SLAM_WINDUP.get(), SoundSource.PLAYERS, 0.8F, 0.6F);
     }
@@ -93,9 +122,10 @@ public final class RendManager {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        Iterator<Map.Entry<UUID, Long>> it = ACTIVE.entrySet().iterator();
+        Iterator<Map.Entry<UUID, State>> it = ACTIVE.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<UUID, Long> e = it.next();
+            Map.Entry<UUID, State> e = it.next();
+            State s = e.getValue();
             ServerPlayer player = event.getServer().getPlayerList().getPlayer(e.getKey());
             if (player == null || !player.isAlive()) {
                 if (player != null) setSlow(player, 0);
@@ -103,13 +133,26 @@ public final class RendManager {
                 continue;
             }
             ServerLevel level = player.serverLevel();
-            long age = level.getGameTime() - e.getValue();
-            if (age == RendTimeline.WINDUP - 20) {
+            long now = level.getGameTime();
+            long age = now - s.start;
+            if (age < RendTimeline.WINDUP + RendTimeline.HIT_AT && !(player.getMainHandItem().getItem() instanceof SoulForgedItem)) {
+                abort(player);
+                it.remove();
+                continue;
+            }
+            if (s.releaseAt >= 0 && !s.released && age >= s.releaseAt) {
+                // fast-forward the timeline to the cut and tell everyone to do the same
+                s.released = true;
+                s.start = now - RendTimeline.WINDUP;
+                age = RendTimeline.WINDUP;
+                ModNetwork.sendTrackingAndSelf(player, new RendStartPacket(player.getId(), RendTimeline.WINDUP));
+            }
+            if (age == RendTimeline.WINDUP - 20 && !s.released) {
                 // the blade is fully charged: one last breath before the cut
                 level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.9F, 1.6F);
             }
             if (age == RendTimeline.WINDUP + RendTimeline.HIT_AT) {
-                strike(player);
+                strike(player, s.power);
                 setSlow(player, -0.3);
             }
             if (age >= RendTimeline.TOTAL) {
@@ -119,7 +162,8 @@ public final class RendManager {
         }
     }
 
-    private static void strike(ServerPlayer player) {
+    /** The cut. {@code power} (MIN_POWER..1, from how long right click was held) scales damage, stun and heal. */
+    private static void strike(ServerPlayer player, float power) {
         ServerLevel level = player.serverLevel();
         float yaw = player.getYRot();
 
@@ -134,16 +178,16 @@ public final class RendManager {
         for (int i = 0; i < hit.size(); i++) {
             LivingEntity t = hit.get(i);
             t.invulnerableTime = 0;
-            t.hurt(level.damageSources().playerAttack(player), DAMAGE);
+            t.hurt(level.damageSources().playerAttack(player), DAMAGE * power);
             if (i < STUN_TARGETS) {
-                Stun.apply(t, STUN_SECONDS * 20, player);
+                Stun.apply(t, Math.max(10, Math.round(STUN_SECONDS * 20 * power)), player);
             }
-            fling(t, player);
+            fling(t, player, 0.5 + 0.5 * power);
             level.sendParticles(ModParticles.SOUL_EMBER.get(), t.getX(), t.getY() + t.getBbHeight() * 0.6, t.getZ(), 25, 0.3, 0.4, 0.3, 0.15);
             level.sendParticles(ParticleTypes.CRIT, t.getX(), t.getY() + t.getBbHeight() * 0.6, t.getZ(), 12, 0.3, 0.3, 0.3, 0.4);
         }
         if (!hit.isEmpty()) {
-            player.heal(HEAL_PER_TARGET * hit.size());
+            player.heal(HEAL_PER_TARGET * power * hit.size());
             level.sendParticles(ParticleTypes.HEART, player.getX(), player.getY() + 2.1, player.getZ(), Math.min(hit.size(), 6), 0.4, 0.1, 0.4, 0);
         }
 
@@ -176,8 +220,8 @@ public final class RendManager {
      * Throw a struck creature away from the wielder. Distance in blocks = 2 + 136 / max health (capped at 40):
      * an iron golem (100) goes ~3 blocks, a zombie (20) ~9, a chicken (4) ~36. Knockback resistance is ignored.
      */
-    private static void fling(LivingEntity t, ServerPlayer player) {
-        double blocks = Math.min(40, 2 + 136.0 / Math.max(1, t.getMaxHealth()));
+    private static void fling(LivingEntity t, ServerPlayer player, double scale) {
+        double blocks = Math.min(40, 2 + 136.0 / Math.max(1, t.getMaxHealth())) * scale;
         Vec3 away = new Vec3(t.getX() - player.getX(), 0, t.getZ() - player.getZ());
         away = away.lengthSqr() < 1.0E-4 ? Vec3.directionFromRotation(0, player.getYRot()) : away.normalize();
         // horizontal speed decays by 0.91 per tick in the air (much faster on landing): long throws need a

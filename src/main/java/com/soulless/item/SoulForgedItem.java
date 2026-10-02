@@ -107,6 +107,12 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         return mainHandModifiers;
     }
 
+    /** As a dropped item it survives fire, lava and explosions. */
+    @Override
+    public boolean canBeHurtBy(net.minecraft.world.damagesource.DamageSource source) {
+        return !source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION) && super.canBeHurtBy(source);
+    }
+
     // Soul fire replaces vanilla fire, so Fire Aspect would only fight the curse.
     @Override
     public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
@@ -134,40 +140,54 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
 
         tooltip.add(Component.translatable(k + "subtitle").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
         tooltip.add(Component.translatable(k + "stats", v(fmt(damage)), v(fmt(speed)), v(fmt(REACH_BONUS))).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.empty());
 
         if (!details) {
+            tooltip.add(section("passive"));
             tooltip.add(line(k + "c.curse", ChatFormatting.LIGHT_PURPLE, v(CURSE_SECONDS)));
-            tooltip.add(line(k + "c.slam", ChatFormatting.LIGHT_PURPLE, slamKey, v(fmt(SlamManager.MAX_DAMAGE)), v(SlamManager.COOLDOWN_TICKS / 20)));
-            tooltip.add(line(k + "c.rend", ChatFormatting.GOLD, rendKey, v(fmt(RendManager.DAMAGE)), v(RendTimeline.COOLDOWN / 20)));
             tooltip.add(line(k + "c.traits", ChatFormatting.DARK_AQUA));
+            tooltip.add(section("active"));
+            tooltip.add(line(k + "c.slam", ChatFormatting.LIGHT_PURPLE, slamKey, v(fmt(SlamManager.BASE_DAMAGE)),
+                    v(fmt(SlamManager.DAMAGE_CAP)), v(SlamManager.COOLDOWN_TICKS / 20)));
+            tooltip.add(line(k + "c.rend", ChatFormatting.GOLD, rendKey, v(fmt(RendManager.DAMAGE)), v(RendTimeline.COOLDOWN / 20)));
             tooltip.add(Component.empty());
             tooltip.add(Component.translatable(k + "c.more").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
             return;
         }
 
+        tooltip.add(section("passive"));
         tooltip.add(line(k + "d.curse.title", ChatFormatting.LIGHT_PURPLE));
         tooltip.add(line(k + "d.curse.1", ChatFormatting.GRAY, v(CURSE_SECONDS), v(fmt(SoulCurse.DAMAGE_PER_SECOND))));
         tooltip.add(line(k + "d.curse.2", ChatFormatting.GRAY, v(Math.round(SoulCurse.SLOWNESS * 100))));
-
-        tooltip.add(line(k + "d.slam.title", ChatFormatting.LIGHT_PURPLE, slamKey, v(SlamManager.COOLDOWN_TICKS / 20)));
-        tooltip.add(line(k + "d.slam.1", ChatFormatting.GRAY));
-        tooltip.add(line(k + "d.slam.2", ChatFormatting.GRAY, v(fmt(SlamManager.MAX_DAMAGE)), v(fmt(SlamManager.RADIUS))));
-        tooltip.add(line(k + "d.slam.3", ChatFormatting.GRAY, v(SlamManager.CURSE_SECONDS),
-                v(fmt(SoulCurse.DAMAGE_PER_SECOND + SlamManager.CURSE_AMPLIFIER))));
-
-        tooltip.add(line(k + "d.rend.title", ChatFormatting.GOLD, rendKey, v(RendTimeline.COOLDOWN / 20)));
-        tooltip.add(line(k + "d.rend.1", ChatFormatting.GRAY, v(RendTimeline.WINDUP / 20), v(fmt(RendManager.DAMAGE))));
-        tooltip.add(line(k + "d.rend.2", ChatFormatting.GRAY));
-        tooltip.add(line(k + "d.rend.3", ChatFormatting.GRAY, v(RendManager.STUN_TARGETS), v(RendManager.STUN_SECONDS)));
-        tooltip.add(line(k + "d.rend.4", ChatFormatting.GRAY, v(RendTimeline.RECOVER / 20)));
-
         tooltip.add(line(k + "d.traits.title", ChatFormatting.DARK_AQUA));
         tooltip.add(line(k + "d.traits.1", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.traits.2", ChatFormatting.GRAY, v(Math.round(HEAVY_SLOWNESS * 100))));
         tooltip.add(line(k + "d.traits.3", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.traits.4", ChatFormatting.GRAY));
+
+        tooltip.add(section("active"));
+        tooltip.add(line(k + "d.slam.title", ChatFormatting.LIGHT_PURPLE, slamKey, v(SlamManager.COOLDOWN_TICKS / 20)));
+        tooltip.add(line(k + "d.slam.1", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.slam.2", ChatFormatting.GRAY, v(fmt(SlamManager.BASE_DAMAGE)), v(fmt(SlamManager.RADIUS))));
+        tooltip.add(line(k + "d.slam.4", ChatFormatting.GRAY, v(fmt(SlamManager.DAMAGE_PER_BLOCK)), v(fmt(SlamManager.DAMAGE_CAP))));
+        tooltip.add(line(k + "d.slam.3", ChatFormatting.GRAY, v(SlamManager.CURSE_SECONDS),
+                v(fmt(SoulCurse.DAMAGE_PER_SECOND + SlamManager.CURSE_AMPLIFIER))));
+        tooltip.add(line(k + "d.slam.5", ChatFormatting.DARK_GRAY));
+
+        tooltip.add(line(k + "d.rend.title", ChatFormatting.GOLD, rendKey, v(RendTimeline.COOLDOWN / 20)));
+        tooltip.add(line(k + "d.rend.1", ChatFormatting.GRAY, v(RendTimeline.WINDUP / 20), v(fmt(RendManager.DAMAGE))));
+        tooltip.add(line(k + "d.rend.5", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.rend.2", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.rend.3", ChatFormatting.GRAY, v(RendManager.STUN_TARGETS), v(RendManager.STUN_SECONDS)));
+        tooltip.add(line(k + "d.rend.4", ChatFormatting.GRAY, v(RendTimeline.RECOVER / 20)));
         tooltip.add(Component.empty());
         tooltip.add(Component.translatable(k + "lore").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+    }
+
+    /** Marker for a section divider; the client tooltip renderer swaps it for a drawn header (SoulTooltip). */
+    public static final String SECTION_MARK = "⁣";
+
+    private static Component section(String name) {
+        return Component.literal(SECTION_MARK).append(Component.translatable("tooltip.soulless.section." + name));
     }
 
     /** The item name in a pale-lilac to deep-violet gradient (client only; servers keep the plain translation). */
@@ -203,7 +223,8 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         return v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(Math.round(v * 10) / 10.0);
     }
 
-    private static final float ATTACK_SPEED_MODIFIER = -3.3F;
+    /** 4 - 3.45 = 0.55 attacks per second: a slow, heavy blade. */
+    private static final float ATTACK_SPEED_MODIFIER = -3.45F;
 
     // ------------------------------------------------------------------ GeckoLib
 

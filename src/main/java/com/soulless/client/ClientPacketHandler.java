@@ -70,8 +70,12 @@ public final class ClientPacketHandler {
         }
     }
 
-    public static void rendStart(int entityId) {
-        ClientState.RENDS.put(entityId, ClientState.gameTime());
+    public static void rendStart(int entityId, int elapsed) {
+        ClientState.RENDS.put(entityId, ClientState.gameTime() - elapsed);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.player.getId() == entityId && elapsed == 0) {
+            ClientState.rendReleaseSent = false;
+        }
     }
 
     public static void rendHit(RendHitPacket msg) {

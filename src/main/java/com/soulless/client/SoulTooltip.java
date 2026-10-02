@@ -59,6 +59,22 @@ public final class SoulTooltip {
         return false;
     }
 
+    /** Replace section marker lines with drawn section headers. */
+    @SubscribeEvent
+    public static void onGather(RenderTooltipEvent.GatherComponents event) {
+        if (!ours(event.getItemStack())) return;
+        var elements = event.getTooltipElements();
+        for (int i = 0; i < elements.size(); i++) {
+            var el = elements.get(i);
+            if (el.left().isPresent()) {
+                String s = el.left().get().getString();
+                if (s.startsWith(SoulForgedItem.SECTION_MARK)) {
+                    elements.set(i, com.mojang.datafixers.util.Either.right(new SectionTooltip(s.substring(SoulForgedItem.SECTION_MARK.length()))));
+                }
+            }
+        }
+    }
+
     @SubscribeEvent
     public static void onTooltipColor(RenderTooltipEvent.Color event) {
         if (!ours(event.getItemStack())) return;
@@ -77,6 +93,7 @@ public final class SoulTooltip {
             w = Math.max(w, c.getWidth(event.getFont()));
             h += c.getHeight();
         }
+        SectionTooltip.currentWidth = w;
         // same placement as vanilla's DefaultTooltipPositioner
         int x = event.getX() + 12, y = event.getY() - 12;
         if (x + w > event.getScreenWidth()) x = Math.max(x - 24 - w, 4);

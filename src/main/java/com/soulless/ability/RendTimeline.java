@@ -8,7 +8,12 @@ package com.soulless.ability;
  * The cooldown starts at the hit. No sword attacks from start until the end of RECOVER.
  */
 public final class RendTimeline {
+    /** Full charge: holding right click this long gives the full-power cut (released automatically). */
     public static final int WINDUP = 120;
+    /** Heaving the sword onto the shoulder; an earlier release still waits for this. */
+    public static final int HEAVE = 14;
+    /** Power of the weakest (instantly released) cut. */
+    public static final float MIN_POWER = 0.2F;
     public static final int STRIKE = 60;
     /** Ticks into STRIKE at which the blade connects. */
     public static final int HIT_AT = 4;

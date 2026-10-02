@@ -26,6 +26,8 @@ public final class ClientState {
     public static final List<SlashTrails.Trail> TRAILS = new ArrayList<>();
     /** Game time the local player's Soul Rend is ready again. */
     public static long rendReadyAt;
+    /** The local player's right-click release was already reported for the current wind-up. */
+    public static boolean rendReleaseSent;
 
     /** {@code /soulless zones}: draw ability hit zones around the local player. */
     public static boolean showZones;

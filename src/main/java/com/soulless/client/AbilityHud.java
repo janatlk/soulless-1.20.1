@@ -29,8 +29,19 @@ public final class AbilityHud implements IGuiOverlay {
         int x = width / 2 + 91 + 8, y = height - SLOT - 2;
         float slam = player.getCooldowns().getCooldownPercent(item, partialTick);
         slot(g, font, x, y, Component.literal(ClientKeys.slamKeyName()), slam, Mth.ceil(slam * SlamManager.COOLDOWN_TICKS / 20F), 0xFF9A2CF0);
-        long left = ClientState.rendReadyAt - ClientState.gameTime();
-        float rend = left > 0 ? left / (float) RendTimeline.COOLDOWN : 0;
+        // Soul Crush's cooldown also locks right click (it is the item's cooldown), so the RMB slot shows
+        // whichever of the two ends later
+        long rendLeft = ClientState.rendReadyAt - ClientState.gameTime();
+        float slamLeftTicks = slam * SlamManager.COOLDOWN_TICKS;
+        float rend;
+        long left;
+        if (slamLeftTicks > rendLeft) {
+            rend = slam;
+            left = (long) Math.ceil(slamLeftTicks);
+        } else {
+            rend = rendLeft > 0 ? rendLeft / (float) RendTimeline.COOLDOWN : 0;
+            left = rendLeft;
+        }
         slot(g, font, x + SLOT + 4, y, Component.translatable("hud.soulless.rmb"), rend, Mth.ceil(left / 20F), 0xFFE8D25A);
 
         float t = ClientState.rendTicks(player);
@@ -38,6 +49,8 @@ public final class AbilityHud implements IGuiOverlay {
             int w = 80, bx = width / 2 - w / 2, by = height / 2 + 14;
             g.fill(bx - 1, by - 1, bx + w + 1, by + 4, 0xAA000000);
             g.fill(bx, by, bx + (int) (w * t / RendTimeline.WINDUP), by + 3, t > RendTimeline.WINDUP - 20 ? 0xFFF1D2FF : 0xFFB54CFF);
+            String pct = Math.round(Math.max(RendTimeline.MIN_POWER, t / RendTimeline.WINDUP) * 100) + "%";
+            g.drawString(font, pct, width / 2 - font.width(pct) / 2, by + 6, 0xFFE8C8FF, true);
         }
     }
 

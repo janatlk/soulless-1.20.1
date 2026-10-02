@@ -12,8 +12,8 @@ public final class SlamTimeline {
     public static final int CHARGE = 7;
     /** Peak of the leap: the dive starts here. */
     public static final int PLUNGE = 17;
-    /** Fail-safe: impact even if the player never lands. */
-    public static final int MAX_AIR = 40;
+    /** Fail-safe: impact even if the player never lands (long drops off cliffs are allowed). */
+    public static final int MAX_AIR = 400;
     /** Kneeling with the sword buried in the ground; rooted. */
     public static final int KNEEL = 14;
     /** Rising back into the guard stance. */

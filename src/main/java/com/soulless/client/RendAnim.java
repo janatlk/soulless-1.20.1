@@ -25,7 +25,7 @@ public final class RendAnim {
 
     /** Ticks of the cut itself, from the shoulder to the end of the swing. */
     public static final int CUT_TICKS = 6;
-    private static final int HEAVE_TICKS = 14;
+    private static final int HEAVE_TICKS = RendTimeline.HEAVE;
     /** Recovery: lift the blade onto the shoulder, carry it there, then bring it back to guard. */
     private static final int TO_REST = 14, BACK_TO_GUARD = 30;
 

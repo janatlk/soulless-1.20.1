@@ -9,6 +9,7 @@ import com.soulless.network.SlamStartPacket;
 import com.soulless.registry.ModParticles;
 import com.soulless.registry.ModSounds;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -41,9 +42,13 @@ import java.util.UUID;
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class SlamManager {
-    public static final float MAX_DAMAGE = 12.0F;
-    public static final float MIN_DAMAGE = 6.0F;
+    /** Damage at the centre when landing where you started; the edge of the blast takes half. */
+    public static final float BASE_DAMAGE = 14.0F;
+    /** Extra centre damage per block the impact lands below the starting ground. */
+    public static final float DAMAGE_PER_BLOCK = 5.0F;
+    public static final float DAMAGE_CAP = 120.0F;
     public static final float RADIUS = 5.0F;
+    private static final int MAX_FALL_TICKS = SlamTimeline.MAX_AIR;
     public static final int CURSE_SECONDS = 8;
     public static final int CURSE_AMPLIFIER = 1;
     public static final int COOLDOWN_TICKS = 240;
@@ -51,11 +56,18 @@ public final class SlamManager {
     /** Ticks of the leap before the sword is driven down. Mirrored by the client animation. */
     private static final class State {
         final long start;
+        final double startY;
         long impact = -1;
 
-        State(long start) {
+        State(long start, double startY) {
             this.start = start;
+            this.startY = startY;
         }
+    }
+
+    /** Centre damage for an impact {@code drop} blocks below where the slam began. */
+    public static float centreDamage(double drop) {
+        return (float) Math.min(DAMAGE_CAP, BASE_DAMAGE + Math.max(0, drop) * DAMAGE_PER_BLOCK);
     }
 
     private static final Map<UUID, State> ACTIVE = new HashMap<>();
@@ -64,10 +76,14 @@ public final class SlamManager {
         ItemStack stack = player.getMainHandItem();
         if (!(stack.getItem() instanceof SoulForgedItem item) || !player.isAlive() || player.isSpectator()) return;
         if (player.getCooldowns().isOnCooldown(item) || ACTIVE.containsKey(player.getUUID()) || RendManager.isActive(player)) return;
+        if (!player.onGround()) {
+            player.displayClientMessage(Component.translatable("message.soulless.slam_ground"), true);
+            return;
+        }
 
         ServerLevel level = player.serverLevel();
         player.getCooldowns().addCooldown(item, COOLDOWN_TICKS);
-        ACTIVE.put(player.getUUID(), new State(level.getGameTime()));
+        ACTIVE.put(player.getUUID(), new State(level.getGameTime(), player.getY()));
 
         item.triggerAnim(player, GeoItem.getOrAssignId(stack, level), SoulForgedItem.CONTROLLER, SoulForgedItem.SLAM_ANIM);
         ModNetwork.sendTrackingAndSelf(player, new SlamStartPacket(player.getId()));
@@ -112,9 +128,9 @@ public final class SlamManager {
                 player.setDeltaMovement(v.x * 0.3, SlamTimeline.DIVE_SPEED, v.z * 0.3);
                 player.hurtMarked = true;
             }
-            if ((age > SlamTimeline.PLUNGE && player.onGround()) || age >= SlamTimeline.MAX_AIR) {
+            if ((age > SlamTimeline.PLUNGE && player.onGround()) || age >= MAX_FALL_TICKS) {
                 s.impact = now;
-                impact(player);
+                impact(player, s.startY);
             }
         }
         CrackManager.tick(event.getServer());
@@ -136,20 +152,21 @@ public final class SlamManager {
         ACTIVE.remove(event.getEntity().getUUID());
     }
 
-    private static void impact(ServerPlayer player) {
+    private static void impact(ServerPlayer player, double startY) {
         ServerLevel level = player.serverLevel();
         Vec3 look = horizontalLook(player);
         Vec3 center = impactCenter(player);
         BlockPos groundPos = CrackManager.findSurface(level, BlockPos.containing(center.x, player.getY(), center.z));
         double groundY = groundPos != null ? groundPos.getY() + 1.0 : player.getY();
         center = new Vec3(center.x, groundY, center.z);
+        float maxDamage = centreDamage(startY - player.getY());
 
         AABB box = new AABB(center, center).inflate(RADIUS, 3.0, RADIUS);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator())) {
             if (target.isAlliedTo(player) || (target instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
             if (!inBlast(center, target)) continue;
             double dist = Math.sqrt(Mth.square(target.getX() - center.x) + Mth.square(target.getZ() - center.z));
-            float damage = (float) Mth.lerp(dist / RADIUS, MAX_DAMAGE, MIN_DAMAGE);
+            float damage = (float) Mth.lerp(dist / RADIUS, maxDamage, maxDamage * 0.5F);
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(player), damage);
             Vec3 away = new Vec3(target.getX() - center.x, 0, target.getZ() - center.z);

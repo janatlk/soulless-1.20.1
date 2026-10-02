@@ -28,6 +28,9 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.InputEvent;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.RenderPlayerEvent;
@@ -51,6 +54,35 @@ public final class ClientForgeEvents {
     private static final ResourceLocation FIRE_0 = Soulless.id("block/soul_curse_fire_0");
     private static final ResourceLocation FIRE_1 = Soulless.id("block/soul_curse_fire_1");
 
+    /** True while the local player is in Soul Crush or Soul Rend: the sword cannot be switched or dropped. */
+    public static boolean abilityLocked(Player p) {
+        return ClientState.rendTicks(p) >= 0 || ClientState.slamTicks(p) >= 0;
+    }
+
+    /**
+     * Runs before vanilla handles key presses this tick: while an ability plays, swallow hotbar, drop and
+     * offhand-swap presses so the sword stays in hand.
+     */
+    @SubscribeEvent
+    public static void onClientTickStart(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || !abilityLocked(mc.player)) return;
+        for (KeyMapping key : mc.options.keyHotbarSlots) {
+            while (key.consumeClick()) { }
+        }
+        while (mc.options.keyDrop.consumeClick()) { }
+        while (mc.options.keySwapOffhand.consumeClick()) { }
+    }
+
+    @SubscribeEvent
+    public static void onScroll(InputEvent.MouseScrollingEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.screen == null && abilityLocked(mc.player)) {
+            event.setCanceled(true);
+        }
+    }
+
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -65,8 +97,28 @@ public final class ClientForgeEvents {
                 if (left > 0) {
                     int seconds = Mth.ceil(left * com.soulless.ability.SlamManager.COOLDOWN_TICKS / 20F);
                     player.displayClientMessage(Component.translatable("message.soulless.slam_cooldown", seconds), true);
+                } else if (!player.onGround()) {
+                    player.displayClientMessage(Component.translatable("message.soulless.slam_ground"), true);
                 } else {
                     ModNetwork.sendToServer(new SlamRequestPacket());
+                }
+            }
+        }
+
+        // Soul Rend charges while right click is held; letting go cuts early (weaker)
+        float rend = ClientState.rendTicks(player);
+        if (rend >= 0 && rend < RendTimeline.WINDUP && !ClientState.rendReleaseSent && !mc.options.keyUse.isDown()) {
+            ClientState.rendReleaseSent = true;
+            ModNetwork.sendToServer(new com.soulless.network.RendReleasePacket());
+        }
+
+        // a dropped Soul Forged smoulders with souls
+        if (level.getGameTime() % 3 == 0) {
+            for (Entity e : level.entitiesForRendering()) {
+                if (e instanceof ItemEntity item && item.getItem().getItem() instanceof SoulForgedItem && e.distanceToSqr(player) < 32 * 32) {
+                    level.addParticle(level.getRandom().nextInt(3) == 0 ? ParticleTypes.SOUL : ModParticles.SOUL_EMBER.get(),
+                            e.getX() + (level.getRandom().nextDouble() - 0.5) * 0.4, e.getY() + 0.3 + level.getRandom().nextDouble() * 1.0,
+                            e.getZ() + (level.getRandom().nextDouble() - 0.5) * 0.4, 0, 0.02 + level.getRandom().nextDouble() * 0.02, 0);
                 }
             }
         }
@@ -220,6 +272,12 @@ public final class ClientForgeEvents {
     public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
         Player p = event.getEntity();
         ClientState.renderingPlayer = p;
+        // both hands are on the greatsword: whatever is in the off hand is put away while it renders
+        hiddenOffhand = ItemStack.EMPTY;
+        if (p.getMainHandItem().getItem() instanceof SoulForgedItem && !p.getOffhandItem().isEmpty()) {
+            hiddenOffhand = p.getOffhandItem();
+            p.getInventory().offhand.set(0, ItemStack.EMPTY);
+        }
         SlamAnim.Pose pose = SoulArmPose.current(p);
         PoseStack ps = event.getPoseStack();
         ps.pushPose();
@@ -237,6 +295,10 @@ public final class ClientForgeEvents {
     @SubscribeEvent
     public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
         event.getPoseStack().popPose();
+        if (!hiddenOffhand.isEmpty()) {
+            event.getEntity().getInventory().offhand.set(0, hiddenOffhand);
+            hiddenOffhand = ItemStack.EMPTY;
+        }
         ClientState.renderingPlayer = null;
     }
 
@@ -258,9 +320,16 @@ public final class ClientForgeEvents {
     }
 
     /** First person: the greatsword is drawn by {@link FirstPersonSword} (held pose, slash, Soul Crush). */
+    private static ItemStack hiddenOffhand = ItemStack.EMPTY;
+
     @SubscribeEvent
     public static void onRenderHand(RenderHandEvent event) {
         Minecraft mc = Minecraft.getInstance();
+        if (event.getHand() == InteractionHand.OFF_HAND && mc.player != null
+                && mc.player.getMainHandItem().getItem() instanceof SoulForgedItem) {
+            event.setCanceled(true);   // the off hand is on the greatsword's grip
+            return;
+        }
         if (event.getHand() != InteractionHand.MAIN_HAND || mc.player == null
                 || !(event.getItemStack().getItem() instanceof SoulForgedItem)) return;
         event.setCanceled(true);
