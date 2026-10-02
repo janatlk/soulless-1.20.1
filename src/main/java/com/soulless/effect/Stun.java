@@ -41,10 +41,14 @@ public final class Stun {
         }
     }
 
-    /** Stunned attackers deal no damage (melee, and projectiles they own). */
+    /**
+     * Stunned attackers cannot strike directly. Projectiles and spells already released before the stun
+     * still land (the source entity is the attacker, but the direct entity is the projectile).
+     */
     @SubscribeEvent
     public static void onAttack(LivingAttackEvent event) {
-        if (isStunned(event.getSource().getEntity())) {
+        Entity attacker = event.getSource().getEntity();
+        if (isStunned(attacker) && event.getSource().getDirectEntity() == attacker) {
             event.setCanceled(true);
         }
     }

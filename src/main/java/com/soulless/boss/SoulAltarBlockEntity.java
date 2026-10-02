@@ -173,12 +173,13 @@ public class SoulAltarBlockEntity extends BlockEntity {
             bar = null;
             WailingReaperEntity boss = ModEntities.WAILING_REAPER.get().create(level);
             if (boss != null) {
-                boss.moveTo(worldPosition.getX() + 0.5, worldPosition.getY() - 1, worldPosition.getZ() + 3.5, 180, 0);
+                // just off the platform, clear of the spires
+                boss.moveTo(worldPosition.getX() + 0.5, worldPosition.getY() - 1, worldPosition.getZ() + 7.5, 180, 0);
                 boss.setHome(worldPosition);
                 level.addFreshEntity(boss);
                 boss.playEmerge();
             }
-            level.sendParticles(ParticleTypes.SOUL, worldPosition.getX() + 0.5, worldPosition.getY() + 2, worldPosition.getZ() + 3.5, 120, 1, 3, 1, 0.1);
+            level.sendParticles(ParticleTypes.SOUL, worldPosition.getX() + 0.5, worldPosition.getY() + 2, worldPosition.getZ() + 7.5, 120, 1, 3, 1, 0.1);
             level.playSound(null, worldPosition, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 2.0F, 0.6F);
             phase = Phase.DONE;
         }

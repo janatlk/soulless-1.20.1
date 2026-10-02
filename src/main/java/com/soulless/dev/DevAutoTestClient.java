@@ -82,7 +82,8 @@ public final class DevAutoTestClient {
         var opts = mc.options;
         if (DevAutoTest.BOSS) {
             if (tick == 15) opts.setCameraType(CameraType.FIRST_PERSON);
-            if (tick > 60 && tick % 30 == 0 && tick < 2400) shot(mc, String.format("boss_%04d", tick));
+            if (tick > 60 && tick % 30 == 0 && tick < 1800) shot(mc, String.format("boss_%04d", tick));
+            if (tick == 1850) mc.stop();   // the run ends on its own
             return;
         }
         if (DevAutoTest.CHECK) {

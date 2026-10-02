@@ -86,6 +86,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     public WailingReaperEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
         setNoGravity(true);
+        noPhysics = true;   // a floating ghost: drifts through the altar and terrain (the arena radius keeps it in)
         setPersistenceRequired();
         xpReward = 500;
     }
@@ -229,9 +230,12 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     }
 
     private void releaseHeads(ServerLevel level) {
-        Vec3 c = position().add(0, 3.2, 0);
+        // at chest height of a standing player, so the ring actually has to be dodged
+        Vec3 c = new Vec3(getX(), (target != null ? target.getY() : groundY()) + 1.0, getZ());
         for (int i = 0; i < 10; i++) {
-            double a = Math.PI * 2 * i / 10 + yBodyRot * Mth.DEG_TO_RAD;
+            // the ring is turned so one head flies straight at the target: standing still is not safe
+            double toTarget = target != null ? Math.atan2(target.getZ() - getZ(), target.getX() - getX()) : 0;
+            double a = Math.PI * 2 * i / 10 + toTarget;
             Vec3 dir = new Vec3(Math.cos(a), 0, Math.sin(a));
             AbyssHeadEntity head = new AbyssHeadEntity(level, this, dir);
             head.moveTo(c.x + dir.x * 1.5, c.y, c.z + dir.z * 1.5);
@@ -251,29 +255,41 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
 
     // ------------------------------------------------------------------ movement: a slow, floating drift
 
+    /** Horizontal drift velocity chosen by the AI this tick; applied directly in {@link #hover()}. */
+    private Vec3 drift = Vec3.ZERO;
+
+    /**
+     * Moves the Reaper ourselves (vanilla travel() + ground friction barely moves a floating mob): drift
+     * horizontally, bob above the ground, never leave the arena.
+     */
     private void hover() {
         double ground = groundY();
         double wantY = ground + 0.4 + Math.sin(tickCount * 0.08) * 0.15;
-        Vec3 v = getDeltaMovement();
-        setDeltaMovement(v.x, (wantY - getY()) * 0.2, v.z);
-        // stay inside the arena
+        Vec3 step = new Vec3(drift.x, (wantY - getY()) * 0.2, drift.z);
         if (home != null) {
             Vec3 h = Vec3.atBottomCenterOf(home);
-            Vec3 off = new Vec3(getX() - h.x, 0, getZ() - h.z);
+            Vec3 off = new Vec3(getX() + step.x - h.x, 0, getZ() + step.z - h.z);
             double max = SoulAltarBlockEntity.ARENA_RADIUS - 2.5;
-            if (off.length() > max) {
-                Vec3 back = off.normalize().scale(-0.15);
-                setDeltaMovement(getDeltaMovement().add(back));
-            }
+            if (off.length() > max) step = new Vec3(0, step.y, 0).add(off.normalize().scale(-0.1));
         }
+        move(net.minecraft.world.entity.MoverType.SELF, step);
+        setDeltaMovement(Vec3.ZERO);
     }
 
+    /** Top of the highest solid block in a few blocks above/below, so it rides over the altar dais. */
     private double groundY() {
         BlockPos p = blockPosition();
-        for (int i = 0; i < 8; i++) {
-            if (!level().getBlockState(p.below(i + 1)).isAir()) return p.getY() - i;
+        for (int dy = 3; dy >= -8; dy--) {
+            BlockPos q = p.offset(0, dy, 0);
+            if (!level().getBlockState(q).isAir() && level().getBlockState(q.above()).isAir()) return q.getY() + 1;
         }
         return getY();
+    }
+
+    @Override
+    public void tick() {
+        noPhysics = true;
+        super.tick();
     }
 
     private void moveTowardRange() {
@@ -283,18 +299,16 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         }
         Vec3 to = new Vec3(target.getX() - getX(), 0, target.getZ() - getZ());
         double d = to.length();
-        double speed = 0.09;
-        Vec3 want = Vec3.ZERO;
+        double speed = 0.11;
+        Vec3 want;
         if (d > 12) want = to.normalize().scale(speed);
         else if (d < 6) want = to.normalize().scale(-speed);
-        else want = new Vec3(-to.z, 0, to.x).normalize().scale(speed * 0.5 * (((tickCount / 100) & 1) == 0 ? 1 : -1));
-        Vec3 v = getDeltaMovement();
-        setDeltaMovement(Mth.lerp(0.2, v.x, want.x), v.y, Mth.lerp(0.2, v.z, want.z));
+        else want = new Vec3(-to.z, 0, to.x).normalize().scale(speed * 0.6 * (((tickCount / 100) & 1) == 0 ? 1 : -1));
+        drift = new Vec3(Mth.lerp(0.15, drift.x, want.x), 0, Mth.lerp(0.15, drift.z, want.z));
     }
 
     private void stop() {
-        Vec3 v = getDeltaMovement();
-        setDeltaMovement(v.x * 0.6, v.y, v.z * 0.6);
+        drift = drift.scale(0.6);
     }
 
     @Nullable
