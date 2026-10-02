@@ -1120,3 +1120,56 @@ java.lang.IllegalAccessException: class io.netty.util.internal.PlatformDependent
 [19:31:40] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[soulless_test]'/minecraft:the_end
 [19:31:40] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: Gathering id map for writing to world save soulless_test
 [19:31:40] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: ID Map collection complete soulless_test
+[19:32:17] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?15.0 ����� � ����� 15.0 � ��������� 7.0 �
+[19:32:25] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?16.0 ����� � ����� 31.0 � ��������� 2.0/� (5.0 �)
+[19:32:26] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 33.0 � ��������� 2.0/� (4.0 �)
+[19:32:27] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?8.5 ����� � ����� 41.5 � ��������� 2.0/� (5.0 �)
+[19:32:28] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 43.5 � ��������� 2.0/� (4.0 �)
+[19:32:28] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?12.8 ����� � ����� 56.3 � ��������� 2.0/� (5.0 �)
+[19:32:29] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 58.3 � ��������� 2.0/� (4.0 �)
+[19:32:30] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?13.4 ����� � ����� 71.7 � ��������� 2.0/� (5.0 �)
+[19:32:31] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 73.7 � ��������� 2.0/� (4.0 �)
+[19:32:32] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?22.1 ����� � ����� 95.8 � ��������� 2.0/� (5.0 �)
+[19:32:33] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 97.8 � ��������� 2.0/� (4.0 �)
+[19:32:34] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 99.8 � ��������� 2.0/� (3.0 �)
+[19:32:35] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 101.8 � ��������� 2.0/� (2.0 �)
+[19:32:36] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 103.8 � ��������� 2.0/� (1.0 �)
+[19:32:43] [Server thread/INFO] [minecraft/MinecraftServer]: [Dev: ������� ������ ���������� ���� � Dev]
+[19:32:43] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] ������� ������ ���������� ���� � Dev
+[19:33:07] [Render thread/INFO] [minecraft/AdvancementList]: Loaded 90 advancements
+[19:33:17] [Server thread/INFO] [minecraft/MinecraftServer]: [Dev: ������� ������ ���������� ���� � Dev]
+[19:33:17] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] ������� ������ ���������� ���� � Dev
+[19:33:32] [Server thread/INFO] [minecraft/IntegratedServer]: Saving and pausing game...
+[19:33:32] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[soulless_test]'/minecraft:overworld
+[19:33:32] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[soulless_test]'/minecraft:the_nether
+[19:33:32] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[soulless_test]'/minecraft:the_end
+[19:33:32] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: Gathering id map for writing to world save soulless_test
+[19:33:32] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: ID Map collection complete soulless_test
+[19:33:43] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?15.0 ����� � ����� 15.0 � ��������� 7.0 �
+[19:33:45] [Server thread/INFO] [minecraft/IntegratedServer]: Saving and pausing game...
+[19:33:46] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[soulless_test]'/minecraft:overworld
+[19:33:46] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[soulless_test]'/minecraft:the_nether
+[19:33:46] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[soulless_test]'/minecraft:the_end
+[19:33:46] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: Gathering id map for writing to world save soulless_test
+[19:33:46] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: ID Map collection complete soulless_test
+[19:34:29] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?16.0 ����� � ����� 16.0 � ��������� 2.0/� (5.0 �)
+[19:34:30] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 18.0 � ��������� 2.0/� (4.0 �)
+[19:34:31] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 20.0 � ��������� 2.0/� (3.0 �)
+[19:34:31] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?22.0 ����� � ����� 42.0 � ��������� 2.0/� (5.0 �)
+[19:34:32] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 44.0 � ��������� 2.0/� (4.0 �)
+[19:34:33] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 46.0 � ��������� 2.0/� (3.0 �)
+[19:34:33] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?14.0 ����� � ����� 60.0 � ��������� 2.0/� (5.0 �)
+[19:34:34] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 62.0 � ��������� 2.0/� (4.0 �)
+[19:34:35] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?9.1 ����� � ����� 71.1 � ��������� 2.0/� (5.0 �)
+[19:34:36] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 73.1 � ��������� 2.0/� (4.0 �)
+[19:34:37] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?16.0 ����� � ����� 89.1 � ��������� 2.0/� (5.0 �)
+[19:34:38] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 91.1 � ��������� 2.0/� (4.0 �)
+[19:34:38] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?24.0 ����� � ����� 115.1 � ��������� 2.0/� (5.0 �)
+[19:34:39] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 117.1 � ��������� 2.0/� (4.0 �)
+[19:34:40] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?12.8 ����� � ����� 129.9 � ��������� 2.0/� (5.0 �)
+[19:34:41] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?2.0 ����� � ����� 131.9 � ��������� 2.0/� (4.0 �)
+[19:34:41] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?13.2 ����� � ����� 145.0 � ��������� 3.0/� (8.0 �)
+[19:34:42] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?16.0 ����� � ����� 161.0 � ��������� 3.0/� (7.1 �)
+[19:34:43] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?3.0 ����� � ����� 164.0 � ��������� 3.0/� (6.0 �)
+[19:34:43] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?7.5 ����� � ����� 171.6 � ��������� 3.0/� (5.8 �)
+[19:34:44] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] [�������] ?3.0 ����� � ����� 174.6 � ��������� 3.0/� (5.0 �)

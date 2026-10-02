@@ -53,6 +53,7 @@ public final class RendManager {
     public static final int STUN_TARGETS = 3;
     public static final int STUN_SECONDS = 7;
     public static final float HEAL_PER_TARGET = 2.0F;   // one heart
+    public static final int DURABILITY_COST = 10;
     private static final String CD_TAG = "soulless_rend_ready_at";
 
     private static final UUID SLOW_UUID = UUID.fromString("2b7d0e55-3c1a-4a8e-9f6d-7c4b1a2e9d30");
@@ -186,6 +187,18 @@ public final class RendManager {
             level.sendParticles(ModParticles.SOUL_EMBER.get(), t.getX(), t.getY() + t.getBbHeight() * 0.6, t.getZ(), 25, 0.3, 0.4, 0.3, 0.15);
             level.sendParticles(ParticleTypes.CRIT, t.getX(), t.getY() + t.getBbHeight() * 0.6, t.getZ(), 12, 0.3, 0.3, 0.3, 0.4);
         }
+        // the cut burns away every harmful effect on the wielder, and costs the blade durability
+        List<net.minecraft.world.effect.MobEffect> bad = player.getActiveEffects().stream()
+                .map(net.minecraft.world.effect.MobEffectInstance::getEffect)
+                .filter(fx -> fx.getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL)
+                .toList();
+        bad.forEach(player::removeEffect);
+        if (!bad.isEmpty()) {
+            level.sendParticles(ParticleTypes.SOUL, player.getX(), player.getY() + 1.0, player.getZ(), 15, 0.4, 0.6, 0.4, 0.04);
+        }
+        player.getMainHandItem().hurtAndBreak(DURABILITY_COST, player,
+                p -> p.broadcastBreakEvent(net.minecraft.world.entity.EquipmentSlot.MAINHAND));
+
         if (!hit.isEmpty()) {
             player.heal(HEAL_PER_TARGET * power * hit.size());
             level.sendParticles(ParticleTypes.HEART, player.getX(), player.getY() + 2.1, player.getZ(), Math.min(hit.size(), 6), 0.4, 0.1, 0.4, 0);

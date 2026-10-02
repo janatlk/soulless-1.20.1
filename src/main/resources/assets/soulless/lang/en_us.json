@@ -24,6 +24,8 @@
   "tooltip.soulless.soul_forged.d.slam.5": "  While recharging, Soul Rend is locked too",
   "tooltip.soulless.soul_forged.d.rend.title": "✦ [%s] Soul Rend · %ss cooldown",
   "tooltip.soulless.soul_forged.d.rend.1": "  Hold RMB up to %ss, then a diagonal cut: %s damage",
+  "tooltip.soulless.soul_forged.d.rend.6": "  Removes all harmful effects from you",
+  "tooltip.soulless.soul_forged.d.rend.7": "  Costs %s durability",
   "tooltip.soulless.soul_forged.d.rend.5": "  Release early: less damage, stun and healing",
   "tooltip.soulless.soul_forged.d.rend.2": "  Flings foes: light ones far, heavy ones near",
   "tooltip.soulless.soul_forged.d.rend.3": "  Stuns the %s nearest for %ss, +1 ❤ for each struck",

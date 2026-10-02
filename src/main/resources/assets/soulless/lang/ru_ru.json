@@ -24,6 +24,8 @@
   "tooltip.soulless.soul_forged.d.slam.5": "  Пока перезаряжается, Разрез душ недоступен",
   "tooltip.soulless.soul_forged.d.rend.title": "✦ [%s] Разрез душ · КД %s с",
   "tooltip.soulless.soul_forged.d.rend.1": "  Держите ПКМ до %s с, затем рез наискось: %s урона",
+  "tooltip.soulless.soul_forged.d.rend.6": "  Снимает с вас все негативные эффекты",
+  "tooltip.soulless.soul_forged.d.rend.7": "  Тратит %s прочности",
   "tooltip.soulless.soul_forged.d.rend.5": "  Отпустите раньше: слабее урон, стан и лечение",
   "tooltip.soulless.soul_forged.d.rend.2": "  Отбрасывает: лёгких дальше, тяжёлых ближе",
   "tooltip.soulless.soul_forged.d.rend.3": "  Оглушает %s ближайших на %s с, +1 ❤ за каждого",
