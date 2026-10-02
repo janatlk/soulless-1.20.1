@@ -12,7 +12,7 @@
   "tooltip.soulless.soul_forged.ability.title": "◆ Ability [%s] — Soul Crush",
   "tooltip.soulless.soul_forged.ability.1": "Leap up and drive the sword into the ground:",
   "tooltip.soulless.soul_forged.ability.2": " • Up to %s damage in a %s block radius",
-  "tooltip.soulless.soul_forged.ability.3": " • Knocks enemies back and applies an empowered Soul Curse for %ss",
+  "tooltip.soulless.soul_forged.ability.3": " • Knocks enemies back and applies an empowered Soul Curse for %ss (%s damage/s)",
   "tooltip.soulless.soul_forged.ability.4": " • The ground around the impact cracks",
   "tooltip.soulless.soul_forged.ability.5": " • Cooldown: %ss",
   "tooltip.soulless.soul_forged.trait.1": "◆ Two-handed grip, +%s attack reach",

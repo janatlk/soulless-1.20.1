@@ -110,7 +110,8 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         tooltip.add(Component.translatable(k + "ability.title", Component.keybind("key.soulless.slam")).withStyle(ChatFormatting.LIGHT_PURPLE));
         tooltip.add(Component.translatable(k + "ability.1").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable(k + "ability.2", fmt(SlamManager.MAX_DAMAGE), fmt(SlamManager.RADIUS)).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "ability.3", SlamManager.CURSE_SECONDS).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "ability.3", SlamManager.CURSE_SECONDS,
+                fmt(SoulCurse.DAMAGE_PER_SECOND + SlamManager.CURSE_AMPLIFIER)).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable(k + "ability.4").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable(k + "ability.5", SlamManager.COOLDOWN_TICKS / 20).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.empty());

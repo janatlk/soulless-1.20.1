@@ -98,8 +98,8 @@ public final class ClientForgeEvents {
         Vec3 right = new Vec3(-forward.z, 0, forward.x);
         Vec3 hand = p.position().add(0, p.isCrouching() ? 0.85 : 1.05, 0).add(forward.scale(0.55)).add(right.scale(-0.05));
         Vec3 blade = forward.scale(0.5).add(0, 0.866, 0);
-        for (int i = 0; i < 2; i++) {
-            double along = 0.35 + rnd.nextDouble() * 1.45;
+        for (int i = 0; i < 1; i++) {
+            double along = 0.3 + rnd.nextDouble() * 1.4;
             Vec3 at = hand.add(blade.scale(along)).add(right.scale((rnd.nextDouble() - 0.5) * 0.25));
             level.addParticle(ModParticles.SOUL_EMBER.get(), at.x, at.y, at.z, 0, 0.015 + rnd.nextDouble() * 0.02, 0);
         }

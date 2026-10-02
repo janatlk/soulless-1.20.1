@@ -25,6 +25,12 @@ public class SoulCurseEffect extends MobEffect {
         }
     }
 
+    // Slowness stays at its listed value at every amplifier; only the burn grows stronger.
+    @Override
+    public double getAttributeModifierValue(int amplifier, AttributeModifier modifier) {
+        return modifier.getAmount();
+    }
+
     @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration % 20 == 0;

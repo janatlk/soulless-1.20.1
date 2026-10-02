@@ -414,7 +414,8 @@ def write_geo(tex_h):
             }
             if c.rot:
                 cd["pivot"] = [r(-c.pivot[0]), r(c.pivot[1]), r(c.pivot[2])]
-                cd["rotation"] = [r(c.rot[0]), r(-c.rot[1]), r(-c.rot[2])]
+                # GeckoLib reads bedrock rotations as (-x, -y, z) of the Java-space rotation
+                cd["rotation"] = [r(-c.rot[0]), r(-c.rot[1]), r(c.rot[2])]
             cubes.append(cd)
         if cubes:
             out["cubes"] = cubes

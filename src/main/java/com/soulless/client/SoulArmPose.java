@@ -19,6 +19,9 @@ public final class SoulArmPose {
     private static final float HOLD_END = STRIKE_END + 8;
     private static final float RECOVER_END = HOLD_END + 8;
 
+    /** Forces class init (and so {@link #GREATSWORD} creation) during mod construction. */
+    public static void init() {}
+
     private static void apply(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
         boolean right = arm == HumanoidArm.RIGHT;
         ModelPart main = right ? model.rightArm : model.leftArm;

@@ -12,7 +12,7 @@
   "tooltip.soulless.soul_forged.ability.title": "◆ Способность [%s] — Сокрушение душ",
   "tooltip.soulless.soul_forged.ability.1": "Взмыть вверх и обрушить меч на землю:",
   "tooltip.soulless.soul_forged.ability.2": " • До %s урона в радиусе %s блоков",
-  "tooltip.soulless.soul_forged.ability.3": " • Отбрасывает врагов и накладывает усиленное Проклятье душ на %s сек.",
+  "tooltip.soulless.soul_forged.ability.3": " • Отбрасывает врагов и накладывает усиленное Проклятье душ на %s сек. (%s урона/сек)",
   "tooltip.soulless.soul_forged.ability.4": " • Земля вокруг удара трескается",
   "tooltip.soulless.soul_forged.ability.5": " • Перезарядка: %s сек.",
   "tooltip.soulless.soul_forged.trait.1": "◆ Двуручный хват, +%s к дальности атаки",

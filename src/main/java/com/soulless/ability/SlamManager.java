@@ -43,6 +43,7 @@ public final class SlamManager {
     public static final float MIN_DAMAGE = 14.0F;
     public static final float RADIUS = 5.0F;
     public static final int CURSE_SECONDS = 8;
+    public static final int CURSE_AMPLIFIER = 1;
     public static final int COOLDOWN_TICKS = 160;
 
     /** Ticks of the leap before the sword is driven down. Mirrored by the client animation. */
@@ -122,7 +123,7 @@ public final class SlamManager {
             double push = 1.1 - 0.6 * (dist / RADIUS);
             target.push(away.x * push, 0.75, away.z * push);
             target.hurtMarked = true;
-            SoulCurse.apply(target, CURSE_SECONDS * 20, 1, player);
+            SoulCurse.apply(target, CURSE_SECONDS * 20, CURSE_AMPLIFIER, player);
         }
 
         level.playSound(null, center.x, center.y, center.z, ModSounds.SLAM_IMPACT.get(), SoundSource.PLAYERS, 2.0F, 1.0F);

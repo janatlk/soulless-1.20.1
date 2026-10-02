@@ -20,7 +20,7 @@ public class SoulEmberParticle extends TextureSheetParticle {
         this.zd = vz;
         this.friction = 0.9F;
         this.gravity = -0.03F;
-        this.quadSize *= 0.9F + random.nextFloat() * 0.7F;
+        this.quadSize *= 0.35F + random.nextFloat() * 0.35F;
         this.lifetime = 10 + random.nextInt(14);
         this.hasPhysics = false;
         setSpriteFromAge(sprites);
