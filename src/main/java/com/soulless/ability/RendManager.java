@@ -2,6 +2,7 @@ package com.soulless.ability;
 
 import com.soulless.Soulless;
 import com.soulless.effect.Stun;
+import com.soulless.item.SoulBonus;
 import com.soulless.item.SoulForgedItem;
 import com.soulless.network.ModNetwork;
 import com.soulless.network.RendHitPacket;
@@ -179,7 +180,7 @@ public final class RendManager {
         for (int i = 0; i < hit.size(); i++) {
             LivingEntity t = hit.get(i);
             t.invulnerableTime = 0;
-            t.hurt(level.damageSources().playerAttack(player), DAMAGE * power);
+            SoulBonus.abilityDamage(() -> t.hurt(level.damageSources().playerAttack(player), DAMAGE * power));
             if (i < STUN_TARGETS) {
                 Stun.apply(t, Math.max(10, Math.round(STUN_SECONDS * 20 * power)), player);
             }

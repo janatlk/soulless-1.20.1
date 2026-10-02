@@ -2,6 +2,7 @@ package com.soulless.ability;
 
 import com.soulless.Soulless;
 import com.soulless.effect.SoulCurse;
+import com.soulless.item.SoulBonus;
 import com.soulless.item.SoulForgedItem;
 import com.soulless.network.ModNetwork;
 import com.soulless.network.SlamImpactPacket;
@@ -188,7 +189,7 @@ public final class SlamManager {
             double dist = Math.sqrt(Mth.square(target.getX() - center.x) + Mth.square(target.getZ() - center.z));
             float damage = (float) Mth.lerp(dist / RADIUS, maxDamage, maxDamage * 0.5F);
             target.invulnerableTime = 0;
-            target.hurt(level.damageSources().playerAttack(player), damage);
+            SoulBonus.abilityDamage(() -> target.hurt(level.damageSources().playerAttack(player), damage));
             Vec3 away = new Vec3(target.getX() - center.x, 0, target.getZ() - center.z);
             away = away.lengthSqr() < 1.0E-4 ? look : away.normalize();
             double push = 1.1 - 0.6 * (dist / RADIUS);

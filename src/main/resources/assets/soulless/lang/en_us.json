@@ -34,6 +34,10 @@
   "tooltip.soulless.soul_forged.d.traits.1": "  Soul Speed I on soul sand and soul soil",
   "tooltip.soulless.soul_forged.d.traits.2": "  Heavy: −%s%% speed",
   "tooltip.soulless.soul_forged.d.traits.3": "  Immune to fire, lava and explosions",
+  "tooltip.soulless.soul_forged.d.traits.5": "  On soul sand: +%s damage, abilities +%s%%",
+  "tooltip.soulless.soul_forged.souls": "✦ Souls harvested: %s (+%s%% damage)",
+  "tooltip.soulless.soul_forged.d.souls.1": "  +1%% damage per %s souls (spawner mobs don't count)",
+  "message.soulless.souls_milestone": "Soul Forged has devoured %s souls: +%s%% damage",
   "tooltip.soulless.soul_forged.d.traits.4": "  Two-handed: the off hand is occupied",
   "tooltip.soulless.soul_forged.lore": "\"Forged from souls that never found rest\"",
 

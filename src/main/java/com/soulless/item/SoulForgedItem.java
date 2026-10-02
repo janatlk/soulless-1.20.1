@@ -145,6 +145,7 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
             tooltip.add(section("passive"));
             tooltip.add(line(k + "c.curse", ChatFormatting.LIGHT_PURPLE, v(CURSE_SECONDS)));
             tooltip.add(line(k + "c.traits", ChatFormatting.DARK_AQUA));
+            tooltip.add(soulsLine(stack, k));
             tooltip.add(section("active"));
             tooltip.add(line(k + "c.slam", ChatFormatting.LIGHT_PURPLE, slamKey, v(fmt(SlamManager.BASE_DAMAGE)),
                     v(fmt(SlamManager.DAMAGE_CAP)), v(SlamManager.COOLDOWN_TICKS / 20)));
@@ -163,6 +164,10 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         tooltip.add(line(k + "d.traits.2", ChatFormatting.GRAY, v(Math.round(HEAVY_SLOWNESS * 100))));
         tooltip.add(line(k + "d.traits.3", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.traits.4", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.traits.5", ChatFormatting.GRAY, v(fmt(SoulBonus.SOUL_GROUND_HIT_BONUS)),
+                v(Math.round((SoulBonus.SOUL_GROUND_ABILITY_MULT - 1) * 100))));
+        tooltip.add(soulsLine(stack, k));
+        tooltip.add(line(k + "d.souls.1", ChatFormatting.GRAY, v(SoulBonus.SOULS_PER_PERCENT)));
 
         tooltip.add(section("active"));
         tooltip.add(line(k + "d.slam.title", ChatFormatting.LIGHT_PURPLE, slamKey, v(SlamManager.COOLDOWN_TICKS / 20)));
@@ -187,6 +192,11 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
 
     /** Marker for a section divider; the client tooltip renderer swaps it for a drawn header (SoulTooltip). */
     public static final String SECTION_MARK = "⁣";
+
+    private static Component soulsLine(ItemStack stack, String k) {
+        int souls = SoulBonus.souls(stack);
+        return line(k + "souls", ChatFormatting.DARK_PURPLE, v(souls), v(souls / SoulBonus.SOULS_PER_PERCENT));
+    }
 
     private static Component section(String name) {
         return Component.literal(SECTION_MARK).append(Component.translatable("tooltip.soulless.section." + name));

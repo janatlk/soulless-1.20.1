@@ -34,6 +34,10 @@
   "tooltip.soulless.soul_forged.d.traits.1": "  Скорость душ I на песке и почве душ",
   "tooltip.soulless.soul_forged.d.traits.2": "  Тяжёлый: −%s%% к скорости",
   "tooltip.soulless.soul_forged.d.traits.3": "  Не горит в огне и лаве, не боится взрывов",
+  "tooltip.soulless.soul_forged.d.traits.5": "  На песке душ: +%s урона, способности +%s%%",
+  "tooltip.soulless.soul_forged.souls": "✦ Собрано душ: %s (+%s%% урона)",
+  "tooltip.soulless.soul_forged.d.souls.1": "  +1%% урона за каждые %s душ (не из спавнеров)",
+  "message.soulless.souls_milestone": "Кованная душа поглотила %s душ: +%s%% урона",
   "tooltip.soulless.soul_forged.d.traits.4": "  Двуручный: вторая рука занята",
   "tooltip.soulless.soul_forged.lore": "«Выкован из душ, что так и не обрели покоя»",
 
