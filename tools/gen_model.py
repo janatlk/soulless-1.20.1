@@ -419,6 +419,93 @@ def write_bbmodel(tex_png, tex_h):
     p.write_text(json.dumps(bb))
 
 
+def dominant(pixels):
+    """Most frequent colour among the samples (coarsely bucketed) - keeps pixel art crisp instead of muddy."""
+    keys = (pixels[:, :3] // 24).astype(int)
+    buckets = {}
+    for key, px in zip(map(tuple, keys), pixels):
+        buckets.setdefault(key, []).append(px)
+    best = max(buckets.values(), key=len)
+    return np.mean(best, axis=0)
+
+
+def render_icon(base, gm, size=32, angle_deg=-45, supersample=8):
+    """Inventory icon rendered from the model itself: the front (north) faces, orthographic, turned so the
+    blade points to the top-right, then reduced to pixel art with a dark outline."""
+    S = size * supersample
+    a = math.radians(angle_deg)
+    ca, sa = math.cos(a), math.sin(a)
+
+    def xf(x, y, c):
+        # cube rotation about z around its pivot, then the global icon rotation
+        if c.rot and c.rot[2]:
+            r = math.radians(c.rot[2])
+            px, py = c.pivot[0], c.pivot[1]
+            dx, dy = x - px, y - py
+            x, y = px + dx * math.cos(r) - dy * math.sin(r), py + dx * math.sin(r) + dy * math.cos(r)
+        return x * ca - y * sa, x * sa + y * ca
+
+    faces = []
+    pts = []
+    for c in CUBES:
+        (x0, y0, _), (x1, y1, _) = c.lo, c.hi
+        corners = [xf(x0, y0, c), xf(x1, y0, c), xf(x0, y1, c)]   # origin, +u, +v (v up)
+        faces.append((c.lo[2], c, corners))
+        for cx, cy in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+            pts.append(xf(cx, cy, c))
+    minx, maxx = min(p[0] for p in pts), max(p[0] for p in pts)
+    miny, maxy = min(p[1] for p in pts), max(p[1] for p in pts)
+    scale = (S - 2 * supersample) / max(maxx - minx, maxy - miny)
+    ox, oy = (S - (maxx - minx) * scale) / 2, (S - (maxy - miny) * scale) / 2
+
+    canvas = np.zeros((S, S, 4), np.float32)
+    glow = np.zeros((S, S), bool)
+    for _, c, (o, pu, pv) in sorted(faces, key=lambda f: -f[0]):   # far faces first
+        u, v, W, H = c.uv["north"]
+        e1 = np.array([pu[0] - o[0], pu[1] - o[1]])
+        e2 = np.array([pv[0] - o[0], pv[1] - o[1]])
+        inv = np.linalg.inv(np.array([e1, e2]).T)
+        quad = [o, pu, pv, (pu[0] + e2[0], pu[1] + e2[1])]
+        qx = [(q[0] - minx) * scale + ox for q in quad]
+        qy = [S - ((q[1] - miny) * scale + oy) for q in quad]
+        for py in range(max(0, int(min(qy))), min(S, int(max(qy)) + 1)):
+            for px in range(max(0, int(min(qx))), min(S, int(max(qx)) + 1)):
+                mx = (px + 0.5 - ox) / scale + minx
+                my = (S - (py + 0.5) - oy) / scale + miny
+                s, t = inv @ np.array([mx - o[0], my - o[1]])
+                if 0 <= s < 1 and 0 <= t < 1:
+                    tx, ty = u + int(s * W), v + H - 1 - int(t * H)
+                    col = base[ty, tx]
+                    if col[3] > 0:
+                        canvas[py, px] = col
+                        glow[py, px] = gm[ty, tx][3] > 0
+
+    out = [[None] * size for _ in range(size)]
+    k = supersample
+    for y in range(size):
+        for x in range(size):
+            block = canvas[y * k:(y + 1) * k, x * k:(x + 1) * k].reshape(-1, 4)
+            g = glow[y * k:(y + 1) * k, x * k:(x + 1) * k].reshape(-1)
+            opaque = block[:, 3] > 0
+            if opaque.mean() < 0.35:
+                continue
+            if g.mean() > 0.3:           # glowing runes/eyes/gems where they dominate
+                out[y][x] = dominant(block[g])
+            else:
+                out[y][x] = dominant(block[opaque & ~g] if (opaque & ~g).any() else block[opaque])
+    # dark outline around the silhouette
+    final = np.zeros((size, size, 4), np.float32)
+    for y in range(size):
+        for x in range(size):
+            if out[y][x] is not None:
+                final[y, x] = out[y][x]
+                final[y, x, 3] = 255
+            elif any(0 <= x + dx < size and 0 <= y + dy < size and out[y + dy][x + dx] is not None
+                     for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                final[y, x] = hexc("120a18")
+    return final
+
+
 def main():
     build()
     base, gm, tex_h = pack_and_paint()
@@ -430,6 +517,7 @@ def main():
     tex_png = to_png_bytes(base)
     (tex / "soul_forged.png").write_bytes(tex_png)
     (tex / "soul_forged_glowmask.png").write_bytes(to_png_bytes(gm))
+    (tex / "soul_forged_icon.png").write_bytes(to_png_bytes(render_icon(base, gm)))
     write_geo(tex_h)
     write_animation_json()
     write_bbmodel(tex_png, tex_h)

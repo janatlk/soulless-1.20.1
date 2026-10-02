@@ -1,7 +1,7 @@
 package com.soulless;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.soulless.ability.RendManager;
 import com.soulless.network.ClientControlPacket;
 import com.soulless.network.ModNetwork;
@@ -19,8 +19,10 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * {@code /soulless zones [on|off]} - show where Soul Crush and Soul Rend would hit (anyone, for themselves).
+ * {@code /soulless zones [targets] [on|off]} - show where Soul Crush and Soul Rend would hit (no argument
+ * toggles; anyone for themselves, operators for other players).
  * {@code /soulless resetcd [targets]} - clear both ability cooldowns (operators / cheats).
+ * {@code /soulless dummy [clear]} - place / remove immortal training dummies that report damage in chat.
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class SoullessCommands {
@@ -29,12 +31,29 @@ public final class SoullessCommands {
         CommandDispatcher<CommandSourceStack> d = event.getDispatcher();
         d.register(Commands.literal("soulless")
                 .then(Commands.literal("zones")
-                        .executes(ctx -> zones(ctx.getSource(), null))
-                        .then(Commands.argument("show", BoolArgumentType.bool())
-                                .executes(ctx -> zones(ctx.getSource(), BoolArgumentType.getBool(ctx, "show")))))
+                        .executes(ctx -> zones(ctx.getSource(), self(ctx.getSource()), null))
+                        .then(Commands.literal("on").executes(ctx -> zones(ctx.getSource(), self(ctx.getSource()), true)))
+                        .then(Commands.literal("off").executes(ctx -> zones(ctx.getSource(), self(ctx.getSource()), false)))
+                        .then(Commands.argument("targets", EntityArgument.players())
+                                .requires(src -> src.hasPermission(2))
+                                .executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), null))
+                                .then(Commands.literal("on").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), true)))
+                                .then(Commands.literal("off").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), false)))))
+                .then(Commands.literal("dummy")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> {
+                            TrainingDummy.spawn(ctx.getSource().getPlayerOrException());
+                            ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.dummy.spawned"), true);
+                            return 1;
+                        })
+                        .then(Commands.literal("clear").executes(ctx -> {
+                            int n = TrainingDummy.clear(ctx.getSource().getLevel());
+                            ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.dummy.cleared", n), true);
+                            return n;
+                        })))
                 .then(Commands.literal("resetcd")
                         .requires(src -> src.hasPermission(2))
-                        .executes(ctx -> resetCooldowns(ctx.getSource(), List.of(ctx.getSource().getPlayerOrException())))
+                        .executes(ctx -> resetCooldowns(ctx.getSource(), self(ctx.getSource())))
                         .then(Commands.argument("targets", EntityArgument.players())
                                 .executes(ctx -> resetCooldowns(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"))))));
     }
@@ -47,14 +66,20 @@ public final class SoullessCommands {
         }
     }
 
-    /** {@code show == null} toggles. */
-    private static int zones(CommandSourceStack src, Boolean show) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayer player = src.getPlayerOrException();
-        boolean on = show != null ? show : !player.getPersistentData().getBoolean("soulless_zones");
-        player.getPersistentData().putBoolean("soulless_zones", on);
-        ModNetwork.sendToPlayer(player, new ClientControlPacket(ClientControlPacket.SHOW_ZONES, on));
-        src.sendSuccess(() -> Component.translatable(on ? "command.soulless.zones.on" : "command.soulless.zones.off"), false);
-        return 1;
+    private static Collection<ServerPlayer> self(CommandSourceStack src) throws CommandSyntaxException {
+        return List.of(src.getPlayerOrException());
+    }
+
+    /** {@code show == null} toggles each player's own setting. */
+    private static int zones(CommandSourceStack src, Collection<ServerPlayer> players, Boolean show) {
+        for (ServerPlayer player : players) {
+            boolean on = show != null ? show : !player.getPersistentData().getBoolean("soulless_zones");
+            player.getPersistentData().putBoolean("soulless_zones", on);
+            ModNetwork.sendToPlayer(player, new ClientControlPacket(ClientControlPacket.SHOW_ZONES, on));
+            src.sendSuccess(() -> Component.translatable(on ? "command.soulless.zones.on" : "command.soulless.zones.off",
+                    player.getDisplayName()), false);
+        }
+        return players.size();
     }
 
     private static int resetCooldowns(CommandSourceStack src, Collection<ServerPlayer> players) {

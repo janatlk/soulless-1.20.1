@@ -90,48 +90,7 @@ def diagonal_item(n, length, profile, flames=False, seed=1):
     return img, flame_px
 
 
-def sword_profile(s, v, rnd):
-    av = abs(v)
-    if s < 0 or s > 43:
-        return None
-    if s < 3.2:  # pommel gem
-        if av < 1.9:
-            return GEM[3] if (s > 1.8 and v < 0) else GEM[2] if s > 1 else GEM[1]
-        return None
-    if s < 4.4:
-        return METAL[2] if av < 1.4 else None
-    if s < 12:  # long two-hand grip
-        if av < 1.05:
-            band = int(s * 1.4) % 3
-            return LEATHER[2 - band] if v < 0.3 else LEATHER[0]
-        return None
-    if s < 16.5:  # skull guard with sweeping bone wings
-        if av < 2.6:
-            if 13.6 < s < 15 and 0.5 < av < 1.7:
-                return RUNE[2]  # glowing eyes
-            return BONE[2] if v < 0 else BONE[1]
-        # wings sweep toward the blade as they widen
-        wing_s = 12.4 + (av - 2.6) * 0.75
-        if av < 7.2 and wing_s < s < wing_s + 2.6:
-            return BONE[2] if s > wing_s + 1.4 else BONE[0]
-        return None
-    hw = 3.3  # straight blade with parallel edges ...
-    if s > 35:
-        hw = max(0.45, hw - (s - 35) * 0.45)  # ... and a short point
-    if av < hw:
-        if av < 0.75 and s < 36:
-            return RUNE[2] if int(s) % 4 == 0 else RUNE[1]
-        if av > hw - 1.0:
-            return EDGE[2] if v < 0 else EDGE[1]
-        return BLADE[2] if v < 0 else BLADE[0]
-    return None
-
-
-def make_sword_icon():
-    img, flames = diagonal_item(32, 43, sword_profile, seed=4)
-    flame_cols = set(FLAME)
-    img = outline(img, skip=flame_cols)
-    save(img, "soul_forged_icon")
+# The sword's own icon is rendered from the 3D model by tools/gen_model.py.
 
 
 # ----------------------------------------------------------------------------- material icons (16x16)
@@ -363,7 +322,6 @@ def make_stun_icon():
 
 def main():
     make_stun_icon()
-    make_sword_icon()
     make_hilt()
     make_ingot()
     make_core()

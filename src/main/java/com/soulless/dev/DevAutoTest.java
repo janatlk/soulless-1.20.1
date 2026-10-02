@@ -36,6 +36,8 @@ public final class DevAutoTest {
     /** SOULLESS_TUNE_ABILITY=rend loops Soul Rend (with fling/stun/heal logging) instead of Soul Crush. */
     public static final boolean TUNE_REND = TUNE && "rend".equals(System.getenv("SOULLESS_TUNE_ABILITY"));
     public static final int TUNE_CYCLE = TUNE_REND ? 300 : 120;
+    /** SOULLESS_CHECK=1: tooltip screenshots + a training dummy hit by a swing, Soul Crush and Soul Rend. */
+    public static final boolean CHECK = ENABLED && System.getenv("SOULLESS_CHECK") != null;
     /** Open ground away from anything built near spawn. */
     private static final double ARENA_X = 300.5, ARENA_Z = 0.5;
 
@@ -84,6 +86,31 @@ public final class DevAutoTest {
         if (!ENABLED || event.phase != TickEvent.Phase.END || player == null || tick < 0) return;
         tick++;
         ServerPlayer p = player;
+        if (CHECK) {
+            if (tick == 20) {
+                p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(60), e -> !(e instanceof ServerPlayer))
+                        .forEach(LivingEntity::discard);
+                p.teleportTo(p.serverLevel(), ARENA_X, p.getY(), ARENA_Z, 0, 20);
+                p.setGameMode(GameType.SURVIVAL);
+                // the client may have restored another hotbar slot: put the sword in whichever is selected
+                p.getInventory().setItem(p.getInventory().selected, new ItemStack(ModItems.SOUL_FORGED.get()));
+                com.soulless.TrainingDummy.spawn(p);
+            }
+            if (tick == 60) {
+                p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(8), com.soulless.TrainingDummy::isDummy)
+                        .forEach(d -> {
+                            Soulless.LOGGER.info("[autotest] dummy at {} (player {})", d.position(), p.position());
+                            p.attack(d);
+                        });
+            }
+            if (tick == 140) slam(p);
+            if (tick == 260) {
+                RendManager.resetCooldown(p);
+                RendManager.tryStart(p);
+            }
+            if (tick == 520) Soulless.LOGGER.info("[autotest] check done");
+            return;
+        }
         if (TUNE_REND) {
             int c = tick % TUNE_CYCLE;
             if (c == 0) {

@@ -20,5 +20,13 @@ public final class ClientKeys {
         return key.getDisplayName().getString();       // F-keys, mouse buttons, etc.
     }
 
+    /** Dev screenshots can force the detailed tooltip without a real Shift press. */
+    public static boolean forceDetails;
+
+    /** Detailed (Shift) tooltip requested. */
+    public static boolean detailsHeld() {
+        return forceDetails || net.minecraft.client.gui.screens.Screen.hasShiftDown();
+    }
+
     private ClientKeys() {}
 }

@@ -5,7 +5,10 @@ import com.google.common.collect.Multimap;
 import com.soulless.ability.RendManager;
 import com.soulless.ability.RendTimeline;
 import com.soulless.ability.SlamManager;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -50,6 +53,9 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
     public static final int CURSE_SECONDS = 5;
     public static final double REACH_BONUS = 1.0;
     private static final UUID REACH_UUID = UUID.fromString("5d1f3c0e-7a51-4b8e-9a43-1f5b8c2d7e90");
+    /** A heavy two-hander: slightly slower while held. */
+    public static final double HEAVY_SLOWNESS = 0.08;
+    private static final UUID HEAVY_UUID = UUID.fromString("7c3b9e21-4f6a-4d8b-a1c2-3e5f7a9b1c2d");
 
     public static final String CONTROLLER = "main";
     public static final String SLAM_ANIM = "slam";
@@ -61,7 +67,7 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
 
     public SoulForgedItem(Properties properties) {
         // 1 (base) + 5 (tier) + 10 = 16 attack damage, 4 - 3.3 = 0.7 attacks per second (slow, heavy slashes)
-        super(SoulForgedTier.INSTANCE, 10, -3.3F, properties);
+        super(SoulForgedTier.INSTANCE, 10, ATTACK_SPEED_MODIFIER, properties);
         SingletonGeoAnimatable.registerSyncedAnimatable(this);
     }
 
@@ -75,7 +81,7 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         return super.hurtEnemy(stack, target, attacker);
     }
 
-    /** Right click: Soul Rend. The server decides (cooldown, hunger, other abilities); the client does nothing. */
+    /** Right click: Soul Rend. The server decides (cooldown, other abilities); the client does nothing. */
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -95,6 +101,7 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
             mainHandModifiers = ImmutableMultimap.<Attribute, AttributeModifier>builder()
                     .putAll(super.getAttributeModifiers(slot, stack))
                     .put(ForgeMod.ENTITY_REACH.get(), new AttributeModifier(REACH_UUID, "Soul Forged reach", REACH_BONUS, AttributeModifier.Operation.ADDITION))
+                    .put(Attributes.MOVEMENT_SPEED, new AttributeModifier(HEAVY_UUID, "Soul Forged weight", -HEAVY_SLOWNESS, AttributeModifier.Operation.MULTIPLY_TOTAL))
                     .build();
         }
         return mainHandModifiers;
@@ -111,49 +118,92 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         return !EnchantmentHelper.getEnchantments(book).containsKey(Enchantments.FIRE_ASPECT) && super.isBookEnchantable(stack, book);
     }
 
+    /**
+     * Compact by default (one line per feature + a stat line), the full breakdown while Shift is held.
+     * Numbers come from the code, so they always match the game. The vanilla "When in Main Hand" block is
+     * replaced by the stat line (see {@code client.SoulTooltip}).
+     */
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         String k = "tooltip.soulless.soul_forged.";
-        tooltip.add(Component.translatable(k + "subtitle").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
-        tooltip.add(Component.empty());
-
-        tooltip.add(Component.translatable(k + "passive.title").withStyle(ChatFormatting.LIGHT_PURPLE));
-        tooltip.add(Component.translatable(k + "passive.1", CURSE_SECONDS).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "passive.2", fmt(SoulCurse.DAMAGE_PER_SECOND)).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "passive.3", Math.round(SoulCurse.SLOWNESS * 100)).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "passive.4").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "passive.5").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.empty());
-
+        boolean details = DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.detailsHeld(), () -> () -> true);
         String slamKey = DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.slamKeyName(), () -> () -> "R");
-        tooltip.add(Component.translatable(k + "ability.title", slamKey).withStyle(ChatFormatting.LIGHT_PURPLE));
-        tooltip.add(Component.translatable(k + "ability.1").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "ability.2", fmt(SlamManager.MAX_DAMAGE), fmt(SlamManager.RADIUS)).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "ability.3", SlamManager.CURSE_SECONDS,
-                fmt(SoulCurse.DAMAGE_PER_SECOND + SlamManager.CURSE_AMPLIFIER)).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "ability.4").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "ability.5", SlamManager.COOLDOWN_TICKS / 20).withStyle(ChatFormatting.GRAY));
+        String rendKey = Component.translatable("hud.soulless.rmb").getString();
+        float damage = 1 + getDamage();
+        float speed = 4 + ATTACK_SPEED_MODIFIER;
+
+        tooltip.add(Component.translatable(k + "subtitle").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
+        tooltip.add(Component.translatable(k + "stats", v(fmt(damage)), v(fmt(speed)), v(fmt(REACH_BONUS))).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.empty());
 
-        tooltip.add(Component.translatable(k + "rend.title").withStyle(ChatFormatting.GOLD));
-        tooltip.add(Component.translatable(k + "rend.1", RendTimeline.WINDUP / 20).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "rend.2", fmt(RendManager.DAMAGE)).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "rend.3").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "rend.4", RendManager.STUN_TARGETS, RendManager.STUN_SECONDS).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "rend.5").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "rend.6", RendManager.HUNGER_COST).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "rend.7", RendTimeline.RECOVER / 20).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "rend.8", RendTimeline.COOLDOWN / 20).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.empty());
+        if (!details) {
+            tooltip.add(line(k + "c.curse", ChatFormatting.LIGHT_PURPLE, v(CURSE_SECONDS)));
+            tooltip.add(line(k + "c.slam", ChatFormatting.LIGHT_PURPLE, slamKey, v(fmt(SlamManager.MAX_DAMAGE)), v(SlamManager.COOLDOWN_TICKS / 20)));
+            tooltip.add(line(k + "c.rend", ChatFormatting.GOLD, rendKey, v(fmt(RendManager.DAMAGE)), v(RendTimeline.COOLDOWN / 20)));
+            tooltip.add(line(k + "c.traits", ChatFormatting.DARK_AQUA));
+            tooltip.add(Component.empty());
+            tooltip.add(Component.translatable(k + "c.more").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+            return;
+        }
 
-        tooltip.add(Component.translatable(k + "trait.1", fmt(REACH_BONUS)).withStyle(ChatFormatting.DARK_AQUA));
-        tooltip.add(Component.translatable(k + "trait.2").withStyle(ChatFormatting.DARK_AQUA));
+        tooltip.add(line(k + "d.curse.title", ChatFormatting.LIGHT_PURPLE));
+        tooltip.add(line(k + "d.curse.1", ChatFormatting.GRAY, v(CURSE_SECONDS), v(fmt(SoulCurse.DAMAGE_PER_SECOND))));
+        tooltip.add(line(k + "d.curse.2", ChatFormatting.GRAY, v(Math.round(SoulCurse.SLOWNESS * 100))));
+
+        tooltip.add(line(k + "d.slam.title", ChatFormatting.LIGHT_PURPLE, slamKey, v(SlamManager.COOLDOWN_TICKS / 20)));
+        tooltip.add(line(k + "d.slam.1", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.slam.2", ChatFormatting.GRAY, v(fmt(SlamManager.MAX_DAMAGE)), v(fmt(SlamManager.RADIUS))));
+        tooltip.add(line(k + "d.slam.3", ChatFormatting.GRAY, v(SlamManager.CURSE_SECONDS),
+                v(fmt(SoulCurse.DAMAGE_PER_SECOND + SlamManager.CURSE_AMPLIFIER))));
+
+        tooltip.add(line(k + "d.rend.title", ChatFormatting.GOLD, rendKey, v(RendTimeline.COOLDOWN / 20)));
+        tooltip.add(line(k + "d.rend.1", ChatFormatting.GRAY, v(RendTimeline.WINDUP / 20), v(fmt(RendManager.DAMAGE))));
+        tooltip.add(line(k + "d.rend.2", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.rend.3", ChatFormatting.GRAY, v(RendManager.STUN_TARGETS), v(RendManager.STUN_SECONDS)));
+        tooltip.add(line(k + "d.rend.4", ChatFormatting.GRAY, v(RendTimeline.RECOVER / 20)));
+
+        tooltip.add(line(k + "d.traits.title", ChatFormatting.DARK_AQUA));
+        tooltip.add(line(k + "d.traits.1", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.traits.2", ChatFormatting.GRAY, v(Math.round(HEAVY_SLOWNESS * 100))));
+        tooltip.add(line(k + "d.traits.3", ChatFormatting.GRAY));
+        tooltip.add(Component.empty());
         tooltip.add(Component.translatable(k + "lore").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
     }
 
-    private static String fmt(double v) {
-        return v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(v);
+    /** The item name in a pale-lilac to deep-violet gradient (client only; servers keep the plain translation). */
+    @Override
+    public Component getName(ItemStack stack) {
+        Component plain = super.getName(stack);
+        return DistExecutor.unsafeRunForDist(() -> () -> gradient(plain.getString(), 0xD17CFF, 0x8A22E0), () -> () -> plain);
     }
+
+    private static Component gradient(String text, int from, int to) {
+        MutableComponent out = Component.empty();
+        int n = Math.max(1, text.length() - 1);
+        for (int i = 0; i < text.length(); i++) {
+            float t = i / (float) n;
+            int r = (int) Mth.lerp(t, from >> 16 & 255, to >> 16 & 255);
+            int g = (int) Mth.lerp(t, from >> 8 & 255, to >> 8 & 255);
+            int b = (int) Mth.lerp(t, from & 255, to & 255);
+            out.append(Component.literal(String.valueOf(text.charAt(i))).withStyle(s -> s.withColor(r << 16 | g << 8 | b)));
+        }
+        return out;
+    }
+
+    private static Component line(String key, ChatFormatting style, Object... args) {
+        return Component.translatable(key, args).withStyle(style);
+    }
+
+    /** A highlighted number inside a tooltip line. */
+    private static Component v(Object value) {
+        return Component.literal(String.valueOf(value)).withStyle(ChatFormatting.WHITE);
+    }
+
+    private static String fmt(double v) {
+        return v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(Math.round(v * 10) / 10.0);
+    }
+
+    private static final float ATTACK_SPEED_MODIFIER = -3.3F;
 
     // ------------------------------------------------------------------ GeckoLib
 

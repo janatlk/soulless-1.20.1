@@ -41,12 +41,12 @@ import java.util.UUID;
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class SlamManager {
-    public static final float MAX_DAMAGE = 30.0F;
-    public static final float MIN_DAMAGE = 14.0F;
+    public static final float MAX_DAMAGE = 12.0F;
+    public static final float MIN_DAMAGE = 6.0F;
     public static final float RADIUS = 5.0F;
     public static final int CURSE_SECONDS = 8;
     public static final int CURSE_AMPLIFIER = 1;
-    public static final int COOLDOWN_TICKS = 160;
+    public static final int COOLDOWN_TICKS = 240;
 
     /** Ticks of the leap before the sword is driven down. Mirrored by the client animation. */
     private static final class State {

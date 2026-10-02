@@ -71,6 +71,12 @@ public final class DevAutoTestClient {
         tick++;
         hideWindowIfAsked(mc);
         var opts = mc.options;
+        if (DevAutoTest.CHECK) {
+            if (tick == 15) opts.setCameraType(CameraType.FIRST_PERSON);
+            if (tick == 50) shot(mc, "check_tooltips");
+            if (tick == 100) shot(mc, "check_hit");
+            return;
+        }
         if (DevAutoTest.TUNE) {
             // live tuning loop: same shots every cycle (overwritten), view from SOULLESS_TUNE_VIEW
             String view = System.getenv().getOrDefault("SOULLESS_TUNE_VIEW", "fp");
@@ -148,6 +154,20 @@ public final class DevAutoTestClient {
             GLFW.glfwSetWindowSize(handle, 1280, 720);
             GLFW.glfwSetWindowPos(handle, -6000, -6000);
         }
+    }
+
+    /** CHECK mode: draw the sword's tooltip (compact on the left, detailed on the right) over the game. */
+    @SubscribeEvent
+    public static void onGui(net.minecraftforge.client.event.RenderGuiEvent.Post event) {
+        if (!DevAutoTest.CHECK || tick < 30 || tick > 60) return;
+        Minecraft mc = Minecraft.getInstance();
+        ItemStack stack = new ItemStack(ModItems.SOUL_FORGED.get());
+        var g = event.getGuiGraphics();
+        com.soulless.client.ClientKeys.forceDetails = false;
+        g.renderTooltip(mc.font, stack, 8, 24);
+        com.soulless.client.ClientKeys.forceDetails = true;
+        g.renderTooltip(mc.font, stack, event.getWindow().getGuiScaledWidth() / 2 - 20, 24);
+        com.soulless.client.ClientKeys.forceDetails = false;
     }
 
     private static void shot(Minecraft mc, String name) {

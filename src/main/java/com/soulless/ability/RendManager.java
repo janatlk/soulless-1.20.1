@@ -43,7 +43,7 @@ import java.util.UUID;
  * "Soul Rend" (right click): a six-second wind-up with the sword hauled over the right shoulder, then a
  * diagonal cut from the right shoulder down to the left. Everything in the cut takes damage and is flung away,
  * lighter creatures much further; the three nearest are stunned; the wielder heals per creature struck.
- * Costs hunger. The cooldown starts at the hit; the sword cannot attack until the recovery ends.
+ * The cooldown starts at the hit; the sword cannot attack until the recovery ends.
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class RendManager {
@@ -52,7 +52,6 @@ public final class RendManager {
     public static final double HALF_ARC_DEG = 80;
     public static final int STUN_TARGETS = 3;
     public static final int STUN_SECONDS = 7;
-    public static final int HUNGER_COST = 4;
     public static final float HEAL_PER_TARGET = 2.0F;   // one heart
     private static final String CD_TAG = "soulless_rend_ready_at";
 
@@ -83,13 +82,6 @@ public final class RendManager {
         if (ready > now) {
             player.displayClientMessage(Component.translatable("message.soulless.rend_cooldown", Mth.ceil((ready - now) / 20F)), true);
             return;
-        }
-        if (!player.getAbilities().instabuild && player.getFoodData().getFoodLevel() < HUNGER_COST) {
-            player.displayClientMessage(Component.translatable("message.soulless.rend_hungry", HUNGER_COST), true);
-            return;
-        }
-        if (!player.getAbilities().instabuild) {
-            player.getFoodData().setFoodLevel(player.getFoodData().getFoodLevel() - HUNGER_COST);
         }
         ACTIVE.put(player.getUUID(), now);
         setSlow(player, -0.55);
