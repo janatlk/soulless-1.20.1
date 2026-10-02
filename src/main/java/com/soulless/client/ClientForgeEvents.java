@@ -27,7 +27,15 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
+import net.minecraftforge.client.event.RenderPlayerEvent;
+import com.soulless.ability.SlamTimeline;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemDisplayContext;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -81,27 +89,110 @@ public final class ClientForgeEvents {
                         0, 0.02 + rnd.nextDouble() * 0.03, 0);
             }
         }
-        ClientState.SLAMS.int2LongEntrySet().removeIf(e -> now - e.getLongValue() > ClientState.SLAM_ANIM_TICKS + 5);
-
-        // The blade burns constantly: embers rise off it for everyone holding the sword.
-        for (Player p : level.players()) {
-            if (!(p.getMainHandItem().getItem() instanceof SoulForgedItem) || p.isInvisible()) continue;
-            if (p == player && mc.options.getCameraType() == CameraType.FIRST_PERSON) continue;
-            if (p.distanceToSqr(player) > 48 * 48) continue;
-            spawnBladeEmbers(level, p, rnd);
+        // Slam effects per phase; finished slams are forgotten.
+        Iterator<Int2LongMap.Entry> slams = ClientState.SLAMS.int2LongEntrySet().iterator();
+        while (slams.hasNext()) {
+            Int2LongMap.Entry e = slams.next();
+            Entity entity = level.getEntity(e.getIntKey());
+            if (entity == null || ClientState.slamTicks(entity) < 0 || (ClientState.impactTicks(entity) >= 0
+                    && ClientState.impactTicks(entity) > SlamTimeline.KNEEL + SlamTimeline.RECOVER)) {
+                ClientState.IMPACTS.remove(e.getIntKey());
+                slams.remove();
+                continue;
+            }
+            spawnSlamEffects(level, entity, rnd);
         }
     }
 
-    private static void spawnBladeEmbers(ClientLevel level, Player p, RandomSource rnd) {
-        float yaw = p.yBodyRot * Mth.DEG_TO_RAD;
+    private static void spawnSlamEffects(ClientLevel level, Entity e, RandomSource rnd) {
+        float t = ClientState.slamTicks(e);
+        float ti = ClientState.impactTicks(e);
+        float yaw = e instanceof LivingEntity l ? l.yBodyRot * Mth.DEG_TO_RAD : e.getYRot() * Mth.DEG_TO_RAD;
         Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
-        Vec3 right = new Vec3(-forward.z, 0, forward.x);
-        Vec3 hand = p.position().add(0, p.isCrouching() ? 0.85 : 1.05, 0).add(forward.scale(0.55)).add(right.scale(-0.05));
-        Vec3 blade = forward.scale(0.5).add(0, 0.866, 0);
-        for (int i = 0; i < 1; i++) {
-            double along = 0.3 + rnd.nextDouble() * 1.4;
-            Vec3 at = hand.add(blade.scale(along)).add(right.scale((rnd.nextDouble() - 0.5) * 0.25));
-            level.addParticle(ModParticles.SOUL_EMBER.get(), at.x, at.y, at.z, 0, 0.015 + rnd.nextDouble() * 0.02, 0);
+        Vec3 c = e.position().add(0, 0.9, 0);
+        if (ti >= 0) {
+            if (ti < SlamTimeline.KNEEL) {
+                // the buried blade keeps venting soul fire
+                Vec3 tip = e.position().add(forward.scale(1.1));
+                for (int i = 0; i < 2; i++) {
+                    level.addParticle(ModParticles.SOUL_EMBER.get(), tip.x + (rnd.nextDouble() - 0.5) * 0.3, tip.y + 0.1,
+                            tip.z + (rnd.nextDouble() - 0.5) * 0.3, 0, 0.12 + rnd.nextDouble() * 0.12, 0);
+                }
+            }
+            return;
+        }
+        if (t < SlamTimeline.CHARGE) {
+            // soul fire is drawn in from all around and gathers in the blade
+            for (int i = 0; i < 5; i++) {
+                double a = rnd.nextDouble() * Math.PI * 2, r = 1.8 + rnd.nextDouble() * 0.8;
+                Vec3 from = c.add(Math.cos(a) * r, (rnd.nextDouble() - 0.4) * 1.6, Math.sin(a) * r);
+                Vec3 v = c.add(forward.scale(0.5)).subtract(from).scale(0.14);
+                level.addParticle(ModParticles.SOUL_EMBER.get(), from.x, from.y, from.z, v.x, v.y, v.z);
+            }
+        } else if (t < SlamTimeline.PLUNGE) {
+            // a burning arc traced by the blade during the flip
+            float u = (t - SlamTimeline.CHARGE) / (SlamTimeline.PLUNGE - SlamTimeline.CHARGE);
+            double ang = u * Math.PI * 2;
+            for (int i = 0; i < 4; i++) {
+                double a = ang - i * 0.18;
+                Vec3 p = c.add(forward.scale(Math.sin(a) * 1.6)).add(0, Math.cos(a) * 1.6, 0);
+                level.addParticle(ModParticles.SOUL_EMBER.get(), p.x, p.y, p.z, 0, 0.01, 0);
+            }
+        } else {
+            // diving: a comet tail of soul fire
+            for (int i = 0; i < 6; i++) {
+                level.addParticle(ModParticles.SOUL_EMBER.get(), e.getX() + (rnd.nextDouble() - 0.5) * 0.6,
+                        e.getY() + rnd.nextDouble() * 1.8, e.getZ() + (rnd.nextDouble() - 0.5) * 0.6, 0, 0.5, 0);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ whole-body slam motion
+
+    @SubscribeEvent
+    public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
+        Player p = event.getEntity();
+        ClientState.renderingPlayer = p;
+        SlamAnim.Pose pose = SlamAnim.sample(p);
+        PoseStack ps = event.getPoseStack();
+        ps.pushPose();
+        if (pose == null) return;
+        float yaw = Mth.rotLerp(event.getPartialTick(), p.yBodyRotO, p.yBodyRot) * Mth.DEG_TO_RAD;
+        // pitch axis = the player's right/left line; positive turns the head forward (front flip, lean)
+        Vector3f axis = new Vector3f(Mth.cos(yaw), 0, Mth.sin(yaw));
+        float pitch = (pose.flip + pose.lean) * Mth.DEG_TO_RAD;
+        ps.translate(0, -pose.lower, 0);
+        ps.translate(0, 0.9F, 0);
+        ps.mulPose(new Quaternionf().rotateAxis(pitch, axis));
+        ps.translate(0, -0.9F, 0);
+    }
+
+    @SubscribeEvent
+    public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
+        event.getPoseStack().popPose();
+        ClientState.renderingPlayer = null;
+    }
+
+    /** Every attack swing with the sword starts the slow first-person slash (also on misses). */
+    @SubscribeEvent
+    public static void onAttackKey(InputEvent.InteractionKeyMappingTriggered event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (!event.isAttack() || mc.player == null || !(mc.player.getMainHandItem().getItem() instanceof SoulForgedItem)) return;
+        float t = ClientState.slashTicks(mc.player);
+        if (t < 0 || t >= FirstPersonSword.SLASH_TICKS * 0.7F) {
+            ClientState.slashStart = ClientState.gameTime();
+        }
+    }
+
+    /** First person: the greatsword is drawn by {@link FirstPersonSword} (held pose, slash, Soul Crush). */
+    @SubscribeEvent
+    public static void onRenderHand(RenderHandEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (event.getHand() != InteractionHand.MAIN_HAND || mc.player == null
+                || !(event.getItemStack().getItem() instanceof SoulForgedItem)) return;
+        event.setCanceled(true);
+        if (mc.getCameraEntity() == mc.player) {   // not while spectating through another entity
+            FirstPersonSword.render(event, mc.player, event.getItemStack());
         }
     }
 

@@ -47,10 +47,16 @@ public final class SlamManager {
     public static final int COOLDOWN_TICKS = 160;
 
     /** Ticks of the leap before the sword is driven down. Mirrored by the client animation. */
-    public static final int WINDUP_TICKS = 7;
-    private static final int MAX_AIR_TICKS = 22;
+    private static final class State {
+        final long start;
+        long impact = -1;
 
-    private static final Map<UUID, Long> ACTIVE = new HashMap<>();
+        State(long start) {
+            this.start = start;
+        }
+    }
+
+    private static final Map<UUID, State> ACTIVE = new HashMap<>();
 
     public static void tryStart(ServerPlayer player) {
         ItemStack stack = player.getMainHandItem();
@@ -59,42 +65,68 @@ public final class SlamManager {
 
         ServerLevel level = player.serverLevel();
         player.getCooldowns().addCooldown(item, COOLDOWN_TICKS);
-        ACTIVE.put(player.getUUID(), level.getGameTime());
+        ACTIVE.put(player.getUUID(), new State(level.getGameTime()));
 
         item.triggerAnim(player, GeoItem.getOrAssignId(stack, level), SoulForgedItem.CONTROLLER, SoulForgedItem.SLAM_ANIM);
         ModNetwork.sendTrackingAndSelf(player, new SlamStartPacket(player.getId()));
-        level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SLAM_WINDUP.get(), SoundSource.PLAYERS, 1.2F, 1.0F);
-
-        Vec3 look = horizontalLook(player);
-        player.setDeltaMovement(look.x * 0.35, 0.62, look.z * 0.35);
-        player.hurtMarked = true;
-        player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SLAM_WINDUP.get(), SoundSource.PLAYERS, 1.4F, 0.8F);
+        root(player);
     }
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        Iterator<Map.Entry<UUID, Long>> it = ACTIVE.entrySet().iterator();
+        Iterator<Map.Entry<UUID, State>> it = ACTIVE.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<UUID, Long> entry = it.next();
+            Map.Entry<UUID, State> entry = it.next();
+            State s = entry.getValue();
             ServerPlayer player = event.getServer().getPlayerList().getPlayer(entry.getKey());
             if (player == null || !player.isAlive()) {
                 it.remove();
                 continue;
             }
-            long age = player.serverLevel().getGameTime() - entry.getValue();
+            ServerLevel level = player.serverLevel();
+            long now = level.getGameTime();
+            long age = now - s.start;
             player.fallDistance = 0;
-            if (age == WINDUP_TICKS) {
+
+            if (s.impact >= 0) {
+                // kneeling with the sword in the ground, then the stance is released
+                if (now - s.impact < SlamTimeline.KNEEL) root(player);
+                if (now - s.impact >= SlamTimeline.KNEEL + SlamTimeline.RECOVER) it.remove();
+                continue;
+            }
+            if (age < SlamTimeline.CHARGE) {
+                root(player);
+            } else if (age == SlamTimeline.CHARGE) {
+                Vec3 look = horizontalLook(player);
+                player.setDeltaMovement(look.x * SlamTimeline.LEAP_FORWARD, SlamTimeline.LEAP_UP, look.z * SlamTimeline.LEAP_FORWARD);
+                player.hurtMarked = true;
+                level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 0.5F);
+                level.sendParticles(ModParticles.SOUL_EMBER.get(), player.getX(), player.getY() + 0.1, player.getZ(), 40, 0.6, 0.05, 0.6, 0.08);
+                level.sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY() + 0.1, player.getZ(), 12, 0.5, 0.05, 0.5, 0.05);
+            } else if (age == SlamTimeline.PLUNGE) {
                 Vec3 v = player.getDeltaMovement();
-                player.setDeltaMovement(v.x * 0.3, -1.8, v.z * 0.3);
+                player.setDeltaMovement(v.x * 0.3, SlamTimeline.DIVE_SPEED, v.z * 0.3);
                 player.hurtMarked = true;
             }
-            if ((age > WINDUP_TICKS && player.onGround()) || age >= MAX_AIR_TICKS) {
+            if ((age > SlamTimeline.PLUNGE && player.onGround()) || age >= SlamTimeline.MAX_AIR) {
+                s.impact = now;
                 impact(player);
-                it.remove();
             }
         }
         CrackManager.tick(event.getServer());
+    }
+
+    /** Pins the player in place (charge and kneel phases). */
+    private static void root(ServerPlayer player) {
+        Vec3 v = player.getDeltaMovement();
+        player.setDeltaMovement(0, Math.min(v.y, 0), 0);
+        player.hurtMarked = true;
+    }
+
+    public static boolean isSlamming(ServerPlayer player) {
+        return ACTIVE.containsKey(player.getUUID());
     }
 
     @SubscribeEvent
@@ -105,7 +137,7 @@ public final class SlamManager {
     private static void impact(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         Vec3 look = horizontalLook(player);
-        Vec3 center = player.position().add(look.scale(1.3));
+        Vec3 center = player.position().add(look.scale(1.1));
         BlockPos groundPos = CrackManager.findSurface(level, BlockPos.containing(center.x, player.getY(), center.z));
         double groundY = groundPos != null ? groundPos.getY() + 1.0 : player.getY();
         center = new Vec3(center.x, groundY, center.z);
@@ -131,7 +163,8 @@ public final class SlamManager {
 
         // Shockwave: rings of soul embers, dragon breath and debris from the struck block.
         BlockState ground = groundPos != null ? level.getBlockState(groundPos) : null;
-        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y + 0.2, center.z, 1, 0, 0, 0, 0);
+        level.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.3, center.z, 3, 0.6, 0.2, 0.6, 0);
+        level.sendParticles(ParticleTypes.REVERSE_PORTAL, center.x, center.y + 0.5, center.z, 80, 1.5, 0.6, 1.5, 0.4);
         for (int ring = 1; ring <= (int) RADIUS; ring++) {
             int points = ring * 10;
             for (int i = 0; i < points; i++) {
@@ -152,7 +185,7 @@ public final class SlamManager {
         if (groundPos != null) {
             CrackManager.start(level, groundPos, RADIUS + 1.5F);
         }
-        ModNetwork.sendNear(level, center, 40, new SlamImpactPacket(center.x, center.y, center.z, RADIUS));
+        ModNetwork.sendNear(level, center, 48, new SlamImpactPacket(player.getId(), center.x, center.y, center.z, RADIUS));
         player.fallDistance = 0;
     }
 

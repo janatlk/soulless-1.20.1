@@ -53,8 +53,8 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
     private Multimap<Attribute, AttributeModifier> mainHandModifiers;
 
     public SoulForgedItem(Properties properties) {
-        // 1 (base) + 5 (tier) + 10 = 16 attack damage, 4 - 3 = 1.0 attacks per second
-        super(SoulForgedTier.INSTANCE, 10, -3.0F, properties);
+        // 1 (base) + 5 (tier) + 10 = 16 attack damage, 4 - 3.3 = 0.7 attacks per second (slow, heavy slashes)
+        super(SoulForgedTier.INSTANCE, 10, -3.3F, properties);
         SingletonGeoAnimatable.registerSyncedAnimatable(this);
     }
 

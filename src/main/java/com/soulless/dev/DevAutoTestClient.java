@@ -2,6 +2,7 @@ package com.soulless.dev;
 
 import com.mojang.serialization.Lifecycle;
 import com.soulless.Soulless;
+import com.soulless.client.ClientState;
 import com.soulless.registry.ModItems;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
@@ -10,6 +11,8 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.GameRules;
@@ -30,6 +33,7 @@ public final class DevAutoTestClient {
     private static final String WORLD = "soulless_test";
     private static boolean started;
     private static int tick = -1;
+    private static ArmorStand sideCam;
 
     @SubscribeEvent
     public static void onScreen(ScreenEvent.Init.Post event) {
@@ -63,36 +67,59 @@ public final class DevAutoTestClient {
         if (tick < 0) tick = 0;
         tick++;
         var opts = mc.options;
-        switch (tick) {
-            case 10 -> {
-                opts.hideGui = false;
-                logTooltip(mc);
+        if (DevAutoTest.TUNE) {
+            // live tuning loop: same shots every cycle (overwritten), view from SOULLESS_TUNE_VIEW
+            String view = System.getenv().getOrDefault("SOULLESS_TUNE_VIEW", "fp");
+            if (tick == 15 || (tick > 15 && view.equals("fp") && opts.getCameraType() != CameraType.FIRST_PERSON)) {
+                opts.setCameraType(view.equals("back") ? CameraType.THIRD_PERSON_BACK
+                        : view.equals("front") ? CameraType.THIRD_PERSON_FRONT : CameraType.FIRST_PERSON);
             }
-            case 25 -> {
+            if (view.equals("side") && tick >= 40) {
+                // a client-only camera stand 7 blocks to the player's side, looking at the arena
+                if (sideCam == null || sideCam.level() != mc.level) {
+                    sideCam = new ArmorStand(EntityType.ARMOR_STAND, mc.level);
+                    sideCam.setInvisible(true);
+                    mc.level.putNonPlayerEntity(-777_777, sideCam);
+                }
+                sideCam.moveTo(306.0, mc.player.getY() - 0.2, 2.0, 90, 4);
+                mc.player.setCustomNameVisible(false);
+                sideCam.setYHeadRot(90);
+                if (mc.getCameraEntity() != sideCam) mc.setCameraEntity(sideCam);
+            }
+            int c = tick % DevAutoTest.TUNE_CYCLE;
+            if (c == 70) ClientState.slashStart = ClientState.gameTime();   // the server hit lands now
+            for (int off : new int[]{3, 9, 13, 17, 20, 24, 32, 72, 74, 76, 78, 82, 88, 96, 100}) {
+                if (c == off && tick > DevAutoTest.TUNE_CYCLE) shot(mc, String.format("tune_t%03d", off));
+            }
+            return;
+        }
+        switch (tick) {
+            case 10 -> logTooltip(mc);
+            case 15 -> {
                 opts.setCameraType(CameraType.THIRD_PERSON_FRONT);
                 mc.player.setXRot(10);
             }
-            case 45 -> shot(mc, "01_pose_front");
-            case 50 -> opts.setCameraType(CameraType.THIRD_PERSON_BACK);
-            case 58 -> mc.player.setXRot(25);
-            case 70 -> shot(mc, "02_hold_back");
-            case 80 -> shot(mc, "03_cursed_hit");
-            case 104 -> shot(mc, "04_slam_windup");
-            case 109 -> shot(mc, "05_slam_strike");
-            case 116 -> shot(mc, "06_slam_impact");
-            case 135 -> shot(mc, "07_cracks");
-            case 175 -> shot(mc, "08_cursed_mobs");
-            case 200 -> opts.setCameraType(CameraType.FIRST_PERSON);
-            case 230 -> shot(mc, "09_first_person");
-            case 294 -> shot(mc, "10_fp_windup");
-            case 299 -> shot(mc, "11_fp_strike");
-            case 306 -> shot(mc, "12_fp_impact");
-            case 330 -> {
-                opts.hideGui = false;
-                shot(mc, "13_fp_after");
-                Soulless.LOGGER.info("[autotest] done");
+            case 40 -> shot(mc, "00_pose_front");
+            case 50 -> {
+                opts.setCameraType(CameraType.THIRD_PERSON_BACK);
+                mc.player.setXRot(20);
             }
+            case 80 -> shot(mc, "01_cursed_hit");
+            case 200 -> {
+                opts.setCameraType(CameraType.THIRD_PERSON_FRONT);
+                mc.player.setXRot(5);
+            }
+            case 360 -> opts.setCameraType(CameraType.FIRST_PERSON);
+            case 385 -> shot(mc, "30_fp_idle");
+            case 480 -> Soulless.LOGGER.info("[autotest] done");
             default -> {}
+        }
+        // the slams start on server ticks 100 / 260 / 420: back view, front view, first person
+        int[] offsets = {3, 8, 11, 14, 18, 22, 27, 34, 46};
+        for (int i = 0; i < offsets.length; i++) {
+            if (tick == 100 + offsets[i]) shot(mc, String.format("1%d_back_t%02d", i, offsets[i]));
+            if (tick == 260 + offsets[i]) shot(mc, String.format("2%d_front_t%02d", i, offsets[i]));
+            if (tick == 420 + offsets[i]) shot(mc, String.format("3%d_fp_t%02d", i, offsets[i]));
         }
     }
 

@@ -115,24 +115,15 @@ def sword_profile(s, v, rnd):
         if av < 7.2 and wing_s < s < wing_s + 2.6:
             return BONE[2] if s > wing_s + 1.4 else BONE[0]
         return None
-    hw = 3.5 - (s - 16.5) * 0.095  # blade tapers to the tip
-    if s > 38:
-        hw = max(0.45, hw - (s - 38) * 0.42)
+    hw = 3.3  # straight blade with parallel edges ...
+    if s > 35:
+        hw = max(0.45, hw - (s - 35) * 0.45)  # ... and a short point
     if av < hw:
         if av < 0.75 and s < 36:
             return RUNE[2] if int(s) % 4 == 0 else RUNE[1]
         if av > hw - 1.0:
             return EDGE[2] if v < 0 else EDGE[1]
         return BLADE[2] if v < 0 else BLADE[0]
-    # flame tongues licking off the upper edge, a few on the lower one
-    d = av - hw
-    upper = v < 0
-    if 18 < s < 41:
-        tongue = (math.sin(s * 1.1 + (0 if upper else 2.0)) * 0.5 + 0.5) ** 2
-        reach = (0.6 + tongue * 2.6) * (1.0 if upper else 0.55)
-        if d < reach:
-            heat = 1 - d / max(reach, 0.1)
-            return FLAME[min(3, int(heat * 3.6))]
     return None
 
 
