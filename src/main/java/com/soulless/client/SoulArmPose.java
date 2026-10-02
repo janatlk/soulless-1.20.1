@@ -3,13 +3,15 @@ package com.soulless.client;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Third-person two-handed greatsword stance: both hands on the long grip, blade raised in front.
- * During "Soul Crush" the arms and legs follow {@link SlamAnim}; the whole-body flip, lean and kneel
- * height are applied to the pose stack in {@link ClientForgeEvents}.
+ * During an ability the arms, legs and torso twist follow {@link RendAnim} / {@link SlamAnim}; the whole-body
+ * flip, lean and kneel height are applied to the pose stack in {@link ClientForgeEvents}.
  */
 public final class SoulArmPose {
     public static final HumanoidModel.ArmPose GREATSWORD = HumanoidModel.ArmPose.create("SOULLESS_GREATSWORD", true, SoulArmPose::apply);
@@ -17,13 +19,20 @@ public final class SoulArmPose {
     /** Forces class init (and so {@link #GREATSWORD} creation) during mod construction. */
     public static void init() {}
 
+    /** The ability pose this entity is in right now (Soul Rend first, then Soul Crush), or null. */
+    @Nullable
+    public static SlamAnim.Pose current(Entity entity) {
+        SlamAnim.Pose rend = RendAnim.sample(entity);
+        return rend != null ? rend : SlamAnim.sample(entity);
+    }
+
     private static void apply(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
         boolean right = arm == HumanoidArm.RIGHT;
         ModelPart main = right ? model.rightArm : model.leftArm;
         ModelPart off = right ? model.leftArm : model.rightArm;
         float side = right ? 1 : -1;
 
-        SlamAnim.Pose pose = SlamAnim.sample(entity);
+        SlamAnim.Pose pose = current(entity);
         float look = Mth.clamp(model.head.xRot, -0.6F, 0.6F) * 0.35F;
         if (pose == null) {
             pose = SlamAnim.GUARD;
@@ -45,6 +54,16 @@ public final class SoulArmPose {
         off.xRot = pose.offX + look;
         off.yRot = pose.offY * side;
         off.zRot = 0;
+
+        // torso twist, moving the shoulders with it like vanilla's attack swing does
+        float twist = pose.bodyYaw * side;
+        model.body.yRot = twist;
+        model.rightArm.z = Mth.sin(twist) * 5.0F;
+        model.rightArm.x = -Mth.cos(twist) * 5.0F;
+        model.leftArm.z = -Mth.sin(twist) * 5.0F;
+        model.leftArm.x = Mth.cos(twist) * 5.0F;
+        model.rightArm.yRot += twist;
+        model.leftArm.yRot += twist;
     }
 
     private SoulArmPose() {}

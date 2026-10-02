@@ -16,7 +16,7 @@ for p in shots:
     except Exception:
         pass  # being written right now
 shots = ok
-sheet = Image.new("RGB", (1920, 360 * ((len(ims) + 2) // 3)))
+sheet = Image.new("RGB", (1920, max(360, 360 * ((len(ims) + 2) // 3))))
 draw = ImageDraw.Draw(sheet)
 for i, (p, im) in enumerate(zip(shots, ims)):
     x, y = (i % 3) * 640, (i // 3) * 360

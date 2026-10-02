@@ -6,7 +6,9 @@ import com.soulless.registry.ModParticles;
 import net.minecraft.client.KeyMapping;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -26,6 +28,11 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onParticles(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SOUL_EMBER.get(), SoulEmberParticle.Provider::new);
+    }
+
+    @SubscribeEvent
+    public static void onOverlays(RegisterGuiOverlaysEvent event) {
+        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "abilities", new AbilityHud());
     }
 
     @SubscribeEvent

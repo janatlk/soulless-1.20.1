@@ -2,7 +2,13 @@ package com.soulless.item;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
+import com.soulless.ability.RendManager;
+import com.soulless.ability.RendTimeline;
 import com.soulless.ability.SlamManager;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
 import com.soulless.client.SoulForgedClientExtensions;
 import com.soulless.effect.SoulCurse;
 import com.soulless.registry.ModSounds;
@@ -37,7 +43,7 @@ import java.util.function.Consumer;
 
 /**
  * Soul Forged: a legendary two-handed greatsword.
- * Hits apply the Soul Curse; the slam key (R by default) triggers {@link SlamManager}.
+ * Hits apply the Soul Curse; the slam key (R by default) triggers {@link SlamManager}; right click {@link RendManager}.
  */
 public class SoulForgedItem extends SwordItem implements GeoItem {
     public static final int CURSE_SECONDS = 5;
@@ -66,6 +72,17 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
                     ModSounds.CURSE_IGNITE.get(), SoundSource.PLAYERS, 0.8F, 0.9F + attacker.getRandom().nextFloat() * 0.2F);
         }
         return super.hurtEnemy(stack, target, attacker);
+    }
+
+    /** Right click: Soul Rend. The server decides (cooldown, hunger, other abilities); the client does nothing. */
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (hand != InteractionHand.MAIN_HAND) return InteractionResultHolder.pass(stack);
+        if (!level.isClientSide && player instanceof ServerPlayer sp) {
+            RendManager.tryStart(sp);
+        }
+        return InteractionResultHolder.pass(stack);
     }
 
     @Override
@@ -114,6 +131,17 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
                 fmt(SoulCurse.DAMAGE_PER_SECOND + SlamManager.CURSE_AMPLIFIER)).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable(k + "ability.4").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable(k + "ability.5", SlamManager.COOLDOWN_TICKS / 20).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.empty());
+
+        tooltip.add(Component.translatable(k + "rend.title").withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.translatable(k + "rend.1", RendTimeline.WINDUP / 20).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "rend.2", fmt(RendManager.DAMAGE)).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "rend.3").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "rend.4", RendManager.STUN_TARGETS, RendManager.STUN_SECONDS).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "rend.5").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "rend.6", RendManager.HUNGER_COST).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "rend.7", RendTimeline.RECOVER / 20).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "rend.8", RendTimeline.COOLDOWN / 20).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.empty());
 
         tooltip.add(Component.translatable(k + "trait.1", fmt(REACH_BONUS)).withStyle(ChatFormatting.DARK_AQUA));

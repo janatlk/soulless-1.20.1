@@ -31,7 +31,10 @@ import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.RenderPlayerEvent;
+import com.soulless.ability.RendTimeline;
 import com.soulless.ability.SlamTimeline;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.joml.Quaternionf;
@@ -57,7 +60,7 @@ public final class ClientForgeEvents {
         if (player == null || level == null) return;
 
         while (ClientModEvents.SLAM_KEY.consumeClick()) {
-            if (player.getMainHandItem().getItem() instanceof SoulForgedItem item) {
+            if (player.getMainHandItem().getItem() instanceof SoulForgedItem item && ClientState.rendTicks(player) < 0) {
                 float left = player.getCooldowns().getCooldownPercent(item, 0);
                 if (left > 0) {
                     int seconds = Mth.ceil(left * com.soulless.ability.SlamManager.COOLDOWN_TICKS / 20F);
@@ -102,6 +105,69 @@ public final class ClientForgeEvents {
             }
             spawnSlamEffects(level, entity, rnd);
         }
+        // Soul Rend wind-up: the blade over the shoulder drinks in soul fire, faster and faster.
+        Iterator<Int2LongMap.Entry> rends = ClientState.RENDS.int2LongEntrySet().iterator();
+        while (rends.hasNext()) {
+            Int2LongMap.Entry e = rends.next();
+            Entity entity = level.getEntity(e.getIntKey());
+            if (entity == null || ClientState.rendTicks(entity) < 0) {
+                rends.remove();
+                continue;
+            }
+            spawnRendEffects(level, entity, (int) (now - e.getLongValue()), rnd);
+        }
+        // Stunned creatures: sparks circling their heads.
+        Iterator<Int2LongMap.Entry> stuns = ClientState.STUNNED.int2LongEntrySet().iterator();
+        while (stuns.hasNext()) {
+            Int2LongMap.Entry e = stuns.next();
+            Entity entity = level.getEntity(e.getIntKey());
+            if (entity == null || !entity.isAlive() || e.getLongValue() <= now) {
+                stuns.remove();
+                continue;
+            }
+            for (int i = 0; i < 3; i++) {
+                double a = now * 0.35 + i * Math.PI * 2 / 3;
+                double r = 0.3 + entity.getBbWidth() * 0.4;
+                level.addParticle(ParticleTypes.ELECTRIC_SPARK, entity.getX() + Math.cos(a) * r,
+                        entity.getY() + entity.getBbHeight() + 0.25, entity.getZ() + Math.sin(a) * r, 0, 0, 0);
+            }
+        }
+    }
+
+    private static void spawnRendEffects(ClientLevel level, Entity e, int t, RandomSource rnd) {
+        float yaw = (e instanceof LivingEntity l ? l.yBodyRot : e.getYRot()) * Mth.DEG_TO_RAD;
+        Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
+        Vec3 right = new Vec3(-forward.z, 0, forward.x);
+        if (t >= RendTimeline.WINDUP) return;
+        float k = t / (float) RendTimeline.WINDUP;
+        Vec3 blade = e.position().add(0, 1.9, 0).add(right.scale(0.4)).add(forward.scale(-0.7));
+        int n = 1 + (int) (k * 5);
+        for (int i = 0; i < n; i++) {
+            double a = rnd.nextDouble() * Math.PI * 2, r = 2.0 + rnd.nextDouble() * 1.2;
+            Vec3 from = blade.add(Math.cos(a) * r, (rnd.nextDouble() - 0.5) * 2.4, Math.sin(a) * r);
+            Vec3 v = blade.subtract(from).scale(0.13);
+            level.addParticle(ModParticles.SOUL_EMBER.get(), from.x, from.y, from.z, v.x, v.y, v.z);
+        }
+        // a slowly turning ring of soul fire around the feet, tightening as the strike nears
+        double ringR = 1.6 - 0.6 * k;
+        for (int i = 0; i < 2; i++) {
+            double a = t * 0.22 + i * Math.PI;
+            level.addParticle(ModParticles.SOUL_EMBER.get(), e.getX() + Math.cos(a) * ringR, e.getY() + 0.05,
+                    e.getZ() + Math.sin(a) * ringR, 0, 0.01, 0);
+        }
+        if (t == RendTimeline.WINDUP - 20) {
+            // fully charged: the blade flares
+            level.addParticle(ParticleTypes.FLASH, blade.x, blade.y, blade.z, 0, 0, 0);
+            for (int i = 0; i < 40; i++) {
+                level.addParticle(ModParticles.SOUL_EMBER.get(), blade.x, blade.y, blade.z,
+                        (rnd.nextDouble() - 0.5) * 0.5, (rnd.nextDouble() - 0.3) * 0.5, (rnd.nextDouble() - 0.5) * 0.5);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRenderStage(RenderLevelStageEvent event) {
+        SlashTrails.render(event);
     }
 
     private static void spawnSlamEffects(ClientLevel level, Entity e, RandomSource rnd) {
@@ -153,7 +219,7 @@ public final class ClientForgeEvents {
     public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
         Player p = event.getEntity();
         ClientState.renderingPlayer = p;
-        SlamAnim.Pose pose = SlamAnim.sample(p);
+        SlamAnim.Pose pose = SoulArmPose.current(p);
         PoseStack ps = event.getPoseStack();
         ps.pushPose();
         if (pose == null) return;
@@ -178,6 +244,12 @@ public final class ClientForgeEvents {
     public static void onAttackKey(InputEvent.InteractionKeyMappingTriggered event) {
         Minecraft mc = Minecraft.getInstance();
         if (!event.isAttack() || mc.player == null || !(mc.player.getMainHandItem().getItem() instanceof SoulForgedItem)) return;
+        if (ClientState.rendTicks(mc.player) >= 0) {
+            // no attacks from the Soul Rend wind-up until its recovery ends
+            event.setCanceled(true);
+            event.setSwingHand(false);
+            return;
+        }
         float t = ClientState.slashTicks(mc.player);
         if (t < 0 || t >= FirstPersonSword.SLASH_TICKS * 0.7F) {
             ClientState.slashStart = ClientState.gameTime();

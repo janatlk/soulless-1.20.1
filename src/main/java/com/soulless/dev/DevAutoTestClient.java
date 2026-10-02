@@ -26,6 +26,7 @@ import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.lwjgl.glfw.GLFW;
 
 /** Client half of the dev scenario: opens/creates a flat test world, frames shots, saves screenshots. */
 @Mod.EventBusSubscriber(modid = Soulless.MODID, value = Dist.CLIENT)
@@ -37,7 +38,9 @@ public final class DevAutoTestClient {
 
     @SubscribeEvent
     public static void onScreen(ScreenEvent.Init.Post event) {
-        if (!DevAutoTest.ENABLED || started || !(event.getScreen() instanceof TitleScreen)) return;
+        if (!DevAutoTest.ENABLED) return;
+        hideWindowIfAsked(Minecraft.getInstance());
+        if (started || !(event.getScreen() instanceof TitleScreen)) return;
         started = true;
         Minecraft mc = Minecraft.getInstance();
         // a paused integrated server would desync the scripted timeline from the screenshots
@@ -66,6 +69,7 @@ public final class DevAutoTestClient {
         }
         if (tick < 0) tick = 0;
         tick++;
+        hideWindowIfAsked(mc);
         var opts = mc.options;
         if (DevAutoTest.TUNE) {
             // live tuning loop: same shots every cycle (overwritten), view from SOULLESS_TUNE_VIEW
@@ -87,8 +91,16 @@ public final class DevAutoTestClient {
                 if (mc.getCameraEntity() != sideCam) mc.setCameraEntity(sideCam);
             }
             int c = tick % DevAutoTest.TUNE_CYCLE;
-            if (c == 70) ClientState.slashStart = ClientState.gameTime();   // the server hit lands now
-            for (int off : new int[]{3, 9, 13, 17, 20, 24, 32, 72, 74, 76, 78, 82, 88, 96, 100}) {
+            if (DevAutoTest.TUNE_REND) {
+                // align to the server: count from the moment Soul Rend actually started
+                long start = ClientState.RENDS.getOrDefault(mc.player.getId(), Long.MIN_VALUE);
+                c = start == Long.MIN_VALUE ? -1 : (int) (ClientState.gameTime() - start);
+            }
+            if (!DevAutoTest.TUNE_REND && c == 70) ClientState.slashStart = ClientState.gameTime();   // the server hit lands now
+            int[] offsets = DevAutoTest.TUNE_REND
+                    ? new int[]{6, 16, 60, 110, 119, 121, 122, 124, 127, 140, 175, 200, 240, 290}
+                    : new int[]{3, 9, 13, 17, 20, 24, 32, 72, 74, 76, 78, 82, 88, 96, 100};
+            for (int off : offsets) {
                 if (c == off && tick > DevAutoTest.TUNE_CYCLE) shot(mc, String.format("tune_t%03d", off));
             }
             return;
@@ -120,6 +132,21 @@ public final class DevAutoTestClient {
             if (tick == 100 + offsets[i]) shot(mc, String.format("1%d_back_t%02d", i, offsets[i]));
             if (tick == 260 + offsets[i]) shot(mc, String.format("2%d_front_t%02d", i, offsets[i]));
             if (tick == 420 + offsets[i]) shot(mc, String.format("3%d_fp_t%02d", i, offsets[i]));
+        }
+    }
+
+    /**
+     * SOULLESS_HIDDEN=1: park the game window far off-screen so the user can keep using the PC.
+     * It still renders (and screenshots still work); a minimized window would stop rendering.
+     */
+    private static void hideWindowIfAsked(Minecraft mc) {
+        if (System.getenv("SOULLESS_HIDDEN") == null) return;
+        long handle = mc.getWindow().getWindow();
+        int[] x = new int[1], y = new int[1];
+        GLFW.glfwGetWindowPos(handle, x, y);
+        if (x[0] > -3000) {
+            GLFW.glfwSetWindowSize(handle, 1280, 720);
+            GLFW.glfwSetWindowPos(handle, -6000, -6000);
         }
     }
 

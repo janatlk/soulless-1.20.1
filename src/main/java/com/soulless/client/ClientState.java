@@ -1,9 +1,13 @@
 package com.soulless.client;
 
+import com.soulless.ability.RendTimeline;
 import com.soulless.ability.SlamTimeline;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** Client-side mirrors of server state: who is cursed, who is slamming, how hard the camera shakes. */
 public final class ClientState {
@@ -13,6 +17,15 @@ public final class ClientState {
     public static final Int2LongOpenHashMap SLAMS = new Int2LongOpenHashMap();
     /** entity id -> game time that slam hit the ground */
     public static final Int2LongOpenHashMap IMPACTS = new Int2LongOpenHashMap();
+
+    /** entity id -> game time Soul Rend started */
+    public static final Int2LongOpenHashMap RENDS = new Int2LongOpenHashMap();
+    /** entity id -> game time the stun ends */
+    public static final Int2LongOpenHashMap STUNNED = new Int2LongOpenHashMap();
+    /** Live slash trails, see {@link SlashTrails}. */
+    public static final List<SlashTrails.Trail> TRAILS = new ArrayList<>();
+    /** Game time the local player's Soul Rend is ready again. */
+    public static long rendReadyAt;
 
     public static float shake;
     /** Game time the local player's current slash started, or MIN_VALUE. */
@@ -48,6 +61,19 @@ public final class ClientState {
         return t >= 0 ? t : -1;
     }
 
+    /** Ticks (with partial tick) since this entity started Soul Rend, or -1 when it is not rending. */
+    public static float rendTicks(Entity entity) {
+        long start = RENDS.getOrDefault(entity.getId(), Long.MIN_VALUE);
+        if (start == Long.MIN_VALUE) return -1;
+        float t = gameTime() - start + Minecraft.getInstance().getFrameTime();
+        return t >= 0 && t < RendTimeline.TOTAL ? t : -1;
+    }
+
+    public static boolean isStunned(Entity entity) {
+        long end = STUNNED.getOrDefault(entity.getId(), Long.MIN_VALUE);
+        return end != Long.MIN_VALUE && end > gameTime();
+    }
+
     /** Ticks (with partial tick) into the local player's slash, or -1. */
     public static float slashTicks(Entity player) {
         if (slashStart == Long.MIN_VALUE) return -1;
@@ -64,6 +90,10 @@ public final class ClientState {
         CURSED.clear();
         SLAMS.clear();
         IMPACTS.clear();
+        RENDS.clear();
+        STUNNED.clear();
+        TRAILS.clear();
+        rendReadyAt = 0;
         shake = 0;
         renderingPlayer = null;
     }

@@ -104,8 +104,7 @@ def cube(*a, **k):
 
 BLADE_HW = 3.5     # half-width of the dark core; the bevel edges add EDGE_W on each side
 EDGE_W = 1.5
-TIP_START = 50     # where the parallel edges end and the point begins
-TIP_LEN = 12       # length of the point
+TIP_START = 56     # where the parallel edges end; the point rises (BLADE_HW + EDGE_W) above it
 
 
 def build():
@@ -140,18 +139,14 @@ def build():
              rot=[0, 0, -s * 26], pivot=[s * 12.5, 13, 0])
 
     # blade: a straight soul-steel core between parallel bevel edges, a glowing rune fuller,
-    # and a short pointed tip where both edges angle in to meet
+    # finished by one clean point: a square turned 45 degrees whose side corners meet the edges
     cube("core", "blade", "body", (-BLADE_HW, 9, -1), (BLADE_HW, TIP_START, 1))
-    for i, (y0, y1, hw) in enumerate(((TIP_START, 54, 3.0), (54, 58, 1.6), (58, 60.5, 0.6))):
-        cube(f"core_tip_{i}", "blade", "body", (-hw, y0, -0.9 + i * 0.15), (hw, y1, 0.9 - i * 0.15))
-    tip_len = math.hypot(BLADE_HW + EDGE_W, TIP_LEN)
-    tip_angle = math.degrees(math.atan2(BLADE_HW + EDGE_W, TIP_LEN))
     for s, side in ((-1, "left"), (1, "right")):
-        x_out = s * (BLADE_HW + EDGE_W)
-        cube(f"edge_{side}", "blade", "edge", (s * BLADE_HW, 9, -0.5), (x_out, TIP_START, 0.5))
-        cube(f"edge_tip_{side}", "blade", "edge", (s * BLADE_HW, TIP_START, -0.5), (x_out, TIP_START + tip_len, 0.5),
-             rot=[0, 0, s * tip_angle], pivot=[x_out, TIP_START, 0])
-    cube("fuller", "blade", "fuller", (-1, 11, -1.1), (1, TIP_START - 3, 1.1))
+        cube(f"edge_{side}", "blade", "edge", (s * BLADE_HW, 9, -0.5), (s * (BLADE_HW + EDGE_W), TIP_START, 0.5))
+    half = (BLADE_HW + EDGE_W) / math.sqrt(2)   # half side, so the diagonal equals the blade width
+    cube("point", "blade", "point", (-half, TIP_START - half, -0.8), (half, TIP_START + half, 0.8),
+         rot=[0, 0, 45], pivot=[0, TIP_START, 0])
+    cube("fuller", "blade", "fuller", (-1, 11, -1.1), (1, TIP_START - 4, 1.1))
 
 
 # ----------------------------------------------------------------------------- texture
@@ -197,6 +192,16 @@ def paint(c, f, W, H):
             elif m == "edge":
                 t = 0.4 + (n - 0.5) * 0.35 + (0.35 if f == "up" else 0) + (0.2 if f in ("east", "west") else 0)
                 img[j, i] = P["glint"] if hash2(i, j, 9) > 0.95 else pick(P["edge"], t)
+            elif m == "point":
+                # dark steel inside, a bright bevel rim on the two upper (visible) sides of the diamond
+                rim = min(i, j, W - 1 - i, H - 1 - j)
+                if f in ("north", "south") and rim < 3:
+                    t = 0.45 + (n - 0.5) * 0.3 + (0.3 if rim == 0 else 0)
+                    img[j, i] = P["glint"] if hash2(i, j, 9) > 0.95 else pick(P["edge"], t)
+                elif f in ("north", "south"):
+                    img[j, i] = pick(P["body"], 0.35 + (n - 0.5) * 0.3)
+                else:
+                    img[j, i] = pick(P["edge"], 0.5 + (n - 0.5) * 0.3)
             elif m == "fuller":
                 img[j, i] = P["fuller_bg"]
                 glow[j, i] = True

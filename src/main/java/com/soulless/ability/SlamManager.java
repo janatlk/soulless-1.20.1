@@ -61,7 +61,7 @@ public final class SlamManager {
     public static void tryStart(ServerPlayer player) {
         ItemStack stack = player.getMainHandItem();
         if (!(stack.getItem() instanceof SoulForgedItem item) || !player.isAlive() || player.isSpectator()) return;
-        if (player.getCooldowns().isOnCooldown(item) || ACTIVE.containsKey(player.getUUID())) return;
+        if (player.getCooldowns().isOnCooldown(item) || ACTIVE.containsKey(player.getUUID()) || RendManager.isActive(player)) return;
 
         ServerLevel level = player.serverLevel();
         player.getCooldowns().addCooldown(item, COOLDOWN_TICKS);

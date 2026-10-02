@@ -16,8 +16,8 @@ import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 
 /**
  * GeckoLib renderer for the 3D sword (model and animations come from art/soul_forged.bbmodel).
- * Inventory slots get a flat pixel-art icon; during "Soul Crush"
- * the blade is turned point-down in third person so it can be driven into the ground.
+ * Inventory slots get a flat pixel-art icon; during abilities the blade is turned about the grip in third
+ * person (laid back over the shoulder, driven point-down into the ground...).
  */
 public class SoulForgedRenderer extends GeoItemRenderer<SoulForgedItem> {
     public static final ResourceLocation ICON_MODEL = Soulless.id("item/soul_forged_icon");
@@ -42,7 +42,7 @@ public class SoulForgedRenderer extends GeoItemRenderer<SoulForgedItem> {
         poseStack.pushPose();
         if ((context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND || context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND)
                 && ClientState.renderingPlayer != null) {
-            SlamAnim.Pose pose = SlamAnim.sample(ClientState.renderingPlayer);
+            SlamAnim.Pose pose = SoulArmPose.current(ClientState.renderingPlayer);
             if (pose != null && pose.itemPitch != 0) {
                 // item +x points down the arm, +y along the blade: turning about z swings the point toward the ground
                 poseStack.translate(0.5F, 0.51F, 0.5F);

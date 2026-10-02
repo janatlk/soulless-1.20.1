@@ -15,6 +15,8 @@ public final class SlamAnim {
     public static final class Pose {
         float mainX, offX, mainY, offY, frontLeg, backLeg, lean, lower, itemPitch;
         float flip;
+        /** Torso twist in radians (positive turns the shoulders toward the sword arm). */
+        float bodyYaw;
 
         Pose(float mainX, float offX, float mainY, float offY, float frontLeg, float backLeg, float lean, float lower, float itemPitch) {
             this.mainX = mainX;
@@ -33,7 +35,13 @@ public final class SlamAnim {
                     Mth.lerp(k, a.offY, b.offY), Mth.lerp(k, a.frontLeg, b.frontLeg), Mth.lerp(k, a.backLeg, b.backLeg),
                     Mth.lerp(k, a.lean, b.lean), Mth.lerp(k, a.lower, b.lower), Mth.lerp(k, a.itemPitch, b.itemPitch));
             p.flip = Mth.lerp(k, a.flip, b.flip);
+            p.bodyYaw = Mth.lerp(k, a.bodyYaw, b.bodyYaw);
             return p;
+        }
+
+        Pose twist(float bodyYaw) {
+            this.bodyYaw = bodyYaw;
+            return this;
         }
     }
 

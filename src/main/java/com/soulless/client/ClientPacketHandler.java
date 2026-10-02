@@ -1,5 +1,8 @@
 package com.soulless.client;
 
+import com.soulless.ability.RendTimeline;
+import com.soulless.network.EffectSyncPacket;
+import com.soulless.network.RendHitPacket;
 import com.soulless.registry.ModParticles;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -49,12 +52,31 @@ public final class ClientPacketHandler {
         }
     }
 
-    public static void curseSync(int entityId, int duration) {
+    public static void effectSync(int entityId, int kind, int duration) {
+        var map = kind == EffectSyncPacket.STUN ? ClientState.STUNNED : ClientState.CURSED;
         if (duration <= 0) {
-            ClientState.CURSED.remove(entityId);
+            map.remove(entityId);
         } else {
-            ClientState.CURSED.put(entityId, ClientState.gameTime() + duration);
+            map.put(entityId, ClientState.gameTime() + duration);
         }
+    }
+
+    public static void rendStart(int entityId) {
+        ClientState.RENDS.put(entityId, ClientState.gameTime());
+    }
+
+    public static void rendHit(RendHitPacket msg) {
+        Minecraft mc = Minecraft.getInstance();
+        ClientLevel level = mc.level;
+        if (level == null || mc.player == null) return;
+        long now = ClientState.gameTime();
+        if (msg.entityId() == mc.player.getId()) {
+            ClientState.rendReadyAt = now + RendTimeline.COOLDOWN;
+        }
+        ClientState.TRAILS.add(new SlashTrails.Trail(new Vec3(msg.x(), msg.y(), msg.z()), msg.yaw(), now));
+        double dist = mc.player.position().distanceTo(new Vec3(msg.x(), msg.y(), msg.z()));
+        ClientState.shake = Math.max(ClientState.shake, (float) Math.max(0, 0.7 - dist / 30.0));
+        SlashTrails.burst(level, new Vec3(msg.x(), msg.y(), msg.z()), msg.yaw());
     }
 
     private ClientPacketHandler() {}

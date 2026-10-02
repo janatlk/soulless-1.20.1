@@ -335,7 +335,34 @@ def curse_ignite(rng):
     return whoosh + low + crackle * 0.35
 
 
+def make_stun_icon():
+    """18x18 effect icon: three golden sparks circling a dazed swirl."""
+    img = grid(18)
+    gold, pale = c("e8d25a"), c("fff4b0")
+    for k in range(40):  # swirl
+        a = k * 0.45
+        r = 1.5 + k * 0.13
+        x, y = int(9 + math.cos(a) * r), int(9 + math.sin(a) * r * 0.7)
+        if 0 <= x < 18 and 0 <= y < 18:
+            img[y][x] = c("b8a040")
+    for a in (0.3, 2.4, 4.5):  # stars
+        sx, sy = int(9 + math.cos(a) * 6.5), int(9 + math.sin(a) * 4.5)
+        for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+            if 0 <= sx + dx < 18 and 0 <= sy + dy < 18:
+                img[sy + dy][sx + dx] = pale if (dx, dy) == (0, 0) else gold
+    arr = outline(img)
+    out = np.zeros((18, 18, 4), np.uint8)
+    for y in range(18):
+        for x in range(18):
+            if arr[y][x] is not None:
+                out[y, x] = arr[y][x]
+    p = ASSETS / "textures/mob_effect/stun.png"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(out, "RGBA").save(p)
+
+
 def main():
+    make_stun_icon()
     make_sword_icon()
     make_hilt()
     make_ingot()

@@ -26,9 +26,15 @@ public final class ModNetwork {
         CHANNEL.messageBuilder(SlamImpactPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(SlamImpactPacket::encode).decoder(SlamImpactPacket::decode)
                 .consumerMainThread(SlamImpactPacket::handle).add();
-        CHANNEL.messageBuilder(SoulCurseSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(SoulCurseSyncPacket::encode).decoder(SoulCurseSyncPacket::decode)
-                .consumerMainThread(SoulCurseSyncPacket::handle).add();
+        CHANNEL.messageBuilder(EffectSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(EffectSyncPacket::encode).decoder(EffectSyncPacket::decode)
+                .consumerMainThread(EffectSyncPacket::handle).add();
+        CHANNEL.messageBuilder(RendStartPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RendStartPacket::encode).decoder(RendStartPacket::decode)
+                .consumerMainThread(RendStartPacket::handle).add();
+        CHANNEL.messageBuilder(RendHitPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RendHitPacket::encode).decoder(RendHitPacket::decode)
+                .consumerMainThread(RendHitPacket::handle).add();
     }
 
     public static void sendToServer(Object msg) {
