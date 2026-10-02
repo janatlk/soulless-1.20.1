@@ -95,16 +95,24 @@ public final class SoulTooltip {
         g.fill(cx - 1, t - 2, cx + 1, t + 3, ACCENT_DIM);
         g.fill(cx - 2, t - 1, cx + 2, t + 2, ACCENT_DIM);
         g.fill(cx - 1, t - 1, cx + 1, t + 2, ACCENT);
-        // fading rule under the title line
+        // solid violet rule under the title: bright lilac in the middle, deep violet at the ends, with a soft
+        // darker line beneath it for depth
         if (comps.size() > 1) {
             int ry = y + comps.get(0).getHeight();
             for (int i = 0; i < w; i++) {
-                float fade = 1 - Math.abs(i - w / 2F) / (w / 2F);
-                int a = (int) (0xC0 * fade);
-                g.fill(x + i, ry, x + i + 1, ry + 1, a << 24 | 0xB54CFF);
+                float k = 1 - Math.abs(i - w / 2F) / (w / 2F);   // 0 at the ends, 1 in the middle
+                g.fill(x + i, ry, x + i + 1, ry + 1, 0xFF000000 | lerpColor(0x6A14A8, 0xD98CFF, k));
+                g.fill(x + i, ry + 1, x + i + 1, ry + 2, 0xFF000000 | lerpColor(0x2A0846, 0x5E1494, k));
             }
         }
         g.pose().popPose();
+    }
+
+    private static int lerpColor(int a, int b, float k) {
+        int r = (int) ((a >> 16 & 255) + ((b >> 16 & 255) - (a >> 16 & 255)) * k);
+        int gr = (int) ((a >> 8 & 255) + ((b >> 8 & 255) - (a >> 8 & 255)) * k);
+        int bl = (int) ((a & 255) + ((b & 255) - (a & 255)) * k);
+        return r << 16 | gr << 8 | bl;
     }
 
     /** A small glowing L-bracket sitting on a corner of the border, pointing inward along (dx, dy). */
