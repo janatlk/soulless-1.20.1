@@ -147,6 +147,26 @@ public final class SlamManager {
         return ACTIVE.containsKey(player.getUUID());
     }
 
+    /**
+     * No fall damage during Soul Crush. Resetting fallDistance each tick is not enough: fall damage is checked
+     * while processing movement packets, and several can arrive within one server tick during the dive.
+     */
+    @SubscribeEvent
+    public static void onFall(net.minecraftforge.event.entity.living.LivingFallEvent event) {
+        if (event.getEntity() instanceof ServerPlayer p && ACTIVE.containsKey(p.getUUID())) {
+            event.setDistance(0);
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onFallHurt(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+        if (event.getEntity() instanceof ServerPlayer p && ACTIVE.containsKey(p.getUUID())
+                && event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FALL)) {
+            event.setCanceled(true);
+        }
+    }
+
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         ACTIVE.remove(event.getEntity().getUUID());
