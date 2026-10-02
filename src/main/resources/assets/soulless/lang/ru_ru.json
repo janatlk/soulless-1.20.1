@@ -1,0 +1,44 @@
+{
+  "itemGroup.soulless": "Soulless",
+
+  "item.soulless.soul_forged": "Кованная душа",
+  "tooltip.soulless.soul_forged.subtitle": "Легендарный двуручный меч",
+  "tooltip.soulless.soul_forged.passive.title": "◆ Пассивно — Проклятье душ",
+  "tooltip.soulless.soul_forged.passive.1": "Удары поджигают цель фиолетовым пламенем на %s сек.:",
+  "tooltip.soulless.soul_forged.passive.2": " • %s урона в секунду, игнорирует броню",
+  "tooltip.soulless.soul_forged.passive.3": " • Замедление на %s%%",
+  "tooltip.soulless.soul_forged.passive.4": " • Цель не может прыгать",
+  "tooltip.soulless.soul_forged.passive.5": " • Гасит обычное пламя и не суммируется с ним",
+  "tooltip.soulless.soul_forged.ability.title": "◆ Способность [%s] — Сокрушение душ",
+  "tooltip.soulless.soul_forged.ability.1": "Взмыть вверх и обрушить меч на землю:",
+  "tooltip.soulless.soul_forged.ability.2": " • До %s урона в радиусе %s блоков",
+  "tooltip.soulless.soul_forged.ability.3": " • Отбрасывает врагов и накладывает усиленное Проклятье душ на %s сек.",
+  "tooltip.soulless.soul_forged.ability.4": " • Земля вокруг удара трескается",
+  "tooltip.soulless.soul_forged.ability.5": " • Перезарядка: %s сек.",
+  "tooltip.soulless.soul_forged.trait.1": "◆ Двуручный хват, +%s к дальности атаки",
+  "tooltip.soulless.soul_forged.trait.2": "◆ Не горит в огне и лаве",
+  "tooltip.soulless.soul_forged.lore": "«Выкован из душ, что так и не обрели покоя»",
+
+  "item.soulless.wraithsteel_ingot": "Слиток призрачной стали",
+  "item.soulless.wraithsteel_ingot.desc": "Холодный металл, в котором шепчут чужие голоса",
+  "item.soulless.soulflame_core": "Ядро пламени душ",
+  "item.soulless.soulflame_core.desc": "Сгусток фиолетового огня, что не гаснет даже под водой",
+  "item.soulless.ancient_hilt": "Древняя рукоять",
+  "item.soulless.ancient_hilt.desc": "Рукоять клинка павшего короля. Сам клинок давно утерян",
+  "item.soulless.abyssal_heart": "Сердце Бездны",
+  "item.soulless.abyssal_heart.desc": "Оно всё ещё бьётся",
+  "tooltip.soulless.material.used_for": "Компонент Кованной души",
+  "tooltip.soulless.material.source": "Источник: ??? — неведомые стражи (скоро)",
+
+  "effect.soulless.soul_curse": "Проклятье душ",
+  "death.attack.soulless.soul_curse": "%1$s сгорел в пламени душ",
+  "death.attack.soulless.soul_curse.player": "%1$s сгорел в пламени душ, спасаясь от %2$s",
+
+  "key.categories.soulless": "Soulless",
+  "key.soulless.slam": "Сокрушение душ",
+  "message.soulless.slam_cooldown": "Сокрушение душ перезаряжается: %s сек.",
+
+  "subtitles.soulless.slam_windup": "Меч набирает силу",
+  "subtitles.soulless.slam_impact": "Сокрушающий удар",
+  "subtitles.soulless.curse_ignite": "Вспыхивает пламя душ"
+}

@@ -1,0 +1,37 @@
+package com.soulless.client;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import com.soulless.Soulless;
+import com.soulless.registry.ModParticles;
+import net.minecraft.client.KeyMapping;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ModelEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
+import net.minecraftforge.client.settings.KeyConflictContext;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import org.lwjgl.glfw.GLFW;
+
+@Mod.EventBusSubscriber(modid = Soulless.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+public final class ClientModEvents {
+    public static final KeyMapping SLAM_KEY = new KeyMapping("key.soulless.slam", KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, "key.categories.soulless");
+
+    @SubscribeEvent
+    public static void onKeys(RegisterKeyMappingsEvent event) {
+        event.register(SLAM_KEY);
+    }
+
+    @SubscribeEvent
+    public static void onParticles(RegisterParticleProvidersEvent event) {
+        event.registerSpriteSet(ModParticles.SOUL_EMBER.get(), SoulEmberParticle.Provider::new);
+    }
+
+    @SubscribeEvent
+    public static void onModels(ModelEvent.RegisterAdditional event) {
+        event.register(SoulForgedRenderer.ICON_MODEL);
+    }
+
+    private ClientModEvents() {}
+}

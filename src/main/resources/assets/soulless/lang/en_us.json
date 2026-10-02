@@ -1,0 +1,44 @@
+{
+  "itemGroup.soulless": "Soulless",
+
+  "item.soulless.soul_forged": "Soul Forged",
+  "tooltip.soulless.soul_forged.subtitle": "Legendary two-handed sword",
+  "tooltip.soulless.soul_forged.passive.title": "◆ Passive — Soul Curse",
+  "tooltip.soulless.soul_forged.passive.1": "Hits set the target ablaze with purple flame for %ss:",
+  "tooltip.soulless.soul_forged.passive.2": " • %s damage per second, ignores armor",
+  "tooltip.soulless.soul_forged.passive.3": " • %s%% slower movement",
+  "tooltip.soulless.soul_forged.passive.4": " • The target cannot jump",
+  "tooltip.soulless.soul_forged.passive.5": " • Smothers normal fire and never stacks with it",
+  "tooltip.soulless.soul_forged.ability.title": "◆ Ability [%s] — Soul Crush",
+  "tooltip.soulless.soul_forged.ability.1": "Leap up and drive the sword into the ground:",
+  "tooltip.soulless.soul_forged.ability.2": " • Up to %s damage in a %s block radius",
+  "tooltip.soulless.soul_forged.ability.3": " • Knocks enemies back and applies an empowered Soul Curse for %ss",
+  "tooltip.soulless.soul_forged.ability.4": " • The ground around the impact cracks",
+  "tooltip.soulless.soul_forged.ability.5": " • Cooldown: %ss",
+  "tooltip.soulless.soul_forged.trait.1": "◆ Two-handed grip, +%s attack reach",
+  "tooltip.soulless.soul_forged.trait.2": "◆ Immune to fire and lava",
+  "tooltip.soulless.soul_forged.lore": "\"Forged from souls that never found rest\"",
+
+  "item.soulless.wraithsteel_ingot": "Wraithsteel Ingot",
+  "item.soulless.wraithsteel_ingot.desc": "Cold metal that whispers in voices not its own",
+  "item.soulless.soulflame_core": "Soulflame Core",
+  "item.soulless.soulflame_core.desc": "A knot of purple fire that burns even underwater",
+  "item.soulless.ancient_hilt": "Ancient Hilt",
+  "item.soulless.ancient_hilt.desc": "The hilt of a fallen king's blade. The blade itself is long lost",
+  "item.soulless.abyssal_heart": "Abyssal Heart",
+  "item.soulless.abyssal_heart.desc": "It is still beating",
+  "tooltip.soulless.material.used_for": "Component of Soul Forged",
+  "tooltip.soulless.material.source": "Source: ??? — unknown guardians (coming soon)",
+
+  "effect.soulless.soul_curse": "Soul Curse",
+  "death.attack.soulless.soul_curse": "%1$s was consumed by soul fire",
+  "death.attack.soulless.soul_curse.player": "%1$s was consumed by soul fire whilst fighting %2$s",
+
+  "key.categories.soulless": "Soulless",
+  "key.soulless.slam": "Soul Crush",
+  "message.soulless.slam_cooldown": "Soul Crush recharging: %ss",
+
+  "subtitles.soulless.slam_windup": "Sword gathers power",
+  "subtitles.soulless.slam_impact": "Crushing blow",
+  "subtitles.soulless.curse_ignite": "Soul fire ignites"
+}
