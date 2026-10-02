@@ -205,6 +205,13 @@ public final class RendManager {
             level.sendParticles(ParticleTypes.HEART, player.getX(), player.getY() + 2.1, player.getZ(), Math.min(hit.size(), 6), 0.4, 0.1, 0.4, 0);
         }
 
+        // the cut flies on: a crescent of soul fire through blocks and creatures
+        SoulSlashEntity slash = new SoulSlashEntity(com.soulless.registry.ModEntities.SOUL_SLASH.get(), level);
+        Vec3 look = Vec3.directionFromRotation(0, yaw);
+        slash.moveTo(player.getX() + look.x * 1.5, player.getY() + 0.2, player.getZ() + look.z * 1.5);
+        slash.setup(player, yaw, power);
+        level.addFreshEntity(slash);
+
         player.getPersistentData().putLong(CD_TAG, level.getGameTime() + RendTimeline.COOLDOWN);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.4F, 0.55F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SLAM_IMPACT.get(), SoundSource.PLAYERS, 1.0F, 1.5F);

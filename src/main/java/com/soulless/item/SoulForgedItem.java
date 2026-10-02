@@ -183,6 +183,8 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         tooltip.add(line(k + "d.rend.5", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.rend.2", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.rend.3", ChatFormatting.GRAY, v(RendManager.STUN_TARGETS), v(RendManager.STUN_SECONDS)));
+        tooltip.add(line(k + "d.rend.8", ChatFormatting.GRAY, v(fmt(com.soulless.ability.SoulSlashEntity.RANGE)),
+                v(fmt(com.soulless.ability.SoulSlashEntity.MAX_DAMAGE))));
         tooltip.add(line(k + "d.rend.6", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.rend.7", ChatFormatting.GRAY, v(RendManager.DURABILITY_COST)));
         tooltip.add(line(k + "d.rend.4", ChatFormatting.GRAY, v(RendTimeline.RECOVER / 20)));

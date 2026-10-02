@@ -294,6 +294,48 @@ def curse_ignite(rng):
     return whoosh + low + crackle * 0.35
 
 
+def reaper_scream(rng):
+    """A wailing, many-voiced scream: detuned falling sawtooth voices through a vocal-ish band, plus breath."""
+    n = int(SR * 2.6)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for k, base in enumerate((180, 233, 267, 311, 392)):
+        f = base * (1.0 - 0.35 * t / t[-1]) * (1 + 0.012 * np.sin(2 * np.pi * (5 + k) * t))
+        ph = np.cumsum(f) / SR
+        saw = 2 * (ph % 1) - 1
+        out += saw * (0.7 + 0.3 * np.sin(2 * np.pi * 0.7 * t + k))
+    voice = lowpass(out, 1800 + 900 * np.sin(2 * np.pi * 1.3 * t))
+    breath = lowpass(rng.standard_normal(n), 3000) * 0.4
+    e = np.clip(t / 0.25, 0, 1) * np.clip((t[-1] - t) / 0.8, 0, 1)
+    return (voice * 0.6 + breath) * e
+
+
+def bolt_fly(rng):
+    """An eerie, unplaceable whoosh: a rising-and-falling filtered noise with a ghostly ring modulator."""
+    n = int(SR * 1.2)
+    t = np.arange(n) / SR
+    sweep = 500 + 2500 * np.sin(np.pi * t / t[-1]) ** 2
+    whoosh = lowpass(rng.standard_normal(n), sweep) * 2.5
+    ring = np.sin(2 * np.pi * 330 * t) * np.sin(2 * np.pi * 47 * t) * 0.35
+    whistle = np.sin(2 * np.pi * np.cumsum(900 + 400 * np.sin(2 * np.pi * 3 * t)) / SR) * 0.12
+    return (whoosh + ring + whistle) * np.sin(np.pi * t / t[-1])
+
+
+def eruption(rng):
+    """Burning roar of the eruption: a low rumble swelling into a crackling flare."""
+    n = int(SR * 1.8)
+    t = np.arange(n) / SR
+    swell = np.clip(t / 1.1, 0, 1) ** 2
+    rumble = lowpass(rng.standard_normal(n), 250) * 4 * swell
+    roar = lowpass(rng.standard_normal(n), 400 + 2600 * swell) * 1.8 * swell
+    crackle = np.zeros(n)
+    for _ in range(160):
+        i = int(rng.uniform(0.3, 1.7) * SR)
+        crackle[i:i + 30] += rng.uniform(-1, 1) * np.exp(-np.arange(min(30, n - i)) / 5)
+    tail = np.clip((t[-1] - t) / 0.5, 0, 1)
+    return (rumble + roar + crackle * 0.6) * tail
+
+
 def make_stun_icon():
     """18x18 effect icon: three golden sparks circling a dazed swirl."""
     img = grid(18)
@@ -330,6 +372,9 @@ def main():
     write_ogg(slam_windup(rng), "slam_windup")
     write_ogg(slam_impact(rng), "slam_impact")
     write_ogg(curse_ignite(rng), "curse_ignite")
+    write_ogg(reaper_scream(rng), "reaper_scream")
+    write_ogg(bolt_fly(rng), "bolt_fly")
+    write_ogg(eruption(rng), "eruption")
     print("icons + sounds written")
 
 

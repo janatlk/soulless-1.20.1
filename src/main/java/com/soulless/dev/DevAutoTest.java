@@ -38,15 +38,39 @@ public final class DevAutoTest {
     public static final int TUNE_CYCLE = TUNE_REND ? 300 : 120;
     /** SOULLESS_CHECK=1: tooltip screenshots + a training dummy hit by a swing, Soul Crush and Soul Rend. */
     public static final boolean CHECK = ENABLED && System.getenv("SOULLESS_CHECK") != null;
+    /** SOULLESS_BOSS=1: build the altar, run the ritual, fight the Reaper (player protected), force the ults. */
+    public static final boolean BOSS = ENABLED && System.getenv("SOULLESS_BOSS") != null;
+    private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
     private static final double ARENA_X = 300.5, ARENA_Z = 0.5;
 
     private static ServerPlayer player;
+    private static int bossSeen = -1;
+    private static boolean chestLogged;
+
+    @SubscribeEvent
+    public static void onPlayerHurt(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+        if (BOSS && event.getEntity() instanceof ServerPlayer) {
+            Soulless.LOGGER.info("[autotest] player hit by {} via {} for {}", event.getSource().getMsgId(),
+                    event.getSource().getDirectEntity() == null ? "-" : event.getSource().getDirectEntity().getType().getDescriptionId(),
+                    event.getAmount());
+        }
+    }
     private static int tick = -1;
+
+    /** Safety: the scripted scenarios only ever run in the dedicated autotest world, in the overworld. */
+    private static boolean inAutotestWorld(ServerPlayer p) {
+        return p.server.getWorldData().getLevelName().equals(DevAutoTestClient.WORLD)
+                && p.level().dimension() == net.minecraft.world.level.Level.OVERWORLD;
+    }
 
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!ENABLED || !(event.getEntity() instanceof ServerPlayer p)) return;
+        if (!inAutotestWorld(p)) {
+            Soulless.LOGGER.warn("[autotest] refusing to run outside the '{}' world", DevAutoTestClient.WORLD);
+            return;
+        }
         player = p;
         tick = 0;
         ServerLevel level = p.serverLevel();
@@ -86,6 +110,51 @@ public final class DevAutoTest {
         if (!ENABLED || event.phase != TickEvent.Phase.END || player == null || tick < 0) return;
         tick++;
         ServerPlayer p = player;
+        if (BOSS) {
+            ServerLevel level = p.serverLevel();
+            if (tick == 20) {
+                level.getEntitiesOfClass(net.minecraft.world.entity.Entity.class, p.getBoundingBox().inflate(60), e -> !(e instanceof ServerPlayer))
+                        .forEach(net.minecraft.world.entity.Entity::discard);
+                p.setGameMode(GameType.SURVIVAL);
+                p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z - 2, 0, 5);
+                net.minecraft.core.BlockPos base = net.minecraft.core.BlockPos.containing(ARENA_X, p.getY(), ARENA_Z + 9);
+                com.soulless.boss.SoulAltarFeature.build(level, base);
+                altarPos = base.above();
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, 100000, 3, false, false));
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.REGENERATION, 100000, 3, false, false));
+                Soulless.LOGGER.info("[autotest] altar built at {}", altarPos);
+            }
+            if (tick == 60 && level.getBlockEntity(altarPos) instanceof com.soulless.boss.SoulAltarBlockEntity altar) {
+                level.setBlock(altarPos, level.getBlockState(altarPos).setValue(com.soulless.boss.SoulAltarBlock.FILLED, true), 3);
+                altar.startRitual();
+                Soulless.LOGGER.info("[autotest] ritual started");
+            }
+            var bosses = level.getEntitiesOfClass(com.soulless.boss.WailingReaperEntity.class, p.getBoundingBox().inflate(60));
+            if (!bosses.isEmpty()) {
+                var boss = bosses.get(0);
+                if (tick % 20 == 0) {
+                    Soulless.LOGGER.info("[autotest] t={} boss state={} hp={} pos={} playerHp={}", tick, boss.state(), boss.getHealth(),
+                            boss.position(), p.getHealth());
+                }
+                if (bossSeen < 0) bossSeen = tick;
+                int bt = tick - bossSeen;
+                if (bt == 700) boss.setHealth(boss.getMaxHealth() * 0.49F);   // force the first ult
+                if (bt == 1100) boss.setHealth(boss.getMaxHealth() * 0.14F);  // and the second
+                if (bt == 1400) boss.hurt(level.damageSources().playerAttack(p), 99999);
+            }
+            if (tick % 20 == 0) {
+                long heads = level.getEntitiesOfClass(com.soulless.boss.AbyssHeadEntity.class, p.getBoundingBox().inflate(60)).size();
+                long bolts = level.getEntitiesOfClass(com.soulless.boss.SoulBoltEntity.class, p.getBoundingBox().inflate(60)).size();
+                if (heads + bolts > 0) Soulless.LOGGER.info("[autotest] t={} heads={} bolts={}", tick, heads, bolts);
+            }
+            if (altarPos != null && tick > 300 && level.getBlockState(altarPos).is(net.minecraft.world.level.block.Blocks.CHEST)
+                    && !chestLogged) {
+                chestLogged = true;
+                Soulless.LOGGER.info("[autotest] reward chest placed, slot13={}",
+                        ((net.minecraft.world.level.block.entity.ChestBlockEntity) level.getBlockEntity(altarPos)).getItem(13));
+            }
+            return;
+        }
         if (CHECK) {
             if (tick == 20) {
                 p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(60), e -> !(e instanceof ServerPlayer))

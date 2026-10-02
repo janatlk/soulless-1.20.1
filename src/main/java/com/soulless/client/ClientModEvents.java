@@ -31,6 +31,17 @@ public final class ClientModEvents {
     }
 
     @SubscribeEvent
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static void onRenderers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(com.soulless.registry.ModEntities.WAILING_REAPER.get(), BossRenderers.Reaper::new);
+        event.registerEntityRenderer(com.soulless.registry.ModEntities.SOUL_BOLT.get(), BossRenderers.Bolt::new);
+        event.registerEntityRenderer((net.minecraft.world.entity.EntityType) com.soulless.registry.ModEntities.ABYSS_HEAD.get(),
+                ctx -> new BossRenderers.AbyssHead(ctx));
+        event.registerEntityRenderer(com.soulless.registry.ModEntities.SOUL_ERUPTION.get(), BossRenderers.Invisible::new);
+        event.registerEntityRenderer(com.soulless.registry.ModEntities.SOUL_SLASH.get(), BossRenderers.Slash::new);
+    }
+
+    @SubscribeEvent
     public static void onTooltipFactories(net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent event) {
         event.register(SectionTooltip.class, s -> s);
     }

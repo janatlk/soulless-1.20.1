@@ -27,7 +27,10 @@ public class SoulMaterialItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable(getDescriptionId() + ".desc").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
-        tooltip.add(Component.translatable("tooltip.soulless.material.used_for").withStyle(ChatFormatting.DARK_PURPLE));
+        if (stack.is(com.soulless.registry.ModItems.ABYSSAL_HEART.get())) {
+            tooltip.add(Component.translatable("tooltip.soulless.material.altar").withStyle(ChatFormatting.DARK_PURPLE));
+            return;
+        }
         tooltip.add(Component.translatable("tooltip.soulless.material.source").withStyle(ChatFormatting.DARK_GRAY));
     }
 }

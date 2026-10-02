@@ -51,6 +51,16 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.dummy.cleared", n), true);
                             return n;
                         })))
+                .then(Commands.literal("altar")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> {
+                            var p = ctx.getSource().getPlayerOrException();
+                            var look = net.minecraft.world.phys.Vec3.directionFromRotation(0, p.getYRot()).scale(7);
+                            com.soulless.boss.SoulAltarFeature.build(p.serverLevel(),
+                                    net.minecraft.core.BlockPos.containing(p.getX() + look.x, p.getY(), p.getZ() + look.z));
+                            ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.altar"), true);
+                            return 1;
+                        }))
                 .then(Commands.literal("resetcd")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> resetCooldowns(ctx.getSource(), self(ctx.getSource())))

@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [{ "type": "minecraft:item", "name": "soulless:soul_altar" }],
+      "conditions": [{ "condition": "minecraft:survives_explosion" }]
+    }
+  ]
+}

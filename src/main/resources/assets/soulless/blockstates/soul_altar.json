@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "filled=false": { "model": "soulless:block/soul_altar" },
+    "filled=true": { "model": "soulless:block/soul_altar_filled" }
+  }
+}

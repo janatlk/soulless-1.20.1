@@ -1,4 +1,4 @@
-{
+﻿{
   "itemGroup.soulless": "Soulless",
 
   "item.soulless.soul_forged": "Кованная душа",
@@ -52,6 +52,20 @@
   "tooltip.soulless.material.used_for": "Компонент Кованной души",
   "tooltip.soulless.material.source": "Источник: ??? — неведомые стражи (скоро)",
 
+  "entity.soulless.wailing_reaper": "Скорбный Жнец",
+  "entity.soulless.soul_bolt": "Сгусток душ",
+  "entity.soulless.abyss_head": "Голова бездны",
+  "entity.soulless.soul_eruption": "Извержение душ",
+  "entity.soulless.soul_slash": "Волна разреза",
+  "block.soulless.soul_altar": "Алтарь Душ",
+  "message.soulless.altar_needs_heart": "В выемке не хватает Сердца Бездны",
+  "advancement.soulless.kill_wailing_reaper": "Убейте Скорбного Жнеца",
+  "advancement.soulless.kill_wailing_reaper.desc": "Упокойте того, кто не знает покоя",
+  "subtitles.soulless.reaper_scream": "Скорбный Жнец кричит",
+  "subtitles.soulless.bolt_fly": "Что-то летит",
+  "subtitles.soulless.eruption": "Из земли рвутся души",
+  "tooltip.soulless.soul_forged.d.rend.8": "  Волна разреза летит %s блоков сквозь всё: до %s урона",
+  "tooltip.soulless.material.altar": "Вставьте в Алтарь Душ, чтобы призвать Скорбного Жнеца",
   "effect.soulless.soul_curse": "Проклятье душ",
   "effect.soulless.stun": "Оглушение",
   "death.attack.soulless.soul_curse": "%1$s сгорел в пламени душ",
@@ -67,6 +81,7 @@
   "command.soulless.zones.on": "%s: зоны способностей показаны (держите Кованную душу)",
   "command.soulless.zones.off": "%s: зоны способностей скрыты",
   "command.soulless.resetcd": "Перезарядка способностей сброшена (игроков: %s)",
+  "command.soulless.altar": "Алтарь Душ построен перед вами",
   "command.soulless.dummy.spawned": "Манекен поставлен",
   "command.soulless.dummy.cleared": "Манекенов убрано: %s",
   "entity.soulless.dummy": "Манекен",

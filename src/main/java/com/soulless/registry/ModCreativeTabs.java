@@ -20,6 +20,7 @@ public final class ModCreativeTabs {
                 out.accept(ModItems.SOULFLAME_CORE.get());
                 out.accept(ModItems.ANCIENT_HILT.get());
                 out.accept(ModItems.ABYSSAL_HEART.get());
+                out.accept(ModBlocks.SOUL_ALTAR_ITEM.get());
             })
             .build());
 

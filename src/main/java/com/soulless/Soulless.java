@@ -2,7 +2,10 @@ package com.soulless;
 
 import com.mojang.logging.LogUtils;
 import com.soulless.network.ModNetwork;
+import com.soulless.registry.ModBlocks;
 import com.soulless.registry.ModCreativeTabs;
+import com.soulless.registry.ModEntities;
+import com.soulless.registry.ModFeatures;
 import com.soulless.registry.ModEffects;
 import com.soulless.registry.ModItems;
 import com.soulless.registry.ModParticles;
@@ -24,6 +27,10 @@ public class Soulless {
     public Soulless() {
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         ModItems.ITEMS.register(bus);
+        ModBlocks.BLOCKS.register(bus);
+        ModBlocks.BLOCK_ENTITIES.register(bus);
+        ModEntities.ENTITIES.register(bus);
+        ModFeatures.FEATURES.register(bus);
         ModEffects.EFFECTS.register(bus);
         ModParticles.PARTICLES.register(bus);
         ModSounds.SOUNDS.register(bus);

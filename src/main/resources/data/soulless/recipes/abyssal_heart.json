@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CNC",
+    "SAS",
+    "CNC"
+  ],
+  "key": {
+    "C": { "item": "minecraft:crying_obsidian" },
+    "N": { "item": "minecraft:netherite_ingot" },
+    "S": { "item": "minecraft:soul_sand" },
+    "A": { "item": "minecraft:nether_star" }
+  },
+  "result": { "item": "soulless:abyssal_heart" }
+}

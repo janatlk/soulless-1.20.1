@@ -1,0 +1,23 @@
+{
+  "parent": "minecraft:nether/root",
+  "display": {
+    "icon": { "item": "soulless:soul_forged" },
+    "title": { "translate": "advancement.soulless.kill_wailing_reaper" },
+    "description": { "translate": "advancement.soulless.kill_wailing_reaper.desc" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "killed": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": [
+          { "condition": "minecraft:entity_properties", "entity": "this", "predicate": { "type": "soulless:wailing_reaper" } }
+        ]
+      }
+    }
+  },
+  "rewards": { "experience": 500 }
+}

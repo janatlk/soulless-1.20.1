@@ -1,4 +1,4 @@
-{
+﻿{
   "itemGroup.soulless": "Soulless",
 
   "item.soulless.soul_forged": "Soul Forged",
@@ -52,6 +52,20 @@
   "tooltip.soulless.material.used_for": "Component of Soul Forged",
   "tooltip.soulless.material.source": "Source: ??? — unknown guardians (coming soon)",
 
+  "entity.soulless.wailing_reaper": "The Wailing Reaper",
+  "entity.soulless.soul_bolt": "Soul Bolt",
+  "entity.soulless.abyss_head": "Head of the Abyss",
+  "entity.soulless.soul_eruption": "Soul Eruption",
+  "entity.soulless.soul_slash": "Rending Wave",
+  "block.soulless.soul_altar": "Soul Altar",
+  "message.soulless.altar_needs_heart": "The socket is missing an Abyssal Heart",
+  "advancement.soulless.kill_wailing_reaper": "Kill The Wailing Reaper",
+  "advancement.soulless.kill_wailing_reaper.desc": "Lay to rest the one who knows no rest",
+  "subtitles.soulless.reaper_scream": "Wailing Reaper screams",
+  "subtitles.soulless.bolt_fly": "Something flies",
+  "subtitles.soulless.eruption": "Souls burst from the ground",
+  "tooltip.soulless.soul_forged.d.rend.8": "  A rending wave flies %s blocks through everything: up to %s damage",
+  "tooltip.soulless.material.altar": "Place in a Soul Altar to summon The Wailing Reaper",
   "effect.soulless.soul_curse": "Soul Curse",
   "effect.soulless.stun": "Stunned",
   "death.attack.soulless.soul_curse": "%1$s was consumed by soul fire",
@@ -67,6 +81,7 @@
   "command.soulless.zones.on": "%s: ability zones shown (hold Soul Forged)",
   "command.soulless.zones.off": "%s: ability zones hidden",
   "command.soulless.resetcd": "Ability cooldowns reset for %s player(s)",
+  "command.soulless.altar": "Soul Altar built in front of you",
   "command.soulless.dummy.spawned": "Training dummy placed",
   "command.soulless.dummy.cleared": "Training dummies removed: %s",
   "entity.soulless.dummy": "Training Dummy",

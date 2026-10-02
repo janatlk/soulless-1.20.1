@@ -31,7 +31,8 @@ import org.lwjgl.glfw.GLFW;
 /** Client half of the dev scenario: opens/creates a flat test world, frames shots, saves screenshots. */
 @Mod.EventBusSubscriber(modid = Soulless.MODID, value = Dist.CLIENT)
 public final class DevAutoTestClient {
-    private static final String WORLD = "soulless_test";
+    /** A world only the autotest ever uses; never the user's own worlds. */
+    public static final String WORLD = "soulless_autotest";
     private static boolean started;
     private static int tick = -1;
     private static ArmorStand sideCam;
@@ -46,6 +47,14 @@ public final class DevAutoTestClient {
         // a paused integrated server would desync the scripted timeline from the screenshots
         mc.options.pauseOnLostFocus = false;
         mc.tell(() -> {
+            // the autotest world is disposable: always start it fresh
+            if (mc.getLevelSource().levelExists(WORLD)) {
+                try (var access = mc.getLevelSource().createAccess(WORLD)) {
+                    access.deleteLevel();
+                } catch (Exception e) {
+                    Soulless.LOGGER.warn("[autotest] could not reset world: {}", e.toString());
+                }
+            }
             if (mc.getLevelSource().levelExists(WORLD)) {
                 mc.createWorldOpenFlows().loadLevel(event.getScreen(), WORLD);
             } else {
@@ -71,6 +80,11 @@ public final class DevAutoTestClient {
         tick++;
         hideWindowIfAsked(mc);
         var opts = mc.options;
+        if (DevAutoTest.BOSS) {
+            if (tick == 15) opts.setCameraType(CameraType.FIRST_PERSON);
+            if (tick > 60 && tick % 30 == 0 && tick < 2400) shot(mc, String.format("boss_%04d", tick));
+            return;
+        }
         if (DevAutoTest.CHECK) {
             if (tick == 15) opts.setCameraType(CameraType.FIRST_PERSON);
             if (tick == 50) shot(mc, "check_tooltips");
