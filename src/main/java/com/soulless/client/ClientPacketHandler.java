@@ -1,6 +1,7 @@
 package com.soulless.client;
 
 import com.soulless.ability.RendTimeline;
+import com.soulless.network.ClientControlPacket;
 import com.soulless.network.EffectSyncPacket;
 import com.soulless.network.RendHitPacket;
 import com.soulless.registry.ModParticles;
@@ -58,6 +59,14 @@ public final class ClientPacketHandler {
             map.remove(entityId);
         } else {
             map.put(entityId, ClientState.gameTime() + duration);
+        }
+    }
+
+    public static void control(int action, boolean value) {
+        if (action == ClientControlPacket.SHOW_ZONES) {
+            ClientState.showZones = value;
+        } else if (action == ClientControlPacket.RESET_COOLDOWNS) {
+            ClientState.rendReadyAt = 0;
         }
     }
 

@@ -16,7 +16,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
@@ -137,7 +139,7 @@ public final class SlamManager {
     private static void impact(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         Vec3 look = horizontalLook(player);
-        Vec3 center = player.position().add(look.scale(1.1));
+        Vec3 center = impactCenter(player);
         BlockPos groundPos = CrackManager.findSurface(level, BlockPos.containing(center.x, player.getY(), center.z));
         double groundY = groundPos != null ? groundPos.getY() + 1.0 : player.getY();
         center = new Vec3(center.x, groundY, center.z);
@@ -145,8 +147,8 @@ public final class SlamManager {
         AABB box = new AABB(center, center).inflate(RADIUS, 3.0, RADIUS);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator())) {
             if (target.isAlliedTo(player) || (target instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
+            if (!inBlast(center, target)) continue;
             double dist = Math.sqrt(Mth.square(target.getX() - center.x) + Mth.square(target.getZ() - center.z));
-            if (dist > RADIUS) continue;
             float damage = (float) Mth.lerp(dist / RADIUS, MAX_DAMAGE, MIN_DAMAGE);
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(player), damage);
@@ -189,7 +191,18 @@ public final class SlamManager {
         player.fallDistance = 0;
     }
 
-    private static Vec3 horizontalLook(ServerPlayer player) {
+    /** Where the blade lands: a little ahead of the wielder's feet. Shared with {@code /soulless zones}. */
+    public static Vec3 impactCenter(Player player) {
+        return player.position().add(horizontalLook(player).scale(1.1));
+    }
+
+    /** Is the target inside the blast around {@code center} (horizontal radius, 3 blocks up/down). */
+    public static boolean inBlast(Vec3 center, Entity target) {
+        double dist = Math.sqrt(Mth.square(target.getX() - center.x) + Mth.square(target.getZ() - center.z));
+        return dist <= RADIUS && Math.abs(target.getY() - center.y) <= 3.0;
+    }
+
+    private static Vec3 horizontalLook(Player player) {
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0, look.z);
         return flat.lengthSqr() < 1.0E-4 ? Vec3.ZERO : flat.normalize();

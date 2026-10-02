@@ -28,7 +28,7 @@ public final class AbilityHud implements IGuiOverlay {
 
         int x = width / 2 + 91 + 8, y = height - SLOT - 2;
         float slam = player.getCooldowns().getCooldownPercent(item, partialTick);
-        slot(g, font, x, y, Component.keybind("key.soulless.slam"), slam, Mth.ceil(slam * SlamManager.COOLDOWN_TICKS / 20F), 0xFF9A2CF0);
+        slot(g, font, x, y, Component.literal(ClientKeys.slamKeyName()), slam, Mth.ceil(slam * SlamManager.COOLDOWN_TICKS / 20F), 0xFF9A2CF0);
         long left = ClientState.rendReadyAt - ClientState.gameTime();
         float rend = left > 0 ? left / (float) RendTimeline.COOLDOWN : 0;
         slot(g, font, x + SLOT + 4, y, Component.translatable("hud.soulless.rmb"), rend, Mth.ceil(left / 20F), 0xFFE8D25A);

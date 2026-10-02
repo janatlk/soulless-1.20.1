@@ -43,10 +43,11 @@ public final class FirstPersonSword {
         def("low_rx", -8); def("low_rz", 4); def("low_x", 0.02); def("low_y", -0.08);
         def("raised_rx", 14); def("raised_rz", -6); def("raised_x", -0.06); def("raised_y", 0.22);
         def("struck_rx", -70); def("struck_rz", -12); def("struck_x", -0.2); def("struck_y", 0.1);
-        // Soul Rend key poses (same layout): hauled over the right shoulder, end of the diagonal cut, dragging low
+        // Soul Rend key poses (same layout): hauled over the right shoulder, end of the diagonal cut,
+        // and the recovery with the blade laid back on the shoulder
         def("shoulder_rx", 70); def("shoulder_rz", -30); def("shoulder_x", 0.12); def("shoulder_y", 0.4);
         def("cut_rx", -35); def("cut_rz", 115); def("cut_x", -0.8); def("cut_y", 0.35);
-        def("low_drag_rx", -45); def("low_drag_rz", 30); def("low_drag_x", -0.2); def("low_drag_y", -0.15);
+        def("rest_rx", 32); def("rest_rz", -12); def("rest_x", 0.06); def("rest_y", 0.02);
     }
 
     private static void def(String k, double v) {
@@ -88,7 +89,7 @@ public final class FirstPersonSword {
         float[] rend = RendAnim.firstPersonKeys(player);
         float[] slam = rend != null ? rend : SlamAnim.firstPersonKeys(player);
         if (slam != null) {
-            float[][] keys = {new float[4], key("low"), key("raised"), key("struck"), key("shoulder"), key("cut"), key("low_drag")};
+            float[][] keys = {new float[4], key("low"), key("raised"), key("struck"), key("shoulder"), key("cut"), key("rest")};
             float[] a = keys[(int) slam[0]], b = keys[(int) slam[1]];
             float k = slam[2];
             ps.translate(Mth.lerp(k, a[2], b[2]), Mth.lerp(k, a[3], b[3]), 0);

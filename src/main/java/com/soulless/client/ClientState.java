@@ -27,6 +27,9 @@ public final class ClientState {
     /** Game time the local player's Soul Rend is ready again. */
     public static long rendReadyAt;
 
+    /** {@code /soulless zones}: draw ability hit zones around the local player. */
+    public static boolean showZones;
+
     public static float shake;
     /** Game time the local player's current slash started, or MIN_VALUE. */
     public static long slashStart = Long.MIN_VALUE;
@@ -94,6 +97,7 @@ public final class ClientState {
         STUNNED.clear();
         TRAILS.clear();
         rendReadyAt = 0;
+        showZones = false;
         shake = 0;
         renderingPlayer = null;
     }

@@ -49,6 +49,9 @@
   "message.soulless.rend_cooldown": "Soul Rend recharging: %ss",
   "message.soulless.rend_hungry": "Too hungry: needs %s hunger",
   "hud.soulless.rmb": "RMB",
+  "command.soulless.zones.on": "Ability zones shown (hold Soul Forged)",
+  "command.soulless.zones.off": "Ability zones hidden",
+  "command.soulless.resetcd": "Ability cooldowns reset for %s player(s)",
   "effect.soulless.stun": "Stunned",
 
   "subtitles.soulless.slam_windup": "Sword gathers power",

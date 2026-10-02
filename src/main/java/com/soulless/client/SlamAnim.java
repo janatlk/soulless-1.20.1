@@ -17,6 +17,8 @@ public final class SlamAnim {
         float flip;
         /** Torso twist in radians (positive turns the shoulders toward the sword arm). */
         float bodyYaw;
+        /** How much the pose drives the legs: 1 = planted stance, 0 = vanilla walking legs. */
+        float legs = 1;
 
         Pose(float mainX, float offX, float mainY, float offY, float frontLeg, float backLeg, float lean, float lower, float itemPitch) {
             this.mainX = mainX;
@@ -36,11 +38,17 @@ public final class SlamAnim {
                     Mth.lerp(k, a.lean, b.lean), Mth.lerp(k, a.lower, b.lower), Mth.lerp(k, a.itemPitch, b.itemPitch));
             p.flip = Mth.lerp(k, a.flip, b.flip);
             p.bodyYaw = Mth.lerp(k, a.bodyYaw, b.bodyYaw);
+            p.legs = Mth.lerp(k, a.legs, b.legs);
             return p;
         }
 
         Pose twist(float bodyYaw) {
             this.bodyYaw = bodyYaw;
+            return this;
+        }
+
+        Pose legs(float weight) {
+            this.legs = weight;
             return this;
         }
     }

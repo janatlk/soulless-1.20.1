@@ -38,15 +38,19 @@ public final class SoulArmPose {
             pose = SlamAnim.GUARD;
         } else {
             look = 0;
-            // legs: the whole body is leaned on the pose stack, so counter-rotate the legs to keep them planted
+            // legs: the whole body is leaned on the pose stack, so counter-rotate the legs to keep them planted;
+            // blended with vanilla's walking legs so the player can still stride while the pose allows it
             float lean = pose.lean * Mth.DEG_TO_RAD;
             ModelPart front = right ? model.leftLeg : model.rightLeg;
             ModelPart back = right ? model.rightLeg : model.leftLeg;
-            front.xRot = pose.frontLeg - lean;
-            back.xRot = pose.backLeg - lean;
-            front.yRot = back.yRot = 0;
-            front.zRot = -0.05F * side;
-            back.zRot = 0.05F * side;
+            float w = pose.legs;
+            front.xRot = Mth.lerp(w, front.xRot, pose.frontLeg - lean);
+            back.xRot = Mth.lerp(w, back.xRot, pose.backLeg - lean);
+            if (w > 0.5F) {
+                front.yRot = back.yRot = 0;
+                front.zRot = -0.05F * side;
+                back.zRot = 0.05F * side;
+            }
         }
         main.xRot = pose.mainX + look;
         main.yRot = pose.mainY * side;

@@ -35,6 +35,9 @@ public final class ModNetwork {
         CHANNEL.messageBuilder(RendHitPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(RendHitPacket::encode).decoder(RendHitPacket::decode)
                 .consumerMainThread(RendHitPacket::handle).add();
+        CHANNEL.messageBuilder(ClientControlPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ClientControlPacket::encode).decoder(ClientControlPacket::decode)
+                .consumerMainThread(ClientControlPacket::handle).add();
     }
 
     public static void sendToServer(Object msg) {

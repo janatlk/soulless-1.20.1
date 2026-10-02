@@ -11,17 +11,23 @@ import static com.soulless.client.SlamAnim.smooth;
 /**
  * Third-person body animation of "Soul Rend":
  * GUARD -> SHOULDER (sword heaved back over the right shoulder, torso coiled, slowly drawing tighter for six
- * seconds) -> CUT (diagonal cut down to the left, torso unwinding, follow-through held) -> LOW (the heavy
- * blade drags low) -> GUARD.
+ * seconds) -> CUT (diagonal cut down to the left, torso unwinding, follow-through held) -> REST (the spent
+ * blade laid back on the shoulder; the player walks normally) -> GUARD.
  */
 public final class RendAnim {
-    private static final SlamAnim.Pose SHOULDER = new SlamAnim.Pose(-2.75F, -2.5F, -0.55F, 0.95F, -0.35F, 0.45F, -6, 0.05F, 25).twist(0.45F);
-    private static final SlamAnim.Pose CUT = new SlamAnim.Pose(-0.55F, -0.7F, 0.95F, 1.2F, -0.55F, 0.55F, 16, 0.15F, -35).twist(-0.6F);
-    private static final SlamAnim.Pose LOW = new SlamAnim.Pose(-0.15F, -0.3F, 0.2F, 0.5F, 0, 0, 6, 0, -75).twist(-0.15F);
+    private static final SlamAnim.Pose SHOULDER = new SlamAnim.Pose(-2.75F, -2.5F, -0.55F, 0.95F, -0.35F, 0.45F, -6, 0.05F, 25)
+            .twist(0.45F).legs(0.6F);
+    private static final SlamAnim.Pose CUT = new SlamAnim.Pose(-0.55F, -0.7F, 0.95F, 1.2F, -0.55F, 0.55F, 16, 0.15F, -35)
+            .twist(-0.6F);
+    /** Recovering: the blade rests back over the right shoulder, the off hand low on the grip. */
+    private static final SlamAnim.Pose REST = new SlamAnim.Pose(-2.0F, -1.45F, -0.25F, 0.6F, 0, 0, 0, 0, 20)
+            .legs(0);
 
     /** Ticks of the cut itself, from the shoulder to the end of the swing. */
     public static final int CUT_TICKS = 6;
     private static final int HEAVE_TICKS = 14;
+    /** Recovery: lift the blade onto the shoulder, carry it there, then bring it back to guard. */
+    private static final int TO_REST = 14, BACK_TO_GUARD = 30;
 
     @Nullable
     public static SlamAnim.Pose sample(Entity entity) {
@@ -34,12 +40,23 @@ public final class RendAnim {
         float s = t - RendTimeline.WINDUP;
         if (s < RendTimeline.STRIKE) {
             if (s < CUT_TICKS) return SlamAnim.Pose.lerp(charged(RendTimeline.WINDUP), CUT, cutCurve(s / CUT_TICKS));
-            return SlamAnim.Pose.lerp(CUT, LOW, smooth((s - CUT_TICKS) / (RendTimeline.STRIKE - CUT_TICKS)) * 0.25F);
+            // the follow-through is held, the stance slowly relaxing
+            SlamAnim.Pose held = SlamAnim.Pose.lerp(CUT, REST, 0);
+            held.legs = 1 - smooth((s - CUT_TICKS) / (RendTimeline.STRIKE - CUT_TICKS)) * 0.6F;
+            return held;
         }
         float r = t - RendTimeline.WINDUP - RendTimeline.STRIKE;
-        SlamAnim.Pose held = SlamAnim.Pose.lerp(CUT, LOW, 0.25F);
-        if (r < 40) return SlamAnim.Pose.lerp(held, LOW, smooth(r / 40));
-        if (r < RendTimeline.RECOVER) return SlamAnim.Pose.lerp(LOW, SlamAnim.GUARD, smooth((r - 40) / (RendTimeline.RECOVER - 40)));
+        SlamAnim.Pose cut = SlamAnim.Pose.lerp(CUT, CUT, 0).legs(0.4F);
+        if (r < TO_REST) return SlamAnim.Pose.lerp(cut, REST, smooth(r / TO_REST));
+        if (r < RendTimeline.RECOVER - BACK_TO_GUARD) {
+            SlamAnim.Pose p = SlamAnim.Pose.lerp(REST, REST, 0);
+            p.mainX += Mth.sin(r * 0.12F) * 0.04F;   // the heavy blade bobs on the shoulder
+            return p;
+        }
+        if (r < RendTimeline.RECOVER) {
+            SlamAnim.Pose guard = SlamAnim.Pose.lerp(SlamAnim.GUARD, SlamAnim.GUARD, 0).legs(0);
+            return SlamAnim.Pose.lerp(REST, guard, smooth((r - RendTimeline.RECOVER + BACK_TO_GUARD) / BACK_TO_GUARD));
+        }
         return null;
     }
 
@@ -63,8 +80,8 @@ public final class RendAnim {
     }
 
     /**
-     * First person as {fromKey, toKey, blend}: keys are 0 rest, 4 shoulder, 5 cut, 6 low (values in
-     * {@link FirstPersonSword}). Null when not rending.
+     * First person as {fromKey, toKey, blend}: keys are 0 rest, 4 shoulder, 5 cut, 6 shoulder rest
+     * (values in {@link FirstPersonSword}). Null when not rending.
      */
     @Nullable
     public static float[] firstPersonKeys(Entity entity) {
@@ -74,11 +91,12 @@ public final class RendAnim {
         float s = t - RendTimeline.WINDUP;
         if (s < RendTimeline.STRIKE) {
             if (s < CUT_TICKS) return new float[]{4, 5, cutCurve(s / CUT_TICKS)};
-            return new float[]{5, 6, smooth((s - CUT_TICKS) / (RendTimeline.STRIKE - CUT_TICKS)) * 0.25F};
+            return new float[]{5, 5, 1};
         }
         float r = t - RendTimeline.WINDUP - RendTimeline.STRIKE;
-        if (r < 40) return new float[]{5, 6, 0.25F + 0.75F * smooth(r / 40)};
-        if (r < RendTimeline.RECOVER) return new float[]{6, 0, smooth((r - 40) / (RendTimeline.RECOVER - 40))};
+        if (r < TO_REST) return new float[]{5, 6, smooth(r / TO_REST)};
+        if (r < RendTimeline.RECOVER - BACK_TO_GUARD) return new float[]{6, 6, 1};
+        if (r < RendTimeline.RECOVER) return new float[]{6, 0, smooth((r - RendTimeline.RECOVER + BACK_TO_GUARD) / BACK_TO_GUARD)};
         return null;
     }
 

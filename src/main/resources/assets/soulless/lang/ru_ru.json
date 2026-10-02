@@ -49,6 +49,9 @@
   "message.soulless.rend_cooldown": "Разрез душ перезаряжается: %s сек.",
   "message.soulless.rend_hungry": "Слишком голоден: нужно %s ед. голода",
   "hud.soulless.rmb": "ПКМ",
+  "command.soulless.zones.on": "Зоны способностей показаны (держите Кованную душу)",
+  "command.soulless.zones.off": "Зоны способностей скрыты",
+  "command.soulless.resetcd": "Перезарядка способностей сброшена (игроков: %s)",
   "effect.soulless.stun": "Оглушение",
 
   "subtitles.soulless.slam_windup": "Меч набирает силу",

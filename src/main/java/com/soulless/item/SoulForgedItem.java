@@ -6,6 +6,7 @@ import com.soulless.ability.RendManager;
 import com.soulless.ability.RendTimeline;
 import com.soulless.ability.SlamManager;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
@@ -124,7 +125,8 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         tooltip.add(Component.translatable(k + "passive.5").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.empty());
 
-        tooltip.add(Component.translatable(k + "ability.title", Component.keybind("key.soulless.slam")).withStyle(ChatFormatting.LIGHT_PURPLE));
+        String slamKey = DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.slamKeyName(), () -> () -> "R");
+        tooltip.add(Component.translatable(k + "ability.title", slamKey).withStyle(ChatFormatting.LIGHT_PURPLE));
         tooltip.add(Component.translatable(k + "ability.1").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable(k + "ability.2", fmt(SlamManager.MAX_DAMAGE), fmt(SlamManager.RADIUS)).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable(k + "ability.3", SlamManager.CURSE_SECONDS,

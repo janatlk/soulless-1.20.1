@@ -16,7 +16,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -57,6 +59,11 @@ public final class RendManager {
     private static final UUID SLOW_UUID = UUID.fromString("2b7d0e55-3c1a-4a8e-9f6d-7c4b1a2e9d30");
 
     private static final Map<UUID, Long> ACTIVE = new HashMap<>();
+
+    /** Clears the Soul Rend cooldown ({@code /soulless resetcd}). */
+    public static void resetCooldown(ServerPlayer player) {
+        player.getPersistentData().remove(CD_TAG);
+    }
 
     /** Game time when this player's Soul Rend is ready again (0 if never used). */
     public static long readyAt(ServerPlayer player) {
@@ -122,20 +129,13 @@ public final class RendManager {
 
     private static void strike(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        Vec3 eye = player.getEyePosition();
         float yaw = player.getYRot();
-        Vec3 look = Vec3.directionFromRotation(0, yaw);
 
         List<LivingEntity> hit = new ArrayList<>();
         AABB box = player.getBoundingBox().inflate(RANGE, 2.5, RANGE);
         for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, box, x -> x != player && x.isAlive() && !x.isSpectator())) {
             if (t.isAlliedTo(player) || (t instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
-            Vec3 to = t.position().add(0, t.getBbHeight() * 0.5, 0).subtract(eye);
-            Vec3 flat = new Vec3(to.x, 0, to.z);
-            if (flat.length() > RANGE || to.y < -2.5 || to.y > 3.0) continue;
-            double angle = Math.toDegrees(Math.acos(Mth.clamp(flat.normalize().dot(look), -1, 1)));
-            if (flat.lengthSqr() > 0.5 && angle > HALF_ARC_DEG) continue;
-            hit.add(t);
+            if (inCut(player, t)) hit.add(t);
         }
 
         hit.sort(Comparator.comparingDouble(t -> t.distanceToSqr(player)));
@@ -160,6 +160,24 @@ public final class RendManager {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SLAM_IMPACT.get(), SoundSource.PLAYERS, 1.0F, 1.5F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.WITHER_SHOOT, SoundSource.PLAYERS, 0.5F, 0.6F);
         ModNetwork.sendNear(level, player.position(), 64, new RendHitPacket(player.getId(), player.getX(), player.getY(), player.getZ(), yaw, hit.size()));
+    }
+
+    /** Lowest / highest point of the cut relative to the wielder's eyes. */
+    public static final double CUT_BELOW = 2.5, CUT_ABOVE = 3.0;
+
+    /**
+     * Is the target inside the cut: within {@link #RANGE} horizontally, within {@link #HALF_ARC_DEG} of where
+     * the wielder faces, and between {@link #CUT_BELOW} below and {@link #CUT_ABOVE} above the eyes.
+     * Shared with the client zone preview ({@code /soulless zones}).
+     */
+    public static boolean inCut(Player player, Entity target) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = Vec3.directionFromRotation(0, player.getYRot());
+        Vec3 to = target.position().add(0, target.getBbHeight() * 0.5, 0).subtract(eye);
+        Vec3 flat = new Vec3(to.x, 0, to.z);
+        if (flat.length() > RANGE || to.y < -CUT_BELOW || to.y > CUT_ABOVE) return false;
+        double angle = Math.toDegrees(Math.acos(Mth.clamp(flat.normalize().dot(look), -1, 1)));
+        return flat.lengthSqr() <= 0.5 || angle <= HALF_ARC_DEG;
     }
 
     /**

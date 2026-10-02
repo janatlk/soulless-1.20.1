@@ -168,6 +168,7 @@ public final class ClientForgeEvents {
     @SubscribeEvent
     public static void onRenderStage(RenderLevelStageEvent event) {
         SlashTrails.render(event);
+        ZoneRenderer.render(event);
     }
 
     private static void spawnSlamEffects(ClientLevel level, Entity e, RandomSource rnd) {
