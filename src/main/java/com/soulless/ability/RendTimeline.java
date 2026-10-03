@@ -17,7 +17,7 @@ public final class RendTimeline {
     public static final int STRIKE = 60;
     /** Ticks into STRIKE at which the blade connects. */
     public static final int HIT_AT = 4;
-    public static final int RECOVER = 100;
+    public static final int RECOVER = 70;
     public static final int TOTAL = WINDUP + STRIKE + RECOVER;
     public static final int COOLDOWN = 31 * 20;
 

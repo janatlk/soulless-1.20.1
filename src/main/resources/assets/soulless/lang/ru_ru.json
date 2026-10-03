@@ -1,4 +1,4 @@
-﻿{
+{
   "itemGroup.soulless": "Soulless",
 
   "item.soulless.soul_forged": "Кованная душа",
@@ -21,6 +21,7 @@
   "tooltip.soulless.soul_forged.d.slam.2": "  %s урона в радиусе %s, отбрасывание",
   "tooltip.soulless.soul_forged.d.slam.4": "  +%s урона за каждый блок падения (до %s)",
   "tooltip.soulless.soul_forged.d.slam.3": "  Проклятье на %s с (%s урона/с), земля трескается",
+  "tooltip.soulless.soul_forged.d.slam.6": "  Оглушает всех задетых на %s с, даже боссов",
   "tooltip.soulless.soul_forged.d.slam.5": "  Пока перезаряжается, Разрез душ недоступен",
   "tooltip.soulless.soul_forged.d.rend.title": "✦ [%s] Разрез душ · КД %s с",
   "tooltip.soulless.soul_forged.d.rend.1": "  Держите ПКМ до %s с, затем рез наискось: %s урона",
@@ -65,7 +66,7 @@
   "subtitles.soulless.reaper_scream": "Скорбный Жнец кричит",
   "subtitles.soulless.bolt_fly": "Что-то летит",
   "subtitles.soulless.eruption": "Из земли рвутся души",
-  "tooltip.soulless.soul_forged.d.rend.8": "  Волна разреза летит %s блоков сквозь всё: до %s урона",
+  "tooltip.soulless.soul_forged.d.rend.8": "  Волна разреза летит по взгляду на %s блоков сквозь всё: до %s урона",
   "tooltip.soulless.material.altar": "Вставьте в Алтарь Душ, чтобы призвать Скорбного Жнеца",
   "effect.soulless.soul_curse": "Проклятье душ",
   "effect.soulless.stun": "Оглушение",

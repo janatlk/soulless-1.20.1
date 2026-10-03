@@ -21,6 +21,11 @@ public final class Stun {
         target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), ticks, 0, false, false, true), source);
     }
 
+    /** Like {@link #apply} but ignores immunities (bosses such as the Wither refuse ordinary effects). */
+    public static void force(LivingEntity target, int ticks, @Nullable Entity source) {
+        target.forceAddEffect(new MobEffectInstance(ModEffects.STUN.get(), ticks, 0, false, false, true), source);
+    }
+
     public static boolean isStunned(@Nullable Entity entity) {
         return entity instanceof LivingEntity l && l.hasEffect(ModEffects.STUN.get());
     }

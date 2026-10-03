@@ -22,12 +22,12 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The crescent of soul fire Soul Rend sends flying: travels {@link #RANGE} blocks straight ahead through
- * blocks and creatures, hitting each creature once for up to {@link #MAX_DAMAGE} (scaled by charge).
+ * The crescent of soul fire Soul Rend sends flying: travels {@link #RANGE} blocks along the wielder's line of
+ * sight (up and down too) through blocks and creatures, hitting each creature once for up to {@link #MAX_DAMAGE} (scaled by charge).
  * Drawn on the client by {@code client.SoulSlashRenderer} in the same shape as the Soul Rend trail.
  */
 public class SoulSlashEntity extends Entity {
-    public static final float MAX_DAMAGE = 25.0F;
+    public static final float MAX_DAMAGE = 45.0F;
     public static final double RANGE = 30;
     public static final double SPEED = 1.5;
     /** Half-width of the crescent across its flight, and its height. */
@@ -44,12 +44,17 @@ public class SoulSlashEntity extends Entity {
         setNoGravity(true);
     }
 
-    public void setup(ServerPlayer owner, float yaw, float power) {
+    /** The entity's position is the centre of the crescent; it flies along {@code dir}. */
+    public void setup(ServerPlayer owner, Vec3 dir, float power) {
         this.owner = owner.getUUID();
         entityData.set(POWER, power);
-        setYRot(yaw);
-        Vec3 dir = Vec3.directionFromRotation(0, yaw);
-        setDeltaMovement(dir.scale(SPEED));
+        setDeltaMovement(dir.normalize().scale(SPEED));
+    }
+
+    /** Horizontal unit vector across the flight (the crescent's width). */
+    private static Vec3 across(Vec3 dir) {
+        Vec3 a = new Vec3(-dir.z, 0, dir.x);
+        return a.lengthSqr() < 1.0E-6 ? new Vec3(1, 0, 0) : a.normalize();
     }
 
     public float power() {
@@ -69,9 +74,10 @@ public class SoulSlashEntity extends Entity {
         if (level().isClientSide) {
             for (int i = 0; i < 3; i++) {
                 double side = (random.nextDouble() - 0.5) * 2 * HALF_WIDTH;
-                Vec3 across = new Vec3(-v.z, 0, v.x).normalize().scale(side);
-                level().addParticle(ModParticles.SOUL_EMBER.get(), getX() + across.x, getY() + 0.5 + random.nextDouble() * HEIGHT,
-                        getZ() + across.z, 0, 0.02, 0);
+                Vec3 a = across(v);
+                Vec3 up = a.cross(v.normalize());
+                Vec3 p = position().add(a.scale(side)).add(up.scale((random.nextDouble() - 0.5) * HEIGHT));
+                level().addParticle(ModParticles.SOUL_EMBER.get(), p.x, p.y, p.z, 0, 0.02, 0);
             }
             return;
         }
@@ -85,14 +91,15 @@ public class SoulSlashEntity extends Entity {
             return;
         }
         Vec3 dir = v.normalize();
-        Vec3 across = new Vec3(-dir.z, 0, dir.x);
-        AABB box = getBoundingBox().inflate(HALF_WIDTH + 1, 1, HALF_WIDTH + 1).expandTowards(v.scale(-1));
+        Vec3 across = across(dir);
+        Vec3 up = across.cross(dir);
+        AABB box = getBoundingBox().inflate(HALF_WIDTH + 1, HEIGHT, HALF_WIDTH + 1).expandTowards(v.scale(-1));
         for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator())) {
             if (struck.contains(t.getId()) || t.isAlliedTo(player) || (t instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
-            Vec3 rel = t.position().subtract(position());
-            double side = rel.dot(across), along = rel.dot(dir);
-            if (Math.abs(side) > HALF_WIDTH + t.getBbWidth() / 2 || along < -SPEED - 0.5 || along > 0.8) continue;
-            if (t.getY() + t.getBbHeight() < getY() - 0.2 || t.getY() > getY() + HEIGHT) continue;
+            Vec3 rel = t.position().add(0, t.getBbHeight() / 2, 0).subtract(position());
+            double side = rel.dot(across), along = rel.dot(dir), rise = rel.dot(up);
+            if (Math.abs(side) > HALF_WIDTH + t.getBbWidth() / 2 || along < -SPEED - 0.5 - t.getBbWidth() / 2 || along > 0.8 + t.getBbWidth() / 2) continue;
+            if (Math.abs(rise) > HEIGHT / 2 + t.getBbHeight() / 2) continue;
             struck.add(t.getId());
             float damage = MAX_DAMAGE * power();
             t.invulnerableTime = 0;
@@ -121,5 +128,11 @@ public class SoulSlashEntity extends Entity {
     public float flightYaw() {
         Vec3 v = getDeltaMovement();
         return (float) (Mth.atan2(v.z, v.x) * Mth.RAD_TO_DEG) - 90F;
+    }
+
+    /** Pitch used by the renderer: positive when flying downward. */
+    public float flightPitch() {
+        Vec3 v = getDeltaMovement();
+        return (float) (Math.asin(Mth.clamp(-v.y / Math.max(1.0E-6, v.length()), -1, 1)) * Mth.RAD_TO_DEG);
     }
 }

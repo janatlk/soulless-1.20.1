@@ -212,6 +212,24 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         playSound(SoundEvents.WITHER_AMBIENT, 1.0F, 1.4F);
     }
 
+    /**
+     * Knocked reeling by a player (Soul Crush): drops whatever it was doing and is stunned. Rising from the
+     * altar and the ultimate cannot be interrupted; an existing stun is only lengthened.
+     */
+    public void stagger(int ticks) {
+        if (isDeadOrDying() || state() == State.EMERGE) return;
+        if (state() == State.ULT) {
+            Stun.apply(this, ticks, null);
+            return;
+        }
+        if (state() == State.STUNNED) {
+            stunLeft = Math.max(stunLeft, ticks);
+            Stun.apply(this, stunLeft, null);
+            return;
+        }
+        stun(ticks, false);
+    }
+
     private void stun(int ticks, boolean vulnerableToo) {
         setState(State.STUNNED);
         altitudeWant = 0.2;   // sinks low while reeling

@@ -236,6 +236,8 @@ public final class BossRenderers {
             if (fade <= 0) return;
             ps.pushPose();
             ps.mulPose(Axis.YP.rotationDegrees(-e.flightYaw()));
+            ps.mulPose(Axis.XP.rotationDegrees(e.flightPitch()));   // tilted along the line of sight
+            ps.translate(0, -1.65, 0);                               // the entity sits at the crescent's centre
             VertexConsumer vc = buffers.getBuffer(RenderType.lightning());
             Matrix4f m = ps.last().pose();
             int seg = 24;

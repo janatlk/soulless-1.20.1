@@ -47,6 +47,8 @@ public final class SlamManager {
     public static final float BASE_DAMAGE = 14.0F;
     /** Extra centre damage per block the impact lands below the starting ground. */
     public static final float DAMAGE_PER_BLOCK = 5.0F;
+    /** Everything the blast hits is stunned this long, bosses included. */
+    public static final float STUN_SECONDS = 3;
     public static final float DAMAGE_CAP = 120.0F;
     public static final float RADIUS = 5.0F;
     private static final int MAX_FALL_TICKS = SlamTimeline.MAX_AIR;
@@ -196,6 +198,9 @@ public final class SlamManager {
             target.push(away.x * push, 0.75, away.z * push);
             target.hurtMarked = true;
             SoulCurse.apply(target, CURSE_SECONDS * 20, CURSE_AMPLIFIER, player);
+            // everything struck is stunned, bosses too (the Reaper drops what it was doing and reels)
+            if (target instanceof com.soulless.boss.WailingReaperEntity reaper) reaper.stagger(Math.round(STUN_SECONDS * 20));
+            else com.soulless.effect.Stun.force(target, Math.round(STUN_SECONDS * 20), player);
         }
 
         level.playSound(null, center.x, center.y, center.z, ModSounds.SLAM_IMPACT.get(), SoundSource.PLAYERS, 2.0F, 1.0F);

@@ -176,6 +176,7 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         tooltip.add(line(k + "d.slam.4", ChatFormatting.GRAY, v(fmt(SlamManager.DAMAGE_PER_BLOCK)), v(fmt(SlamManager.DAMAGE_CAP))));
         tooltip.add(line(k + "d.slam.3", ChatFormatting.GRAY, v(SlamManager.CURSE_SECONDS),
                 v(fmt(SoulCurse.DAMAGE_PER_SECOND + SlamManager.CURSE_AMPLIFIER))));
+        tooltip.add(line(k + "d.slam.6", ChatFormatting.GRAY, v(fmt(SlamManager.STUN_SECONDS))));
         tooltip.add(line(k + "d.slam.5", ChatFormatting.DARK_GRAY));
 
         tooltip.add(line(k + "d.rend.title", ChatFormatting.GOLD, rendKey, v(RendTimeline.COOLDOWN / 20)));
@@ -187,7 +188,7 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
                 v(fmt(com.soulless.ability.SoulSlashEntity.MAX_DAMAGE))));
         tooltip.add(line(k + "d.rend.6", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.rend.7", ChatFormatting.GRAY, v(RendManager.DURABILITY_COST)));
-        tooltip.add(line(k + "d.rend.4", ChatFormatting.GRAY, v(RendTimeline.RECOVER / 20)));
+        tooltip.add(line(k + "d.rend.4", ChatFormatting.GRAY, v(fmt(RendTimeline.RECOVER / 20.0))));
         tooltip.add(Component.empty());
         tooltip.add(Component.translatable(k + "lore").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
     }
