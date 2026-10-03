@@ -547,21 +547,28 @@ def animations():
     # --- wing beat, after the classic flight-cycle rules (Animation Mentor "How to Animate Birds in Flight",
     # Williams' Animator's Survival Kit): a big sweep from the shoulder, the elbow and the hand following
     # later and later so a wave runs out along the wing (overlap, follow-through); a faster, fully spread
-    # downstroke and a slower upstroke with the wing partly folded back; the body lifting on the downstroke.
-    # Beat phase psi: 0 = wings at the top, 180 = at the bottom. The warp makes the downstroke ~40% of the beat.
+    # power stroke and a slower recovery with the wing partly folded; the body lifting on the power stroke.
+    # The wings hang as broad surfaces facing forward, so the stroke must move that face, not slide the wing
+    # edge-on in its own plane: each beat starts high and swept back, then drives down AND forward, face
+    # first, scooping air (the body rises), and recovers up and back half folded.
+    # Beat phase psi: 0 = top of the beat, 180 = bottom. The warp makes the power stroke ~40% of the beat.
     psi = f"({t} * {BEAT} + 20 - 20 * math.cos({t} * {BEAT}))"
 
-    def elev(bias, amp, lag):   # absolute elevation of a wing segment (degrees above the spread pose)
+    def elev(bias, amp, lag):   # elevation of a wing segment (degrees above the spread pose)
         return f"({bias} + {amp} * math.cos({psi} - {lag}))"
 
-    root, fore, hand = elev(-6, 30, 0), elev(-5, 32, 38), elev(-4, 34, 76)
-    fold = f"(12 * (1 - math.sin({psi})))"   # 0 at mid-downstroke (spread), 24 at mid-upstroke (tucked)
+    def sweep(bias, amp, lag):  # how far a segment is swept back (negative = forward)
+        return f"({bias} + {amp} * math.cos({psi} - {lag}))"
+
+    root, fore, hand = elev(-4, 26, 0), elev(-3, 28, 35), elev(-2, 30, 70)
+    sw_root, sw_fore, sw_hand = sweep(14, 30, 0), sweep(14, 33, 30), sweep(14, 36, 60)
+    fold = f"(10 * (1 - math.sin({psi})))"   # 0 mid-power-stroke (spread), 20 mid-recovery (tucked)
     # signs (checked in game): +z lifts the right wing's tip, +y sweeps it back; the left side mirrors
     for side, s in (("left", -1), ("right", 1)):
         z = "" if s > 0 else "-"
-        amb[f"{side}_wing"] = {"rotation": {0: [f"math.sin({psi}) * 6", f"{s} * (12 - 6 * math.sin({psi}))", f"{z}{root}"]}}
-        amb[f"{side}_wing_fore"] = {"rotation": {0: [0, f"{s} * {fold} * 0.7", f"{z}({fore} - {root})"]}}
-        amb[f"{side}_wing_hand"] = {"rotation": {0: [0, f"{s} * {fold}", f"{z}({hand} - {fore})"]}}
+        amb[f"{side}_wing"] = {"rotation": {0: [0, f"{s} * {sw_root}", f"{z}{root}"]}}
+        amb[f"{side}_wing_fore"] = {"rotation": {0: [0, f"{s} * ({sw_fore} - {sw_root} + {fold} * 0.6)", f"{z}({fore} - {root})"]}}
+        amb[f"{side}_wing_hand"] = {"rotation": {0: [0, f"{s} * ({sw_hand} - {sw_fore} + {fold})", f"{z}({hand} - {fore})"]}}
     # the body rises through each downstroke (a little after it, for weight) and settles on the upstroke
     amb["hover"] = {"position": {0: [0, f"-1.6 * math.cos({psi} - 30)", 0]},
                     "rotation": {0: [f"math.cos({psi} - 60) * 1.5", 0, 0]}}

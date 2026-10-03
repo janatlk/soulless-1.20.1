@@ -7,44 +7,44 @@
    "bones": {
     "left_wing": {
      "rotation": [
-      "math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))) * 6",
-      "-1 * (12 - 6 * math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))))",
-      "-(-6 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0))"
+      0,
+      "-1 * (14 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0))",
+      "-(-4 + 26 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0))"
      ]
     },
     "left_wing_fore": {
      "rotation": [
       0,
-      "-1 * (12 * (1 - math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))))) * 0.7",
-      "-((-5 + 32 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 38)) - (-6 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0)))"
+      "-1 * ((14 + 33 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 30)) - (14 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0)) + (10 * (1 - math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))))) * 0.6)",
+      "-((-3 + 28 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 35)) - (-4 + 26 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0)))"
      ]
     },
     "left_wing_hand": {
      "rotation": [
       0,
-      "-1 * (12 * (1 - math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)))))",
-      "-((-4 + 34 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 76)) - (-5 + 32 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 38)))"
+      "-1 * ((14 + 36 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 60)) - (14 + 33 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 30)) + (10 * (1 - math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))))))",
+      "-((-2 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 70)) - (-3 + 28 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 35)))"
      ]
     },
     "right_wing": {
      "rotation": [
-      "math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))) * 6",
-      "1 * (12 - 6 * math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))))",
-      "(-6 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0))"
+      0,
+      "1 * (14 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0))",
+      "(-4 + 26 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0))"
      ]
     },
     "right_wing_fore": {
      "rotation": [
       0,
-      "1 * (12 * (1 - math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))))) * 0.7",
-      "((-5 + 32 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 38)) - (-6 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0)))"
+      "1 * ((14 + 33 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 30)) - (14 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0)) + (10 * (1 - math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))))) * 0.6)",
+      "((-3 + 28 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 35)) - (-4 + 26 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 0)))"
      ]
     },
     "right_wing_hand": {
      "rotation": [
       0,
-      "1 * (12 * (1 - math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)))))",
-      "((-4 + 34 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 76)) - (-5 + 32 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 38)))"
+      "1 * ((14 + 36 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 60)) - (14 + 33 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 30)) + (10 * (1 - math.sin((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225))))))",
+      "((-2 + 30 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 70)) - (-3 + 28 * math.cos((query.anim_time * 225 + 20 - 20 * math.cos(query.anim_time * 225)) - 35)))"
      ]
     },
     "hover": {
