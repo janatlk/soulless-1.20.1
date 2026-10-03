@@ -106,6 +106,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     protected void defineSynchedData() {
         super.defineSynchedData();
         entityData.define(STATE, State.IDLE.ordinal());
+        entityData.define(PREVIEW, "");
     }
 
     public State state() {
@@ -378,7 +379,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     @Override
     public void startSeenByPlayer(ServerPlayer player) {
         super.startSeenByPlayer(player);
-        bossBar.addPlayer(player);
+        if (!isPreview()) bossBar.addPlayer(player);
     }
 
     @Override
@@ -419,6 +420,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         if (home != null) tag.put("home", NbtUtils.writeBlockPos(home));
+        if (isPreview()) tag.putString("preview", entityData.get(PREVIEW));
         tag.putInt("ults", ultsDone);
         tag.putInt("cycle", cycle);
     }
@@ -427,6 +429,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         if (tag.contains("home")) home = NbtUtils.readBlockPos(tag.getCompound("home"));
+        if (tag.contains("preview")) entityData.set(PREVIEW, tag.getString("preview"));
         ultsDone = tag.getInt("ults");
         cycle = tag.getInt("cycle");
         if (hasCustomName()) bossBar.setName(getDisplayName());
@@ -442,9 +445,31 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     private static final RawAnimation EMERGE = RawAnimation.begin().thenPlay("animation.wailing_reaper.emerge");
     private static final RawAnimation DEATH = RawAnimation.begin().thenPlay("animation.wailing_reaper.death");
 
+    private static final RawAnimation AMBIENT = RawAnimation.begin().thenLoop("animation.wailing_reaper.ambient");
+
+    /** Preview statues ({@code /soulless preview}) play this animation on loop and do nothing else. */
+    private static final EntityDataAccessor<String> PREVIEW = SynchedEntityData.defineId(WailingReaperEntity.class, EntityDataSerializers.STRING);
+
+    public void makePreview(String animation) {
+        entityData.set(PREVIEW, animation);
+        setNoAi(true);
+        setInvulnerable(true);
+        setSilent(true);
+        getPersistentData().putBoolean("soulless_preview", true);
+    }
+
+    public boolean isPreview() {
+        return !entityData.get(PREVIEW).isEmpty();
+    }
+
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        // always on: flame tail, flickering tongues, orbiting souls, cape
+        controllers.add(new AnimationController<>(this, "ambient", 0, state -> state.setAndContinue(AMBIENT)));
         controllers.add(new AnimationController<>(this, "main", 4, state -> {
+            if (isPreview()) {
+                return state.setAndContinue(RawAnimation.begin().thenLoop("animation.wailing_reaper." + entityData.get(PREVIEW)));
+            }
             if (isDeadOrDying()) return state.setAndContinue(DEATH);
             return state.setAndContinue(switch (state()) {
                 case BOLT -> BOLT;

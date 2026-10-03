@@ -80,6 +80,18 @@ public final class DevAutoTestClient {
         tick++;
         hideWindowIfAsked(mc);
         var opts = mc.options;
+        if (DevAutoTest.PREVIEW) {
+            if (tick == 15) {
+                opts.setCameraType(CameraType.FIRST_PERSON);
+                opts.hideGui = true;
+            }
+            for (int v = 0; v < 4; v++) {
+                if (tick == 60 + v * 40) shot(mc, "preview_" + v);
+                if (tick == 70 + v * 40) shot(mc, "preview_" + v + "b");
+            }
+            if (tick == 240) mc.stop();
+            return;
+        }
         if (DevAutoTest.BOSS) {
             if (tick == 15) opts.setCameraType(CameraType.FIRST_PERSON);
             if (tick > 60 && tick % 30 == 0 && tick < 1800) shot(mc, String.format("boss_%04d", tick));

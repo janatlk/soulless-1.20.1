@@ -40,6 +40,8 @@ public final class DevAutoTest {
     public static final boolean CHECK = ENABLED && System.getenv("SOULLESS_CHECK") != null;
     /** SOULLESS_BOSS=1: build the altar, run the ritual, fight the Reaper (player protected), force the ults. */
     public static final boolean BOSS = ENABLED && System.getenv("SOULLESS_BOSS") != null;
+    /** SOULLESS_PREVIEW=1: a preview statue of the Reaper photographed from four sides. */
+    public static final boolean PREVIEW = ENABLED && System.getenv("SOULLESS_PREVIEW") != null;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
     private static final double ARENA_X = 300.5, ARENA_Z = 0.5;
@@ -82,7 +84,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        spawnZombies(p);
+        if (!PREVIEW && !BOSS) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -110,6 +112,27 @@ public final class DevAutoTest {
         if (!ENABLED || event.phase != TickEvent.Phase.END || player == null || tick < 0) return;
         tick++;
         ServerPlayer p = player;
+        if (PREVIEW) {
+            ServerLevel level = p.serverLevel();
+            double cx = ARENA_X, cz = ARENA_Z + 9;
+            if (tick == 20) {
+                var r = com.soulless.registry.ModEntities.WAILING_REAPER.get().create(level);
+                r.moveTo(cx, p.getY(), cz, 180, 0);
+                r.setYBodyRot(180);
+                r.setYHeadRot(180);
+                r.makePreview(System.getenv().getOrDefault("SOULLESS_PREVIEW_ANIM", "idle"));
+                level.addFreshEntity(r);
+            }
+            // walk around it: front, front-left, side, back
+            double[][] views = {{0, -9}, {-7, -7}, {-10, 0}, {0, 10}};
+            int v = (tick - 30) / 40;
+            if (tick >= 30 && (tick - 30) % 40 == 0 && v < views.length) {
+                double px = cx + views[v][0], pz = cz + views[v][1];
+                float yaw = (float) (Math.toDegrees(Math.atan2(cz - pz, cx - px)) - 90);
+                p.teleportTo(level, px, p.getY(), pz, yaw, -12);
+            }
+            return;
+        }
         if (BOSS) {
             ServerLevel level = p.serverLevel();
             if (tick == 20) {

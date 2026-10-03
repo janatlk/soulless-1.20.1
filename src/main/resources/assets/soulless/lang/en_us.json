@@ -82,6 +82,8 @@
   "command.soulless.zones.off": "%s: ability zones hidden",
   "command.soulless.resetcd": "Ability cooldowns reset for %s player(s)",
   "command.soulless.altar": "Soul Altar built in front of you",
+  "command.soulless.preview": "Reaper preview: %s",
+  "command.soulless.preview.cleared": "Previews removed: %s",
   "command.soulless.dummy.spawned": "Training dummy placed",
   "command.soulless.dummy.cleared": "Training dummies removed: %s",
   "entity.soulless.dummy": "Training Dummy",

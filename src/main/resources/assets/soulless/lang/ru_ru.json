@@ -82,6 +82,8 @@
   "command.soulless.zones.off": "%s: зоны способностей скрыты",
   "command.soulless.resetcd": "Перезарядка способностей сброшена (игроков: %s)",
   "command.soulless.altar": "Алтарь Душ построен перед вами",
+  "command.soulless.preview": "Предпросмотр Жнеца: %s",
+  "command.soulless.preview.cleared": "Предпросмотров убрано: %s",
   "command.soulless.dummy.spawned": "Манекен поставлен",
   "command.soulless.dummy.cleared": "Манекенов убрано: %s",
   "entity.soulless.dummy": "Манекен",

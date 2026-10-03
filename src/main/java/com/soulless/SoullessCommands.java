@@ -51,6 +51,28 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.dummy.cleared", n), true);
                             return n;
                         })))
+                .then(Commands.literal("preview")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.literal("reaper")
+                                .executes(ctx -> preview(ctx.getSource(), "idle"))
+                                .then(Commands.argument("animation", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                        .suggests((c, b) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                                                new String[]{"idle", "bolt", "erupt", "ult", "stunned", "emerge", "death"}, b))
+                                        .executes(ctx -> preview(ctx.getSource(),
+                                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "animation")))))
+                        .then(Commands.literal("clear").executes(ctx -> {
+                            var level = ctx.getSource().getLevel();
+                            int n = 0;
+                            for (var e : level.getAllEntities()) {
+                                if (e instanceof com.soulless.boss.WailingReaperEntity r && r.isPreview()) {
+                                    r.discard();
+                                    n++;
+                                }
+                            }
+                            int removed = n;
+                            ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.preview.cleared", removed), true);
+                            return n;
+                        })))
                 .then(Commands.literal("altar")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> {
@@ -74,6 +96,22 @@ public final class SoullessCommands {
         if (event.getEntity() instanceof ServerPlayer p && p.getPersistentData().getBoolean("soulless_zones")) {
             ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.SHOW_ZONES, true));
         }
+    }
+
+    /** A motionless, harmless copy of the Reaper 6 blocks ahead, facing you, looping one animation. */
+    private static int preview(CommandSourceStack src, String animation) throws CommandSyntaxException {
+        ServerPlayer p = src.getPlayerOrException();
+        var level = p.serverLevel();
+        var r = com.soulless.registry.ModEntities.WAILING_REAPER.get().create(level);
+        if (r == null) return 0;
+        var look = net.minecraft.world.phys.Vec3.directionFromRotation(0, p.getYRot()).scale(6);
+        r.moveTo(p.getX() + look.x, p.getY(), p.getZ() + look.z, p.getYRot() + 180, 0);
+        r.setYHeadRot(p.getYRot() + 180);
+        r.setYBodyRot(p.getYRot() + 180);
+        r.makePreview(animation);
+        level.addFreshEntity(r);
+        src.sendSuccess(() -> Component.translatable("command.soulless.preview", animation), false);
+        return 1;
     }
 
     private static Collection<ServerPlayer> self(CommandSourceStack src) throws CommandSyntaxException {
