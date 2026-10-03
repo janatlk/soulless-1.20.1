@@ -266,28 +266,24 @@ def build():
 
     build_wings()
 
-    # --- head: a compact closed helm. An angular mask narrowing to a point at the chin, pierced by a T-shaped
-    # slit; behind it only darkness, and in the dark two red embers for eyes (painted with a glow fading into
-    # the black, not modelled as cubes), under a plain circlet.
+    # --- head: a reaper's deep hood. A cowl of the same ragged violet cloth as the scarf, an overhanging brim
+    # and side folds framing a deep opening; inside only darkness and two red embers for eyes (painted with a
+    # glow fading into the black); its peak droops down the back.
     bone("head", "chest", (0, 80, 0))
-    box("helm_dome", "head", "helm", 0, 88, 0.3, 10, 8, 10.5)
-    box("helm_cap", "head", "helm", 0, 96, 0.3, 8, 1.2, 8.5)
-    box("helm_ridge", "head", "trim", 0, 96, 0.3, 1, 1.6, 10)
-    box("helm_lower", "head", "helm", 0, 82, 1.0, 9.2, 6, 8.6)          # behind the mask
-    box("helm_void", "head", "void", 0, 82, -3.85, 8.4, 6.6, 1.1)       # the darkness seen through the slit
-    CUBES[-1].density = 4                                               # fine enough for the eye glow
-    # the mask (front at z -5.3): a top band, two cheek plates either side of the vertical slit, a pointed chin
-    z = -4.85
-    box("mask_top", "head", "helm", 0, 87.6, z, 9.6, 1.9, 0.9)
+    box("hood_top", "head", "cloth", 0, 94.5, 0.4, 11.2, 2.6, 12.4)
+    box("hood_crown", "head", "cloth", 0, 97.1, 0.9, 10.0, 1.2, 10.8)
+    box("hood_back", "head", "cloth", 0, 78.5, 5.8, 11.6, 16.6, 2.0)
+    box("hood_void", "head", "void", 0, 80.0, -0.5, 8.6, 14.4, 8.0)        # the darkness inside
+    CUBES[-1].density = 4                                                 # fine enough for the eye glow
+    box("hood_brim", "head", "cloth", 0, 92.4, -5.6, 11.4, 2.3, 3.0)      # overhangs the opening
+    box("hood_brim_lip", "head", "cloth", 0, 91.6, -6.9, 8.4, 1.0, 1.0)
     for sd in (-1, 1):
-        box(f"mask_cheek{sd}", "head", "helm", sd * 2.5, 83.4, z, 4.0, 3.2, 0.9)
-        box(f"mask_slit_end{sd}", "head", "helm", sd * 4.3, 86.6, z, 1.0, 1.0, 0.9)
-        box(f"mask_edge{sd}", "head", "trim", sd * 4.9, 82.2, -5.35, 0.5, 7.3, 0.6)
-    box("mask_chin1", "head", "helm", 0, 82.2, z, 7.0, 1.2, 0.9)
-    box("mask_chin2", "head", "helm", 0, 81.1, z, 4.6, 1.1, 0.9)
-    box("mask_chin3", "head", "trim", 0, 80.3, z, 2.0, 0.8, 0.9)
-    # a plain circlet
-    box("circlet", "head", "trim", 0, 94.0, 0.3, 10.6, 1.2, 11.1)
+        box(f"hood_side{sd}", "head", "cloth", sd * 5.3, 78.5, 0.0, 1.8, 16.0, 11.6)
+        box(f"hood_fold{sd}", "head", "cloth", sd * 4.6, 78.8, -6.1, 1.6, 14.2, 2.6)   # the deep front folds
+        box(f"hood_fold_in{sd}", "head", "cloth", sd * 3.9, 82.0, -5.2, 0.8, 10.4, 1.4)
+    # the peak, drooping down the back in three folds
+    chain("hood_peak", "head", "cloth", (0, 97.6, 4.0),
+          [((0, 0.35, 1), 3.2, 4.6), ((0, -0.45, 1), 3.0, 3.4), ((0, -1, 0.45), 3.4, 2.4), ((0, -1, 0.15), 2.6, 1.4)])
     bone("jaw", "head", (0, 84, 2))   # kept (empty) so the animations' jaw keys stay valid
 
     # --- long skeletal arms: shoulder, humerus, elbow, two forearm bones, wrist, palm, hooked claws
@@ -387,7 +383,7 @@ def paint(c, f, W, H):
                 col = hexc("030205")
                 if f == "north":
                     for ex in (-1.9, 1.9):
-                        r = math.hypot((x - ex) / 0.55, (y - 87.1) / 0.32)
+                        r = math.hypot((x - ex) / 0.55, (y - 87.6) / 0.32)
                         if r < 1:
                             col = hexc("fff0e6") if r < 0.45 else hexc("ff3a2a")
                             glow[j, i] = True
