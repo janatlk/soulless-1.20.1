@@ -31,7 +31,7 @@ public class SoulSlashEntity extends Entity {
     public static final float MIN_DAMAGE = 30.0F, MAX_DAMAGE = 60.0F;
     /** Lifesteal: this share of the damage dealt, at least half a heart, at most one heart per beam. */
     public static final float LIFESTEAL = 0.05F, MIN_HEAL = 1.0F, MAX_HEAL = 2.0F;
-    public static final double RANGE = 30;
+    public static final double RANGE = 92;
     public static final double SPEED = 1.5;
     /** Half-width of the crescent across its flight, and its height. */
     public static final double HALF_WIDTH = 2.8, HEIGHT = 3.2;

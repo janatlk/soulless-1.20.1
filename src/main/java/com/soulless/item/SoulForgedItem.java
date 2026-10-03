@@ -177,9 +177,8 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         tooltip.add(line(k + "d.slam.6", ChatFormatting.GRAY, v(fmt(SlamManager.STUN_SECONDS))));
 
         tooltip.add(line(k + "d.rend.title", ChatFormatting.GOLD, rendKey));
-        tooltip.add(line(k + "d.rend.1", ChatFormatting.GRAY, v(fmt(RendTimeline.WINDUP / 20.0))));
-        tooltip.add(line(k + "d.rend.8", ChatFormatting.GRAY, v(fmt(SoulSlashEntity.RANGE)), v(fmt(SoulSlashEntity.MIN_DAMAGE)),
-                v(fmt(SoulSlashEntity.MAX_DAMAGE))));
+        tooltip.add(line(k + "d.rend.1", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.rend.8", ChatFormatting.GRAY, v(fmt(SoulSlashEntity.MIN_DAMAGE)), v(fmt(SoulSlashEntity.MAX_DAMAGE))));
         tooltip.add(line(k + "d.rend.9", ChatFormatting.GRAY, v(Math.round(SoulSlashEntity.LIFESTEAL * 100))));
         tooltip.add(line(k + "d.rend.7", ChatFormatting.GRAY, v(RendManager.DURABILITY_COST)));
         tooltip.add(line(k + "d.cd", ChatFormatting.DARK_GRAY, v(SlamManager.COOLDOWN_TICKS / 20)));
