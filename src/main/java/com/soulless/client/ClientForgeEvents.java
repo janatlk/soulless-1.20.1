@@ -97,7 +97,7 @@ public final class ClientForgeEvents {
                 if (left > 0) {
                     int seconds = Mth.ceil(left * com.soulless.ability.SlamManager.COOLDOWN_TICKS / 20F);
                     player.displayClientMessage(Component.translatable("message.soulless.slam_cooldown", seconds), true);
-                } else if (!player.onGround()) {
+                } else if (!player.onGround() && !com.soulless.item.SoulRing.worn(player)) {   // the ring allows it in mid-air
                     player.displayClientMessage(Component.translatable("message.soulless.slam_ground"), true);
                 } else {
                     ModNetwork.sendToServer(new SlamRequestPacket());
