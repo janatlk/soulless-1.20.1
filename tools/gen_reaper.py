@@ -256,29 +256,38 @@ def build():
 
     build_wings()
 
-    # --- head: a deep closed helm - cheek guards down to the jaw line, a chin guard, a scowling V brow and a
-    # nasal bar over a narrow opening; inside, only darkness and two red points of light. Horns rise from
-    # metal sockets on its sides, sweeping out, then back and up.
+    # --- head: a compact closed helm. An angular mask narrowing to a point at the chin, pierced by a T-shaped
+    # slit; behind it only darkness, and in the dark two red embers for eyes (painted with a glow fading into
+    # the black, not modelled as cubes). A circlet carries a crown of blade-like spikes.
     bone("head", "chest", (0, 80, 0))
-    box("helm_dome", "head", "helm", 0, 90, 0.4, 13, 7, 13)
-    box("helm_cap", "head", "helm", 0, 97, 0.4, 11, 1.5, 11)
-    box("helm_crest", "head", "trim", 0, 97.6, 0.9, 1.4, 1.6, 11.5)
-    box("helm_back", "head", "helm", 0, 81, 5.9, 13, 9, 2)
-    box("helm_void", "head", "void", 0, 81.5, -1.5, 7.4, 8.5, 6)
-    box("helm_bevor", "head", "helm", 0, 79.6, -5.4, 7.2, 2.4, 2.6)
-    box("helm_nasal", "head", "trim", 0, 85.2, -6.5, 1.0, 4.6, 1.0)
-    box("helm_rim", "head", "trim", 0, 89.9, 0.4, 13.4, 0.8, 13.4)
-    for s in (-1, 1):
-        box(f"helm_cheek{s}", "head", "helm", s * 5.75, 80.5, -1.2, 1.5, 9.5, 11)
-        box(f"helm_guard{s}", "head", "helm", s * 4.95, 80.4, -6.25, 3.1, 8.0, 1.3)
-        box(f"helm_guard_trim{s}", "head", "trim", s * 3.55, 80.4, -6.5, 0.6, 8.0, 0.8)
-        box(f"helm_liner{s}", "head", "helm", s * 4.2, 81.5, -5.0, 1.6, 8.5, 2)
-        box(f"helm_brow{s}", "head", "helm", s * 3.3, 88.7, -6.7, 6.6, 1.6, 1.6, rot=[0, 0, s * 13], pivot=[s * 3.3, 89.5, -6.7])
-        box(f"eye{s}", "head", "redeye", s * 1.7, 86.7, -4.75, 1.0, 0.8, 0.5)
-        box(f"horn_socket{s}", "head", "trim", s * 6.9, 91.4, 0.6, 1.6, 3.6, 3.6)
-        chain(f"horn{s}_", "head", "horn", (s * 7.4, 93.2, 0.6),
-              [((s * 1.0, 0.28, 0.25), 4.5, 3.2), ((s * 0.65, 0.55, 0.55), 4.0, 2.7), ((s * 0.2, 0.75, 0.7), 4.0, 2.2),
-               ((0, 0.6, 0.85), 3.5, 1.7), ((-s * 0.1, 0.35, 1.0), 3.0, 1.2)])
+    box("helm_dome", "head", "helm", 0, 88, 0.3, 10, 8, 10.5)
+    box("helm_cap", "head", "helm", 0, 96, 0.3, 8, 1.2, 8.5)
+    box("helm_ridge", "head", "trim", 0, 96, 0.3, 1, 1.6, 10)
+    box("helm_lower", "head", "helm", 0, 82, 1.0, 9.2, 6, 8.6)          # behind the mask
+    box("helm_void", "head", "void", 0, 82, -3.85, 8.4, 6.6, 1.1)       # the darkness seen through the slit
+    CUBES[-1].density = 4                                               # fine enough for the eye glow
+    # the mask (front at z -5.3): a top band, two cheek plates either side of the vertical slit, a pointed chin
+    z = -4.85
+    box("mask_top", "head", "helm", 0, 87.6, z, 9.6, 1.9, 0.9)
+    for sd in (-1, 1):
+        box(f"mask_cheek{sd}", "head", "helm", sd * 2.5, 83.4, z, 4.0, 3.2, 0.9)
+        box(f"mask_slit_end{sd}", "head", "helm", sd * 4.3, 86.6, z, 1.0, 1.0, 0.9)
+        box(f"mask_edge{sd}", "head", "trim", sd * 4.55, 82.2, z - 0.1, 0.5, 7.3, 1.0)
+    box("mask_chin1", "head", "helm", 0, 82.2, z, 7.0, 1.2, 0.9)
+    box("mask_chin2", "head", "helm", 0, 81.1, z, 4.6, 1.1, 0.9)
+    box("mask_chin3", "head", "trim", 0, 80.3, z, 2.0, 0.8, 0.9)
+    # circlet and a crown of blade spikes (tall and short in turn, leaning outward)
+    box("circlet", "head", "trim", 0, 94.0, 0.3, 10.6, 1.2, 11.1)
+    for k in range(10):
+        a = math.radians(-90 + 36 * k)
+        ox, oz = math.cos(a), math.sin(a)
+        tall = k % 2 == 0
+        if k == 0:
+            continue   # nothing over the face
+        bx, bz = ox * 4.6, 0.3 + oz * 4.8
+        chain(f"crown{k}_", "head", ["helm", "helm", "trim"], (bx, 94.6, bz),
+              [((ox * 0.12, 1, oz * 0.12), 2.6 if tall else 1.8, 1.7), ((ox * 0.16, 1, oz * 0.16), 2.2 if tall else 1.2, 1.1),
+               ((ox * 0.2, 1, oz * 0.2), 1.5 if tall else 0.8, 0.5)])
     bone("jaw", "head", (0, 84, 2))   # kept (empty) so the animations' jaw keys stay valid
 
     # --- long skeletal arms: shoulder, humerus, elbow, two forearm bones, wrist, palm, hooked claws
@@ -376,6 +385,17 @@ def paint(c, f, W, H):
                 col = pick(R["trim"], 0.5 + lt + n * 0.08 + (0.15 if top else 0))
             elif m == "void":
                 col = hexc("030205")
+                if f == "north":
+                    for ex in (-1.9, 1.9):
+                        r = math.hypot((x - ex) / 0.55, (y - 87.1) / 0.32)
+                        if r < 1:
+                            col = hexc("fff0e6") if r < 0.45 else hexc("ff3a2a")
+                            glow[j, i] = True
+                        elif r < 2.8:
+                            k = (1 - (r - 1) / 1.8) ** 2
+                            col = hexc("030205") * (1 - k) + hexc("c00a0a") * k
+                            col[3] = 255
+                            glow[j, i] = True
             elif m == "redeye":
                 col = hexc("ff1a1a") if not side or (0 < i < W - 1 or W <= 2) else hexc("b00000")
                 glow[j, i] = True
