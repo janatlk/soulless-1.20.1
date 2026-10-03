@@ -144,6 +144,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         if (target != null) getLookControl().setLookAt(target, 10, 10);
 
         hover();
+        faceTarget();
         if (tickCount % 3 == 0) {
             level.sendParticles(ParticleTypes.SOUL, getX(), getY() + 1 + random.nextDouble() * 5, getZ(), 1, 0.6, 0.3, 0.6, 0.02);
             level.sendParticles(ModParticles.SOUL_EMBER.get(), getX(), getY() + 0.3, getZ(), 2, 0.5, 0.2, 0.5, 0.02);
@@ -415,6 +416,26 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         moveTicks = 0;
         swoopTo = null;
         orbitDir = random.nextBoolean() ? 1 : -1;
+    }
+
+    /**
+     * Turns the whole Reaper toward its target (the model turns with the body, so the look control alone would
+     * leave it staring wherever it rose); while swooping it faces where it flies.
+     */
+    private void faceTarget() {
+        if (target == null || state() == State.EMERGE) return;
+        float want;
+        float rate = 8;
+        if (move == Move.SWOOP && drift.lengthSqr() > 0.01) {
+            want = (float) (Mth.atan2(drift.z, drift.x) * Mth.RAD_TO_DEG) - 90;
+            rate = 14;
+        } else {
+            want = (float) (Mth.atan2(target.getZ() - getZ(), target.getX() - getX()) * Mth.RAD_TO_DEG) - 90;
+        }
+        float yaw = Mth.approachDegrees(getYRot(), want, rate);
+        setYRot(yaw);
+        yBodyRot = yaw;
+        yHeadRot = yaw;
     }
 
     private void steer(Vec3 want, double rate) {
