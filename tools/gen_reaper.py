@@ -56,7 +56,7 @@ R = {
     "cloth": ramp("0f0b1c", "17112b", "21183d", "2c2052", "3a2a6b", "4c378a", "6347b0"),
     "flame": ramp("26104a", "3b167a", "5420ad", "7232d6", "9150f0", "b07dff", "d2b2ff", "efe2ff"),
     "core": ramp("5a1aa8", "7f2fe0", "a35cff", "c690ff", "e4c8ff", "fbf3ff"),
-    "wing": ramp("070d2a", "0b1640", "101f57", "172b72", "203b8e", "2b4eab", "3a64c6", "5180dc", "7aa2ee", "a8c4fa"),
+    "wing": ramp("0a1a5c", "10308f", "1747c2", "2163ea", "3480ff", "549dff", "7cb9ff", "a9d3ff", "d6ebff", "ffffff"),
     "ghost": ramp("8f7cc4", "ad9de0", "cbbff2", "e6ddff"),
 }
 EYE, EYE_RIM, SOCKET = hexc("fff0ff"), hexc("ff86ee"), hexc("060309")
@@ -160,12 +160,16 @@ def build_wings():
         bone(hand, fore, (s * E[2][0], E[2][1], WING_Z))
         # (bone, edge from, edge to, feather count, angle from..to, tip y from..to or lengths)
         segs = (
-            (arm, E[0], E[1], 5, (0, 6), (72 - 31 * WS, 72 - 28 * WS), None),
-            (fore, E[1], E[2], 6, (8, 24), (72 - 27 * WS, 72 - 12 * WS), None),
-            (hand, E[2], E[3], 9, (30, 112), None, [L * WS for L in (40, 41, 41, 40, 38, 35, 32, 28, 23)]),
+            (arm, E[0], E[1], 7, (0, 7), (72 - 31 * WS, 72 - 28 * WS), None),
+            (fore, E[1], E[2], 9, (8, 26), (72 - 27 * WS, 72 - 12 * WS), None),
+            (hand, E[2], E[3], 11, (28, 112), None, [L * WS for L in (40, 41.5, 42, 42, 41, 39, 36.5, 33.5, 30, 26, 21)]),
         )
+        hw = 1.75 * WS ** 0.5   # long, narrow, blade-like feathers
         for bn, p0, p1, n, (a0, a1), tips, lengths in segs:
-            flights, cov1, cov2 = [], [], []
+            # three layered rows of long feathers (Maledictus-style): the flight feathers, a row of shorter
+            # ones over them and a row of short ones over those, each row's tips jutting out from under the
+            # next so the wing reads as a dense, jagged, layered fan rather than a single sheet
+            flights, mid, low = [], [], []
             for k in range(n):
                 t = (k + 0.4) / n
                 ru, ry = lerp2(p0, p1, t)
@@ -175,21 +179,20 @@ def build_wings():
                     L = lengths[k]
                 else:
                     L = (ry - (tips[0] + (tips[1] - tips[0]) * t)) / math.cos(math.radians(ang))
-                L *= 0.9 + 0.2 * hash3(k, ru, 5)   # ragged trailing edge
-                flights.append((ru, ry, ang, L, 2.5 * WS ** 0.5))
-            for k in range(n + 1):
-                t = k / n
-                ru, ry = lerp2(p0, p1, t)
-                ang = a0 + (a1 - a0) * t
-                cov1.append((ru, ry + 0.5, ang * 0.8, 7.5 * WS, 1.9 * WS ** 0.5))
-                if k < n:
-                    ru2, ry2 = lerp2(p0, p1, (k + 0.5) / n)
-                    cov2.append((ru2, ry2 - 1.5, ang * 0.9, (12 if bn != hand else 14) * WS, 2.2 * WS ** 0.5))
+                L *= 0.88 + 0.24 * hash3(k, ru, 5)   # ragged trailing edge
+                flights.append((ru, ry, ang, L, hw))
+            for k in range(n):
+                t = (k + 0.9) / n
+                ru, ry = lerp2(p0, p1, min(1, t))
+                ang = (a0 + (a1 - a0) * (min(n - 1, k + 0.5) / max(1, n - 1)) ** (1.4 if lengths else 1)) * 0.92
+                ref = flights[k][3]
+                mid.append((ru, ry - 0.6, ang, ref * (0.6 + 0.1 * hash3(k, ru, 8)), hw * 1.05))
+                low.append((ru, ry + 0.2, ang * 0.85, ref * (0.32 + 0.08 * hash3(k, ru, 9)), hw * 1.1))
             top = max(p0[1], p1[1]) + 1
             feather_plane(f"{bn}_flights", bn, s, WING_Z, flights, rot=[-7, 0, 0], pivot_y=top)
-            for layer, dz in (("a", -0.75), ("b", 0.75)):
-                feather_plane(f"{bn}_greater_{layer}", bn, s, WING_Z + dz * 0.8, cov2, mat="covert")
-                feather_plane(f"{bn}_lesser_{layer}", bn, s, WING_Z + dz * 1.3, cov1, mat="covert")
+            for layer, dz in (("a", -1), ("b", 1)):
+                feather_plane(f"{bn}_mid_{layer}", bn, s, WING_Z + dz * 0.55, mid, mat="covert", rot=[-4, 0, 0], pivot_y=top)
+                feather_plane(f"{bn}_low_{layer}", bn, s, WING_Z + dz * 1.0, low, mat="covert")
             # the leading edge: a thick rounded roll of small feathers
             d = np.array([s * (p1[0] - p0[0]), p1[1] - p0[1], 0.0])
             th = 3.4 if bn != hand else 2.8
@@ -353,9 +356,11 @@ def paint(c, f, W, H):
                 col = pick(R["horn"], t)
             elif m in ("plume", "covert"):
                 col = paint_plume(c, x, y, f)
+                glow[j, i] = True
             elif m == "wingedge":   # rows of tiny scale-like feathers
-                t = 0.5 + lt * 0.6 + n * 0.06 - (0.14 if (j + (i // 2)) % 3 == 0 else 0) - (0.1 if edge else 0)
+                t = 0.62 + lt * 0.5 + n * 0.06 - (0.12 if (j + (i // 2)) % 3 == 0 else 0) + (0.15 if top else 0)
                 col = pick(R["wing"], t)
+                glow[j, i] = True
             elif m == "fang":
                 col = pick(R["pale"], 0.85 - 0.5 * (j + 0.5) / H + n * 0.1) if side else pick(R["pale"], 0.5)
             elif m == "cloth":
@@ -397,8 +402,8 @@ def paint(c, f, W, H):
 
 
 def paint_plume(c, x, y, f):
-    """Overlapping feathers: each has a dark rim (so neighbours read apart), a pale shaft, vanes that darken
-    toward the tip and a rounded point; later feathers lie on top of earlier ones."""
+    """Overlapping spectral feathers (they glow): each long blade has a bright rim so neighbours read apart,
+    a darker core, a faint shaft and a bright point; later feathers lie on top of earlier ones."""
     u = c.side * x
     if f not in ("north", "south"):
         return hexc("000000", 0)   # the planes' paper-thin rims stay invisible
@@ -420,13 +425,16 @@ def paint_plume(c, x, y, f):
         return hexc("000000", 0)
     k, v, across, w = hit
     cov = c.mat == "covert"
-    t = (0.58 if cov else 0.52) - 0.3 * v + 0.04 * hash3(k, c.lo[0], 3) - (0.03 if f == "south" else 0)
-    if w - abs(across) < 0.5:
-        t -= 0.2                                     # rim
+    t = (0.5 if cov else 0.46) - 0.18 * v + 0.05 * hash3(k, c.lo[0], 3) - (0.04 if f == "south" else 0)
+    edge = w - abs(across)
+    if edge < 0.5:
+        t = 0.72 + 0.1 * (1 - v)                     # bright rim, like light caught on a spectral blade
+    elif edge < 1.0:
+        t += 0.14                                    # soft inner glow next to the rim
     elif abs(across) < 0.3 and not cov:
-        t += 0.2                                     # shaft
-    elif math.sin(v * 60 + abs(across) * 4) > 0.85:
-        t -= 0.05                                    # barbs
+        t += 0.12                                    # shaft
+    if v > 0.82:
+        t += 0.12                                    # the tips burn brighter
     return pick(R["wing"], t)
 
 
