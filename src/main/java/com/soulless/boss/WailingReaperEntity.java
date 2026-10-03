@@ -441,7 +441,11 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         noPhysics = true;
         super.tick();
         if (level().isClientSide) swingSpine();
-        else if (isPreview() && entityData.get(PREVIEW).equals("fly")) previewFly();
+        else {
+            if (isPreview() && entityData.get(PREVIEW).equals("fly")) previewFly();
+            // mid power stroke of every wing beat (32 ticks): embers shaken off the wings, a downdraft below
+            if (tickCount % 32 == 12 && !isDeadOrDying()) wingGust((ServerLevel) level());
+        }
     }
 
     // ------------------------------------------------------------------ the dangling lower spine (client)
@@ -476,6 +480,29 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
             float tz = (i == 0 ? wantZ * 0.45F : spineZo[i - 1] * 0.9F) + sway;
             spineX[i] += (tx - spineX[i]) * 0.3F;
             spineZ[i] += (tz - spineZ[i]) * 0.3F;
+        }
+    }
+
+    /** Soul embers shed along both wings and a ring of souls blown outward across the ground beneath. */
+    private void wingGust(ServerLevel level) {
+        float yaw = yBodyRot * Mth.DEG_TO_RAD;
+        Vec3 fwd = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
+        Vec3 right = new Vec3(-fwd.z, 0, fwd.x);
+        for (int side = -1; side <= 1; side += 2) {
+            for (int k = 0; k < 6; k++) {
+                double d = 0.6 + k * 0.75;
+                Vec3 p = position().add(0, 4.6 + k * 0.2, 0).add(right.scale(side * d)).subtract(fwd.scale(0.6));
+                for (int n = 0; n < 2; n++) {
+                    level.sendParticles(ModParticles.SOUL_EMBER.get(), p.x + random.nextGaussian() * 0.3, p.y + random.nextGaussian() * 0.3,
+                            p.z + random.nextGaussian() * 0.3, 0, side * right.x * 0.05, -0.12 - random.nextDouble() * 0.08, side * right.z * 0.05, 1);
+                }
+            }
+        }
+        double gy = groundY() + 0.1;
+        for (int i = 0; i < 14; i++) {
+            double a = Math.PI * 2 * i / 14 + random.nextDouble() * 0.3;
+            level.sendParticles(ParticleTypes.SOUL, getX() + Math.cos(a) * 1.2, gy, getZ() + Math.sin(a) * 1.2, 0,
+                    Math.cos(a) * 0.18, 0.01, Math.sin(a) * 0.18, 1);
         }
     }
 

@@ -56,7 +56,7 @@ R = {
     "cloth": ramp("0f0b1c", "17112b", "21183d", "2c2052", "3a2a6b", "4c378a", "6347b0"),
     "flame": ramp("26104a", "3b167a", "5420ad", "7232d6", "9150f0", "b07dff", "d2b2ff", "efe2ff"),
     "core": ramp("5a1aa8", "7f2fe0", "a35cff", "c690ff", "e4c8ff", "fbf3ff"),
-    "wing": ramp("1a0838", "2c0f5e", "421a8a", "5a26b8", "7438df", "8f55f5", "aa7cff", "c7a6ff", "e3d2ff", "ffffff"),
+    "wing": ramp("07030f", "0d0619", "150926", "1e0c36", "290f48", "34135b", "41186f", "511e86", "66289f", "8037bd"),
     "helm": ramp("0b0a11", "13121b", "1b1a27", "252435", "323148", "45445f", "605f80"),
     "trim": ramp("3a3f55", "565d7a", "7c84a6", "a9b1cf", "d5daf0"),
     "ghost": ramp("8f7cc4", "ad9de0", "cbbff2", "e6ddff"),
@@ -139,6 +139,7 @@ def feather_plane(name, b, s, z, feathers, mat="plume", rot=None, pivot_y=None):
 #: the wing's leading edge in its spread pose (span u outward from the spine, y): shoulder, elbow, wrist, tip.
 #: It arches up to the wrist and falls toward the tip, like a real wing, and the feathers follow that perimeter.
 WS = 1.3   # wing scale
+HOOD_SCALE = 0.82
 WING_EDGE = [(5 + (u - 5) * WS, 72 + (y - 72) * WS) for u, y in ((5, 72), (12, 86), (20, 103), (34, 112))]
 WING_Z = 10
 
@@ -216,8 +217,8 @@ def build():
     for k in range(2):
         box(f"lumbar{k}", "body", "bone", 0, 47.5 + k * 3, 1.5, 4.5, 2, 4)
     parent = "body"
-    for k, (top, verts, w) in enumerate(((47, (44, 41), (4.3, 4.0)), (40.5, (37.5, 34.5), (3.6, 3.2)),
-                                          (34, (31, 28.3), (2.8, 2.4)), (27.7, (25.4,), (2.0,)))):
+    for k, (top, verts, w) in enumerate(((47, (44, 41), (4.3, 4.0)), (40.5, (37.5, 34.5), (3.4, 3.0)),
+                                          (34, (31.2,), (2.4,)))):
         bn = f"spine_tail{k}"
         bone(bn, parent, (0, top, 1.5))
         low = verts[-1]
@@ -226,7 +227,7 @@ def build():
             box(f"{bn}_v{v}", bn, "bone", 0, v, 1.5, wv, 2, wv * 0.85)
             box(f"{bn}_spur{v}", bn, "bone", 0, v + 0.4, 1.5 + wv * 0.55, 1, 1.2, 1.4)   # spinous process
         parent = bn
-    chain("spine_tip", "spine_tail3", ["bone", "pale"], (0, 25.6, 1.5), [((0, -1, 0.15), 2.2, 1.4), ((0, -1, 0.25), 1.8, 0.8)])
+    chain("spine_tip", "spine_tail2", ["bone", "pale"], (0, 31.4, 1.5), [((0, -1, 0.15), 2.0, 1.4), ((0, -1, 0.25), 1.6, 0.8)])
 
     # --- chest: a cage of separate ribs over a glowing soul core
     bone("chest", "body", (0, 54, 0))
@@ -270,20 +271,26 @@ def build():
     # and side folds framing a deep opening; inside only darkness and two red embers for eyes (painted with a
     # glow fading into the black); its peak droops down the back.
     bone("head", "chest", (0, 80, 0))
-    box("hood_top", "head", "cloth", 0, 94.5, 0.4, 11.2, 2.6, 12.4)
-    box("hood_crown", "head", "cloth", 0, 97.1, 0.9, 10.0, 1.2, 10.8)
-    box("hood_back", "head", "cloth", 0, 78.5, 5.8, 11.6, 16.6, 2.0)
-    box("hood_void", "head", "void", 0, 80.0, -0.5, 8.6, 14.4, 8.0)        # the darkness inside
-    CUBES[-1].density = 4                                                 # fine enough for the eye glow
-    box("hood_brim", "head", "cloth", 0, 92.4, -5.6, 11.4, 2.3, 3.0)      # overhangs the opening
-    box("hood_brim_lip", "head", "cloth", 0, 91.6, -6.9, 8.4, 1.0, 1.0)
+    k = HOOD_SCALE
+
+    def hb(name, mat, cx, y0, cz, sx, sy, sz):   # a hood box, scaled toward (0, 78.5, 0.4)
+        box(name, "head", mat, cx * k, 78.5 + (y0 - 78.5) * k, 0.4 + (cz - 0.4) * k, sx * k, sy * k, sz * k)
+
+    hb("hood_top", "cloth", 0, 94.5, 0.4, 11.2, 2.6, 12.4)
+    hb("hood_crown", "cloth", 0, 97.1, 0.9, 10.0, 1.2, 10.8)
+    hb("hood_back", "cloth", 0, 78.5, 5.8, 11.6, 16.6, 2.0)
+    hb("hood_void", "void", 0, 80.0, -0.5, 8.6, 14.4, 8.0)          # the darkness inside
+    CUBES[-1].density = 4                                          # fine enough for the eye glow
+    hb("hood_brim", "cloth", 0, 92.4, -5.6, 11.4, 2.3, 3.0)        # overhangs the opening
+    hb("hood_brim_lip", "cloth", 0, 91.6, -6.9, 8.4, 1.0, 1.0)
     for sd in (-1, 1):
-        box(f"hood_side{sd}", "head", "cloth", sd * 5.3, 78.5, 0.0, 1.8, 16.0, 11.6)
-        box(f"hood_fold{sd}", "head", "cloth", sd * 4.6, 78.8, -6.1, 1.6, 14.2, 2.6)   # the deep front folds
-        box(f"hood_fold_in{sd}", "head", "cloth", sd * 3.9, 82.0, -5.2, 0.8, 10.4, 1.4)
+        hb(f"hood_side{sd}", "cloth", sd * 5.3, 78.5, 0.0, 1.8, 16.0, 11.6)
+        hb(f"hood_fold{sd}", "cloth", sd * 4.6, 78.8, -6.1, 1.6, 14.2, 2.6)   # the deep front folds
+        hb(f"hood_fold_in{sd}", "cloth", sd * 3.9, 82.0, -5.2, 0.8, 10.4, 1.4)
     # the peak, drooping down the back in three folds
-    chain("hood_peak", "head", "cloth", (0, 97.6, 4.0),
-          [((0, 0.35, 1), 3.2, 4.6), ((0, -0.45, 1), 3.0, 3.4), ((0, -1, 0.45), 3.4, 2.4), ((0, -1, 0.15), 2.6, 1.4)])
+    chain("hood_peak", "head", "cloth", (0, 78.5 + (97.6 - 78.5) * k, 0.4 + 3.6 * k),
+          [((0, 0.35, 1), 3.2 * k, 4.6 * k), ((0, -0.45, 1), 3.0 * k, 3.4 * k), ((0, -1, 0.45), 3.4 * k, 2.4 * k),
+           ((0, -1, 0.15), 2.6 * k, 1.4 * k)])
     bone("jaw", "head", (0, 84, 2))   # kept (empty) so the animations' jaw keys stay valid
 
     # --- long skeletal arms: shoulder, humerus, elbow, two forearm bones, wrist, palm, hooked claws
@@ -382,8 +389,8 @@ def paint(c, f, W, H):
             elif m == "void":
                 col = hexc("030205")
                 if f == "north":
-                    for ex in (-1.9, 1.9):
-                        r = math.hypot((x - ex) / 0.55, (y - 87.6) / 0.32)
+                    for ex in (-1.9 * HOOD_SCALE, 1.9 * HOOD_SCALE):
+                        r = math.hypot((x - ex) / 0.5, (y - (78.5 + (87.6 - 78.5) * HOOD_SCALE)) / 0.3)
                         if r < 1:
                             col = hexc("fff0e6") if r < 0.45 else hexc("ff3a2a")
                             glow[j, i] = True
