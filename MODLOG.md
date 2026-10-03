@@ -73,3 +73,10 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
   cells), frost rune telegraph with a filling disc for 2-2.7 s, then spikes fall, 20 dmg (armor applies).
 - Dev: `SOULLESS_PREVIEW_STRIP=1` + `SOULLESS_PREVIEW_ANIM=x` films one animation (tools/strip_sheet.py).
   Preview statues replay one-shot anims with a hold. Client heap now -Xmx4G.
+- Encounter v2: `ArenaPlan` (radius 24: patterned floor, crying-obsidian spokes + rune rings, crenellated wall
+  with slits and braziers, 8 colossal pillars (2 broken) with campfires and chained lanterns, 4 bone arches with
+  a crown + chandelier). The altar BE records every replaced block (pos + state id, saved in NBT) and puts the
+  terrain back block by block after the fight. Win: 12000 XP (dragon-style bursts), arena crumbles, chest with
+  Soul Forged on the altar spot. All challengers dead (`ArenaEvents`): Reaper vanishes, drops are moved onto the
+  altar, arena crumbles, altar -> obsidian. Reaper flight: orbit with changing height/direction + telegraphed
+  swoops (10 dmg on contact), wing-flap sound every beat.

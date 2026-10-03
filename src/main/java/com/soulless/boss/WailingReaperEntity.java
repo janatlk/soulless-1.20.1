@@ -155,8 +155,8 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
                 if (stateTicks >= EMERGE_TOTAL) setState(State.IDLE);
             }
             case IDLE -> {
-                moveTowardRange();
-                if (target != null && stateTicks >= GAP) chooseAttack();
+                activeMove();
+                if (target != null && stateTicks >= GAP && move == Move.ORBIT) chooseAttack();
             }
             case BOLT -> {
                 stop();
@@ -214,6 +214,8 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
 
     private void stun(int ticks, boolean vulnerableToo) {
         setState(State.STUNNED);
+        altitudeWant = 0.2;   // sinks low while reeling
+        if (move != Move.ORBIT) endSwoop();
         stunLeft = ticks;
         vulnerable = vulnerableToo;
         Stun.apply(this, ticks, null);
@@ -284,7 +286,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         return position().add(0, 5.2, 0).add(fwd.scale(1.2)).add(right.scale(1.4));
     }
 
-    // ------------------------------------------------------------------ movement: a slow, floating drift
+    // ------------------------------------------------------------------ movement: active flight inside the arena
 
     /** Horizontal drift velocity chosen by the AI this tick; applied directly in {@link #hover()}. */
     private Vec3 drift = Vec3.ZERO;
@@ -295,16 +297,107 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
      */
     private void hover() {
         double ground = groundY();
-        double wantY = ground + 0.4 + Math.sin(tickCount * 0.08) * 0.15;
-        Vec3 step = new Vec3(drift.x, (wantY - getY()) * 0.2, drift.z);
+        altitude = Mth.lerp(0.06, altitude, altitudeWant);
+        double wantY = ground + altitude + Math.sin(tickCount * 0.08) * 0.15;
+        Vec3 step = new Vec3(drift.x, Mth.clamp((wantY - getY()) * 0.2, -0.4, 0.4), drift.z);
         if (home != null) {
             Vec3 h = Vec3.atBottomCenterOf(home);
             Vec3 off = new Vec3(getX() + step.x - h.x, 0, getZ() + step.z - h.z);
-            double max = SoulAltarBlockEntity.ARENA_RADIUS - 2.5;
-            if (off.length() > max) step = new Vec3(0, step.y, 0).add(off.normalize().scale(-0.1));
+            double max = SoulAltarBlockEntity.ARENA_RADIUS - 3;
+            if (off.length() > max) {
+                step = new Vec3(0, step.y, 0).add(off.normalize().scale(-0.15));
+                if (move == Move.SWOOP) endSwoop();
+            }
         }
         move(net.minecraft.world.entity.MoverType.SELF, step);
         setDeltaMovement(Vec3.ZERO);
+        // every wing beat is heard (the beat in the model is 1.6 s = 32 ticks)
+        if (tickCount % 32 == 0 && !isPreview()) playSound(SoundEvents.ENDER_DRAGON_FLAP, 1.6F, 0.65F + random.nextFloat() * 0.1F);
+    }
+
+    // --- active flight: circling the target, changing height and direction, and swooping past it
+
+    private enum Move { ORBIT, SWOOP_WINDUP, SWOOP }
+
+    private static final double ORBIT_RADIUS = 10;
+    private static final float SWOOP_DAMAGE = 10;
+    private Move move = Move.ORBIT;
+    private int moveTicks;
+    private int orbitDir = 1;
+    private double altitude = 0.5, altitudeWant = 0.5;
+    @Nullable private Vec3 swoopTo;
+    private boolean swoopHit;
+
+    private void activeMove() {
+        if (target == null) {
+            stop();
+            altitudeWant = 0.5;
+            return;
+        }
+        moveTicks++;
+        Vec3 to = new Vec3(target.getX() - getX(), 0, target.getZ() - getZ());
+        double d = Math.max(0.01, to.length());
+        Vec3 radial = to.scale(1 / d);
+        switch (move) {
+            case ORBIT -> {
+                // circle at a fighting distance, sliding in and out, rising and sinking
+                Vec3 tangent = new Vec3(-radial.z, 0, radial.x).scale(orbitDir);
+                Vec3 want = tangent.scale(0.26).add(radial.scale(Mth.clamp((d - ORBIT_RADIUS) * 0.05, -0.22, 0.22)));
+                steer(want, 0.1);
+                altitudeWant = 2.2 + Math.sin(tickCount * 0.045) * 1.8;
+                if (moveTicks > 45 + random.nextInt(40)) {
+                    moveTicks = 0;
+                    if (random.nextInt(3) == 0) orbitDir = -orbitDir;
+                    if (d < 22 && random.nextInt(5) < 2) startSwoop(radial);
+                }
+            }
+            case SWOOP_WINDUP -> {
+                // rear back and up: the tell
+                steer(radial.scale(-0.12), 0.2);
+                altitudeWant = 4.5;
+                if (moveTicks >= 12) {
+                    move = Move.SWOOP;
+                    moveTicks = 0;
+                    playSound(SoundEvents.PHANTOM_SWOOP, 3.0F, 0.5F);
+                }
+            }
+            case SWOOP -> {
+                Vec3 left = swoopTo == null ? Vec3.ZERO : new Vec3(swoopTo.x - getX(), 0, swoopTo.z - getZ());
+                if (swoopTo == null || left.length() < 1.5 || moveTicks > 40) {
+                    endSwoop();
+                    return;
+                }
+                steer(left.normalize().scale(0.62), 0.35);
+                altitudeWant = 0.3;
+                if (!swoopHit && getBoundingBox().inflate(0.6).intersects(target.getBoundingBox())) {
+                    swoopHit = true;
+                    target.hurt(damageSources().mobAttack(this), SWOOP_DAMAGE);
+                    Vec3 push = left.normalize().scale(1.4);
+                    target.push(push.x, 0.5, push.z);
+                    target.hurtMarked = true;
+                }
+            }
+        }
+    }
+
+    /** Pass close beside the target and on beyond it. */
+    private void startSwoop(Vec3 radial) {
+        Vec3 side = new Vec3(-radial.z, 0, radial.x).scale(random.nextBoolean() ? 1.8 : -1.8);
+        swoopTo = target.position().add(side).add(radial.scale(9));
+        swoopHit = false;
+        move = Move.SWOOP_WINDUP;
+        moveTicks = 0;
+    }
+
+    private void endSwoop() {
+        move = Move.ORBIT;
+        moveTicks = 0;
+        swoopTo = null;
+        orbitDir = random.nextBoolean() ? 1 : -1;
+    }
+
+    private void steer(Vec3 want, double rate) {
+        drift = new Vec3(Mth.lerp(rate, drift.x, want.x), 0, Mth.lerp(rate, drift.z, want.z));
     }
 
     /** Top of the highest solid block in a few blocks above/below, so it rides over the altar dais. */
@@ -321,21 +414,6 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     public void tick() {
         noPhysics = true;
         super.tick();
-    }
-
-    private void moveTowardRange() {
-        if (target == null) {
-            stop();
-            return;
-        }
-        Vec3 to = new Vec3(target.getX() - getX(), 0, target.getZ() - getZ());
-        double d = to.length();
-        double speed = 0.11;
-        Vec3 want;
-        if (d > 12) want = to.normalize().scale(speed);
-        else if (d < 6) want = to.normalize().scale(-speed);
-        else want = new Vec3(-to.z, 0, to.x).normalize().scale(speed * 0.6 * (((tickCount / 100) & 1) == 0 ? 1 : -1));
-        drift = new Vec3(Mth.lerp(0.15, drift.x, want.x), 0, Mth.lerp(0.15, drift.z, want.z));
     }
 
     private void stop() {
@@ -421,18 +499,40 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
 
     // ------------------------------------------------------------------ death: the reward chest
 
+    /** Experience for the kill, as much as the Ender Dragon's first death. */
+    private static final int XP_REWARD = 12000;
+
     @Override
     protected void tickDeath() {
         deathTime++;
         if (level() instanceof ServerLevel level) {
             level.sendParticles(ParticleTypes.SOUL, getX(), getY() + random.nextDouble() * 6, getZ(), 6, 0.8, 0.5, 0.8, 0.1);
             if (deathTime % 10 == 0) level.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 3, getZ(), 2, 1, 2, 1, 0);
+            // like the dragon: bursts of experience while it dies, the rest when it is gone
+            if (deathTime > 15 && deathTime < 60 && deathTime % 5 == 0) {
+                net.minecraft.world.entity.ExperienceOrb.award(level, position().add(0, 3, 0), Mth.floor(XP_REWARD * 0.08F));
+            }
             if (deathTime == 60) {
-                placeRewardChest(level);
+                net.minecraft.world.entity.ExperienceOrb.award(level, position().add(0, 2, 0), XP_REWARD - Mth.floor(XP_REWARD * 0.08F) * 8);
+                if (home != null && level.getBlockEntity(home) instanceof SoulAltarBlockEntity altar) {
+                    altar.onBossDefeated();   // the arena crumbles, then the reward chest appears on the altar
+                } else {
+                    placeRewardChest(level);
+                }
                 level.sendParticles(ParticleTypes.SOUL, getX(), getY() + 3, getZ(), 200, 1.5, 3, 1.5, 0.3);
                 remove(RemovalReason.KILLED);
             }
         }
+    }
+
+    @Override
+    public int getExperienceReward() {
+        return 0;   // paid out in tickDeath
+    }
+
+    @Nullable
+    public BlockPos home() {
+        return home;
     }
 
     private void placeRewardChest(ServerLevel level) {
