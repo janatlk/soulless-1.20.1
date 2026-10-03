@@ -71,11 +71,7 @@ public final class ClientPacketHandler {
     }
 
     public static void rendStart(int entityId, int elapsed) {
-        // elapsed is a position on the (possibly faster) timeline; convert it back to game ticks
-        Minecraft mc0 = Minecraft.getInstance();
-        net.minecraft.world.entity.Entity e = mc0.level != null ? mc0.level.getEntity(entityId) : null;
-        float speed = e != null ? com.soulless.item.SoulRing.rendSpeed(e) : 1F;
-        ClientState.RENDS.put(entityId, ClientState.gameTime() - Math.round(elapsed / speed));
+        ClientState.RENDS.put(entityId, ClientState.gameTime() - elapsed);
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null && mc.player.getId() == entityId && elapsed == 0) {
             ClientState.rendReleaseSent = false;
@@ -88,7 +84,7 @@ public final class ClientPacketHandler {
         if (level == null || mc.player == null) return;
         long now = ClientState.gameTime();
         if (msg.entityId() == mc.player.getId()) {
-            ClientState.rendReadyAt = now + RendTimeline.COOLDOWN;
+            // the cooldown is the sword's (shared with Soul Crush)
         }
         ClientState.TRAILS.add(new SlashTrails.Trail(new Vec3(msg.x(), msg.y(), msg.z()), msg.yaw(), now));
         double dist = mc.player.position().distanceTo(new Vec3(msg.x(), msg.y(), msg.z()));

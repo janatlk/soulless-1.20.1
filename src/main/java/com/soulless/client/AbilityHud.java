@@ -29,19 +29,9 @@ public final class AbilityHud implements IGuiOverlay {
         int x = width / 2 + 91 + 8, y = height - SLOT - 2;
         float slam = player.getCooldowns().getCooldownPercent(item, partialTick);
         slot(g, font, x, y, Component.literal(ClientKeys.slamKeyName()), slam, Mth.ceil(slam * SlamManager.COOLDOWN_TICKS / 20F), 0xFF9A2CF0);
-        // Soul Crush's cooldown also locks right click (it is the item's cooldown), so the RMB slot shows
-        // whichever of the two ends later
-        long rendLeft = ClientState.rendReadyAt - ClientState.gameTime();
-        float slamLeftTicks = slam * SlamManager.COOLDOWN_TICKS;
-        float rend;
-        long left;
-        if (slamLeftTicks > rendLeft) {
-            rend = slam;
-            left = (long) Math.ceil(slamLeftTicks);
-        } else {
-            rend = rendLeft > 0 ? rendLeft / (float) RendTimeline.COOLDOWN : 0;
-            left = rendLeft;
-        }
+        // one cooldown shared by both abilities (the sword's)
+        float rend = slam;
+        long left = (long) Math.ceil(slam * SlamManager.COOLDOWN_TICKS);
         slot(g, font, x + SLOT + 4, y, Component.translatable("hud.soulless.rmb"), rend, Mth.ceil(left / 20F), 0xFFE8D25A);
 
         float t = ClientState.rendTicks(player);

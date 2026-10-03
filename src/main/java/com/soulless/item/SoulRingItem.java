@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-/** The Soulsmith's Ring: worn with Soul Forged it empowers both of the sword's abilities (see {@link SoulRing}). */
+/** The Soulsmith's Ring: worn with Soul Forged it gilds the sword and lengthens its stuns (see {@link SoulRing}). */
 public class SoulRingItem extends Item {
     public SoulRingItem(Properties props) {
         super(props);
@@ -27,10 +27,7 @@ public class SoulRingItem extends Item {
         tooltip.add(Component.translatable(k + "lore").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
         tooltip.add(Component.empty());
         tooltip.add(Component.translatable(k + "with").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "slam", Math.round((SoulRing.SLAM_LEAP_UP - 1) * 100), Math.round((SoulRing.SLAM_DAMAGE_MULT - 1) * 100))
-                .withStyle(ChatFormatting.LIGHT_PURPLE));
-        tooltip.add(Component.translatable(k + "slam_air").withStyle(ChatFormatting.LIGHT_PURPLE));
-        tooltip.add(Component.translatable(k + "rend", Math.round((SoulRing.REND_SPEED - 1) * 100)).withStyle(ChatFormatting.GOLD));
-        tooltip.add(Component.translatable(k + "rend_recover").withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.translatable(k + "stun", SoulRing.STUN_BONUS_TICKS / 20).withStyle(ChatFormatting.LIGHT_PURPLE));
+        tooltip.add(Component.translatable(k + "gold").withStyle(ChatFormatting.GOLD));
     }
 }

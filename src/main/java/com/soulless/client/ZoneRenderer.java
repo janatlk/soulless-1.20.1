@@ -47,29 +47,20 @@ public final class ZoneRenderer {
         line(vc, m, n, c.add(-0.4, 0, 0), c.add(0.4, 0, 0), SLAM);
         line(vc, m, n, c.add(0, 0, -0.4), c.add(0, 0, 0.4), SLAM);
 
-        // Soul Rend: wedge from the eyes, RANGE deep, +-HALF_ARC wide, from CUT_BELOW below to CUT_ABOVE above
+        // Soul Rend: the beam's path along the line of sight, up to the first block
         Vec3 eye = player.getEyePosition(event.getPartialTick());
-        float yaw = Mth.rotLerp(event.getPartialTick(), player.yRotO, player.getYRot());
-        float arc = (float) RendManager.HALF_ARC_DEG;
-        for (double dy : new double[]{-RendManager.CUT_BELOW, RendManager.CUT_ABOVE}) {
-            Vec3 o = eye.add(0, dy, 0);
-            circle(vc, m, n, o, RendManager.RANGE, yaw - arc, yaw + arc, REND);
-            line(vc, m, n, o, o.add(dir(yaw - arc).scale(RendManager.RANGE)), REND);
-            line(vc, m, n, o, o.add(dir(yaw + arc).scale(RendManager.RANGE)), REND);
-        }
-        for (float a = -arc; a <= arc + 0.01F; a += arc / 4) {
-            Vec3 edge = eye.add(dir(yaw + a).scale(RendManager.RANGE));
-            line(vc, m, n, edge.add(0, -RendManager.CUT_BELOW, 0), edge.add(0, RendManager.CUT_ABOVE, 0), REND);
-        }
+        Vec3 sight = player.getViewVector(event.getPartialTick());
+        Vec3 far = eye.add(sight.scale(com.soulless.ability.SoulSlashEntity.RANGE));
+        var hit = mc.level.clip(new net.minecraft.world.level.ClipContext(eye, far, net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE, player));
+        Vec3 end = hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK ? hit.getLocation() : far;
+        line(vc, m, n, eye.add(0, -0.3, 0), end, REND);
 
         // creatures that would be hit right now
         for (LivingEntity e : mc.level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(9),
                 x -> x != player && x.isAlive())) {
             if (SlamManager.inBlast(c, e)) {
                 LevelRenderer.renderLineBox(ps, vc, e.getBoundingBox().inflate(0.05), SLAM[0], SLAM[1], SLAM[2], 1);
-            }
-            if (RendManager.inCut(player, e)) {
-                LevelRenderer.renderLineBox(ps, vc, e.getBoundingBox().inflate(0.12), REND[0], REND[1], REND[2], 1);
             }
         }
         ps.popPose();

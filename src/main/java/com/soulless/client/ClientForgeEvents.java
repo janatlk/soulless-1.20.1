@@ -97,7 +97,7 @@ public final class ClientForgeEvents {
                 if (left > 0) {
                     int seconds = Mth.ceil(left * com.soulless.ability.SlamManager.COOLDOWN_TICKS / 20F);
                     player.displayClientMessage(Component.translatable("message.soulless.slam_cooldown", seconds), true);
-                } else if (!player.onGround() && !com.soulless.item.SoulRing.worn(player)) {   // the ring allows it in mid-air
+                } else if (!player.onGround()) {
                     player.displayClientMessage(Component.translatable("message.soulless.slam_ground"), true);
                 } else {
                     ModNetwork.sendToServer(new SlamRequestPacket());
@@ -214,6 +214,15 @@ public final class ClientForgeEvents {
             Vec3 hand = p.position().add(0, p.isCrouching() ? 0.85 : 1.05, 0).add(forward.scale(0.55)).add(right.scale(-0.05));
             Vec3 blade = forward.scale(0.5).add(0, 0.866, 0);
             at = hand.add(blade.scale(0.4 + rnd.nextDouble() * 1.6)).add(right.scale((rnd.nextDouble() - 0.5) * 0.3));
+        }
+        if (com.soulless.item.SoulRing.worn(p)) {
+            // with the Soulsmith's Ring: golden embers cooling to orange, and now and then a glint
+            if (rnd.nextInt(4) == 0) {
+                level.addParticle(ParticleTypes.WAX_ON, at.x, at.y, at.z, (rnd.nextDouble() - 0.5) * 0.4, 0.2, (rnd.nextDouble() - 0.5) * 0.4);
+            } else {
+                level.addParticle(com.soulless.item.SoulRing.EMBER, at.x, at.y, at.z, 0, 0.02 + rnd.nextDouble() * 0.02, 0);
+            }
+            return;
         }
         if (rnd.nextInt(3) == 0) {
             level.addParticle(ParticleTypes.SOUL, at.x, at.y, at.z, 0, 0.015 + rnd.nextDouble() * 0.015, 0);

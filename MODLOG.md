@@ -80,3 +80,7 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
   Soul Forged on the altar spot. All challengers dead (`ArenaEvents`): Reaper vanishes, drops are moved onto the
   altar, arena crumbles, altar -> obsidian. Reaper flight: orbit with changing height/direction + telegraphed
   swoops (10 dmg on contact), wing-flap sound every beat.
+- 2026-10-04 sword rework: Soul Crush = flat 32 dmg in radius 4 + 3 s stun (bosses too), small leap, ground only,
+  no curse/knockback/height scaling. Soul Rend = hold to charge (3 s), the cut only releases the beam: 30-60 dmg by
+  charge, stopped by blocks, 5% lifesteal (0.5-1 heart per beam), no knockback/stun/cleanse, no recovery.
+  Both share the sword's 12 s item cooldown. Soulsmith's Ring (Curios) is cosmetic + 1 s longer sword stuns.

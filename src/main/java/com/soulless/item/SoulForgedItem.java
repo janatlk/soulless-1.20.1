@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap;
 import com.soulless.ability.RendManager;
 import com.soulless.ability.RendTimeline;
 import com.soulless.ability.SlamManager;
+import com.soulless.ability.SoulSlashEntity;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -147,9 +148,9 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
             tooltip.add(line(k + "c.traits", ChatFormatting.DARK_AQUA));
             tooltip.add(soulsLine(stack, k));
             tooltip.add(section("active"));
-            tooltip.add(line(k + "c.slam", ChatFormatting.LIGHT_PURPLE, slamKey, v(fmt(SlamManager.BASE_DAMAGE)),
-                    v(fmt(SlamManager.DAMAGE_CAP)), v(SlamManager.COOLDOWN_TICKS / 20)));
-            tooltip.add(line(k + "c.rend", ChatFormatting.GOLD, rendKey, v(fmt(RendManager.DAMAGE)), v(RendTimeline.COOLDOWN / 20)));
+            tooltip.add(line(k + "c.slam", ChatFormatting.LIGHT_PURPLE, slamKey, v(fmt(SlamManager.DAMAGE)), v(fmt(SlamManager.STUN_SECONDS))));
+            tooltip.add(line(k + "c.rend", ChatFormatting.GOLD, rendKey, v(fmt(SoulSlashEntity.MIN_DAMAGE)), v(fmt(SoulSlashEntity.MAX_DAMAGE))));
+            tooltip.add(line(k + "c.cd", ChatFormatting.DARK_GRAY, v(SlamManager.COOLDOWN_TICKS / 20)));
             tooltip.add(Component.empty());
             tooltip.add(Component.translatable(k + "c.more").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
             return;
@@ -170,25 +171,18 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         tooltip.add(line(k + "d.souls.1", ChatFormatting.GRAY, v(SoulBonus.SOULS_PER_PERCENT)));
 
         tooltip.add(section("active"));
-        tooltip.add(line(k + "d.slam.title", ChatFormatting.LIGHT_PURPLE, slamKey, v(SlamManager.COOLDOWN_TICKS / 20)));
+        tooltip.add(line(k + "d.slam.title", ChatFormatting.LIGHT_PURPLE, slamKey));
         tooltip.add(line(k + "d.slam.1", ChatFormatting.GRAY));
-        tooltip.add(line(k + "d.slam.2", ChatFormatting.GRAY, v(fmt(SlamManager.BASE_DAMAGE)), v(fmt(SlamManager.RADIUS))));
-        tooltip.add(line(k + "d.slam.4", ChatFormatting.GRAY, v(fmt(SlamManager.DAMAGE_PER_BLOCK)), v(fmt(SlamManager.DAMAGE_CAP))));
-        tooltip.add(line(k + "d.slam.3", ChatFormatting.GRAY, v(SlamManager.CURSE_SECONDS),
-                v(fmt(SoulCurse.DAMAGE_PER_SECOND + SlamManager.CURSE_AMPLIFIER))));
+        tooltip.add(line(k + "d.slam.2", ChatFormatting.GRAY, v(fmt(SlamManager.DAMAGE)), v(fmt(SlamManager.RADIUS))));
         tooltip.add(line(k + "d.slam.6", ChatFormatting.GRAY, v(fmt(SlamManager.STUN_SECONDS))));
-        tooltip.add(line(k + "d.slam.5", ChatFormatting.DARK_GRAY));
 
-        tooltip.add(line(k + "d.rend.title", ChatFormatting.GOLD, rendKey, v(RendTimeline.COOLDOWN / 20)));
-        tooltip.add(line(k + "d.rend.1", ChatFormatting.GRAY, v(RendTimeline.WINDUP / 20), v(fmt(RendManager.DAMAGE))));
-        tooltip.add(line(k + "d.rend.5", ChatFormatting.GRAY));
-        tooltip.add(line(k + "d.rend.2", ChatFormatting.GRAY));
-        tooltip.add(line(k + "d.rend.3", ChatFormatting.GRAY, v(RendManager.STUN_TARGETS), v(RendManager.STUN_SECONDS)));
-        tooltip.add(line(k + "d.rend.8", ChatFormatting.GRAY, v(fmt(com.soulless.ability.SoulSlashEntity.RANGE)),
-                v(fmt(com.soulless.ability.SoulSlashEntity.MAX_DAMAGE))));
-        tooltip.add(line(k + "d.rend.6", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.rend.title", ChatFormatting.GOLD, rendKey));
+        tooltip.add(line(k + "d.rend.1", ChatFormatting.GRAY, v(fmt(RendTimeline.WINDUP / 20.0))));
+        tooltip.add(line(k + "d.rend.8", ChatFormatting.GRAY, v(fmt(SoulSlashEntity.RANGE)), v(fmt(SoulSlashEntity.MIN_DAMAGE)),
+                v(fmt(SoulSlashEntity.MAX_DAMAGE))));
+        tooltip.add(line(k + "d.rend.9", ChatFormatting.GRAY, v(Math.round(SoulSlashEntity.LIFESTEAL * 100))));
         tooltip.add(line(k + "d.rend.7", ChatFormatting.GRAY, v(RendManager.DURABILITY_COST)));
-        tooltip.add(line(k + "d.rend.4", ChatFormatting.GRAY, v(fmt(RendTimeline.RECOVER / 20.0))));
+        tooltip.add(line(k + "d.cd", ChatFormatting.DARK_GRAY, v(SlamManager.COOLDOWN_TICKS / 20)));
         tooltip.add(Component.empty());
         tooltip.add(Component.translatable(k + "lore").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
     }

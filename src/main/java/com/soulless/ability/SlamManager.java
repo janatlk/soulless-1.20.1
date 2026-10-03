@@ -43,17 +43,12 @@ import java.util.UUID;
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class SlamManager {
-    /** Damage at the centre when landing where you started; the edge of the blast takes half. */
-    public static final float BASE_DAMAGE = 14.0F;
-    /** Extra centre damage per block the impact lands below the starting ground. */
-    public static final float DAMAGE_PER_BLOCK = 5.0F;
-    /** Everything the blast hits is stunned this long, bosses included. */
+    /** Every creature in the blast takes this. */
+    public static final float DAMAGE = 32.0F;
+    /** Everything the blast hits is stunned this long, bosses included (+1 s with the Soulsmith's Ring). */
     public static final float STUN_SECONDS = 3;
-    public static final float DAMAGE_CAP = 120.0F;
-    public static final float RADIUS = 5.0F;
+    public static final float RADIUS = 4.0F;
     private static final int MAX_FALL_TICKS = SlamTimeline.MAX_AIR;
-    public static final int CURSE_SECONDS = 8;
-    public static final int CURSE_AMPLIFIER = 1;
     public static final int COOLDOWN_TICKS = 240;
 
     /** Ticks of the leap before the sword is driven down. Mirrored by the client animation. */
@@ -73,11 +68,6 @@ public final class SlamManager {
         }
     }
 
-    /** Centre damage for an impact {@code drop} blocks below where the slam began. */
-    public static float centreDamage(double drop) {
-        return (float) Math.min(DAMAGE_CAP, BASE_DAMAGE + Math.max(0, drop) * DAMAGE_PER_BLOCK);
-    }
-
     private static final Map<UUID, State> ACTIVE = new HashMap<>();
 
     public static void tryStart(ServerPlayer player) {
@@ -85,14 +75,14 @@ public final class SlamManager {
         if (!(stack.getItem() instanceof SoulForgedItem item) || !player.isAlive() || player.isSpectator()) return;
         if (player.getCooldowns().isOnCooldown(item) || ACTIVE.containsKey(player.getUUID()) || RendManager.isActive(player)) return;
         boolean ring = com.soulless.item.SoulRing.worn(player);
-        if (!player.onGround() && !ring) {
+        if (!player.onGround()) {
             player.displayClientMessage(Component.translatable("message.soulless.slam_ground"), true);
             return;
         }
 
         ServerLevel level = player.serverLevel();
         player.getCooldowns().addCooldown(item, COOLDOWN_TICKS);
-        ACTIVE.put(player.getUUID(), new State(level.getGameTime(), player.getY(), ring, !player.onGround()));
+        ACTIVE.put(player.getUUID(), new State(level.getGameTime(), player.getY(), ring, false));
 
         item.triggerAnim(player, GeoItem.getOrAssignId(stack, level), SoulForgedItem.CONTROLLER, SoulForgedItem.SLAM_ANIM);
         ModNetwork.sendTrackingAndSelf(player, new SlamStartPacket(player.getId()));
@@ -130,9 +120,7 @@ public final class SlamManager {
                 root(player);
             } else if (age == SlamTimeline.CHARGE) {
                 Vec3 look = horizontalLook(player);
-                double up = s.fromAir ? com.soulless.item.SoulRing.SLAM_AIR_KICK
-                        : SlamTimeline.LEAP_UP * (s.ring ? com.soulless.item.SoulRing.SLAM_LEAP_UP : 1);
-                player.setDeltaMovement(look.x * SlamTimeline.LEAP_FORWARD, up, look.z * SlamTimeline.LEAP_FORWARD);
+                player.setDeltaMovement(look.x * SlamTimeline.LEAP_FORWARD, SlamTimeline.LEAP_UP, look.z * SlamTimeline.LEAP_FORWARD);
                 player.hurtMarked = true;
                 level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 0.5F);
                 level.sendParticles(ModParticles.SOUL_EMBER.get(), player.getX(), player.getY() + 0.1, player.getZ(), 40, 0.6, 0.05, 0.6, 0.08);
@@ -193,7 +181,7 @@ public final class SlamManager {
         BlockPos groundPos = CrackManager.findSurface(level, BlockPos.containing(center.x, player.getY(), center.z));
         double groundY = groundPos != null ? groundPos.getY() + 1.0 : player.getY();
         center = new Vec3(center.x, groundY, center.z);
-        float maxDamage = centreDamage(startY - player.getY()) * (withRing ? com.soulless.item.SoulRing.SLAM_DAMAGE_MULT : 1);
+        int stun = Math.round(STUN_SECONDS * 20) + (withRing ? com.soulless.item.SoulRing.STUN_BONUS_TICKS : 0);
         if (withRing) {
             for (int i = 0; i < 24; i++) {
                 double a = Math.PI * 2 * i / 24;
@@ -205,19 +193,14 @@ public final class SlamManager {
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator())) {
             if (target.isAlliedTo(player) || (target instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
             if (!inBlast(center, target)) continue;
-            double dist = Math.sqrt(Mth.square(target.getX() - center.x) + Mth.square(target.getZ() - center.z));
-            float damage = (float) Mth.lerp(dist / RADIUS, maxDamage, maxDamage * 0.5F);
             target.invulnerableTime = 0;
-            SoulBonus.abilityDamage(() -> target.hurt(level.damageSources().playerAttack(player), damage));
-            Vec3 away = new Vec3(target.getX() - center.x, 0, target.getZ() - center.z);
-            away = away.lengthSqr() < 1.0E-4 ? look : away.normalize();
-            double push = 1.1 - 0.6 * (dist / RADIUS);
-            target.push(away.x * push, 0.75, away.z * push);
+            Vec3 keep = target.getDeltaMovement();
+            SoulBonus.abilityDamage(() -> target.hurt(level.damageSources().playerAttack(player), DAMAGE));
+            target.setDeltaMovement(keep);   // no knockback
             target.hurtMarked = true;
-            SoulCurse.apply(target, CURSE_SECONDS * 20, CURSE_AMPLIFIER, player);
             // everything struck is stunned, bosses too (the Reaper drops what it was doing and reels)
-            if (target instanceof com.soulless.boss.WailingReaperEntity reaper) reaper.stagger(Math.round(STUN_SECONDS * 20));
-            else com.soulless.effect.Stun.force(target, Math.round(STUN_SECONDS * 20), player);
+            if (target instanceof com.soulless.boss.WailingReaperEntity reaper) reaper.stagger(stun);
+            else com.soulless.effect.Stun.force(target, stun, player);
         }
 
         level.playSound(null, center.x, center.y, center.z, ModSounds.SLAM_IMPACT.get(), SoundSource.PLAYERS, 2.0F, 1.0F);

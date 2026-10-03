@@ -22,12 +22,15 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The crescent of soul fire Soul Rend sends flying: travels {@link #RANGE} blocks along the wielder's line of
- * sight (up and down too) through blocks and creatures, hitting each creature once for up to {@link #MAX_DAMAGE} (scaled by charge).
+ * The beam of Soul Rend: a crescent of soul fire flying {@link #RANGE} blocks along the wielder's line of sight
+ * (up and down too); it passes through creatures but is stopped by blocks, hitting each creature once for up to {@link #MAX_DAMAGE} (scaled by charge).
  * Drawn on the client by {@code client.SoulSlashRenderer} in the same shape as the Soul Rend trail.
  */
 public class SoulSlashEntity extends Entity {
-    public static final float MAX_DAMAGE = 45.0F;
+    /** Damage of an instant release and of a full charge. */
+    public static final float MIN_DAMAGE = 30.0F, MAX_DAMAGE = 60.0F;
+    /** Lifesteal: this share of the damage dealt, at least half a heart, at most one heart per beam. */
+    public static final float LIFESTEAL = 0.05F, MIN_HEAL = 1.0F, MAX_HEAL = 2.0F;
     public static final double RANGE = 30;
     public static final double SPEED = 1.5;
     /** Half-width of the crescent across its flight, and its height. */
@@ -37,6 +40,7 @@ public class SoulSlashEntity extends Entity {
 
     private UUID owner;
     private final Set<Integer> struck = new HashSet<>();
+    private float dealt, healed;
 
     public SoulSlashEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -57,8 +61,13 @@ public class SoulSlashEntity extends Entity {
         return a.lengthSqr() < 1.0E-6 ? new Vec3(1, 0, 0) : a.normalize();
     }
 
+    /** Charge 0..1 (0 = an instant release). */
     public float power() {
         return entityData.get(POWER);
+    }
+
+    public static float damageFor(float charge) {
+        return MIN_DAMAGE + (MAX_DAMAGE - MIN_DAMAGE) * Mth.clamp(charge, 0, 1);
     }
 
     @Override
@@ -70,7 +79,17 @@ public class SoulSlashEntity extends Entity {
     public void tick() {
         super.tick();
         Vec3 v = getDeltaMovement();
-        setPos(getX() + v.x, getY() + v.y, getZ() + v.z);
+        // blocks stop the beam
+        var hit = level().clip(new net.minecraft.world.level.ClipContext(position(), position().add(v),
+                net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, this));
+        boolean blocked = hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK;
+        Vec3 next = blocked ? hit.getLocation() : position().add(v);
+        setPos(next.x, next.y, next.z);
+        if (blocked && level() instanceof ServerLevel sl) {
+            sl.sendParticles(ModParticles.SOUL_EMBER.get(), next.x, next.y, next.z, 30, 0.4, 0.4, 0.4, 0.12);
+            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL, next.x, next.y, next.z, 8, 0.3, 0.3, 0.3, 0.05);
+            sl.playSound(null, next.x, next.y, next.z, net.minecraft.sounds.SoundEvents.SOUL_ESCAPE, net.minecraft.sounds.SoundSource.PLAYERS, 1.2F, 0.7F);
+        }
         if (level().isClientSide) {
             for (int i = 0; i < 3; i++) {
                 double side = (random.nextDouble() - 0.5) * 2 * HALF_WIDTH;
@@ -101,11 +120,24 @@ public class SoulSlashEntity extends Entity {
             if (Math.abs(side) > HALF_WIDTH + t.getBbWidth() / 2 || along < -SPEED - 0.5 - t.getBbWidth() / 2 || along > 0.8 + t.getBbWidth() / 2) continue;
             if (Math.abs(rise) > HEIGHT / 2 + t.getBbHeight() / 2) continue;
             struck.add(t.getId());
-            float damage = MAX_DAMAGE * power();
+            float damage = damageFor(power());
             t.invulnerableTime = 0;
+            float before = t.getHealth();
+            Vec3 keep = t.getDeltaMovement();
             SoulBonus.abilityDamage(() -> t.hurt(level.damageSources().playerAttack(player), damage));
+            t.setDeltaMovement(keep);   // no knockback
+            t.hurtMarked = true;
+            dealt += Math.max(0, before - t.getHealth());
+            // lifesteal: 5% of the damage dealt, between half a heart and a heart per beam
+            float target = dealt > 0 ? Mth.clamp(dealt * LIFESTEAL, MIN_HEAL, MAX_HEAL) : 0;
+            if (target > healed) {
+                player.heal(target - healed);
+                if (healed == 0) level.sendParticles(net.minecraft.core.particles.ParticleTypes.HEART, player.getX(), player.getY() + 2.1, player.getZ(), 1, 0.2, 0.1, 0.2, 0);
+                healed = target;
+            }
             level.sendParticles(ModParticles.SOUL_EMBER.get(), t.getX(), t.getY() + t.getBbHeight() * 0.6, t.getZ(), 15, 0.3, 0.4, 0.3, 0.12);
         }
+        if (blocked) discard();
     }
 
     @Override
