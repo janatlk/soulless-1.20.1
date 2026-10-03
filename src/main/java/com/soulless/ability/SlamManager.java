@@ -106,9 +106,6 @@ public final class SlamManager {
             long now = level.getGameTime();
             long age = now - s.start;
             player.fallDistance = 0;
-            if (s.ring && s.impact < 0 && age % 2 == 0) {
-                com.soulless.item.SoulRing.sparkle(level, com.soulless.item.SoulRing.swordPoint(player), 4, 0.25);
-            }
 
             if (s.impact >= 0) {
                 // kneeling with the sword in the ground, then the stance is released
@@ -123,7 +120,7 @@ public final class SlamManager {
                 player.setDeltaMovement(look.x * SlamTimeline.LEAP_FORWARD, SlamTimeline.LEAP_UP, look.z * SlamTimeline.LEAP_FORWARD);
                 player.hurtMarked = true;
                 level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 0.5F);
-                level.sendParticles(ModParticles.SOUL_EMBER.get(), player.getX(), player.getY() + 0.1, player.getZ(), 40, 0.6, 0.05, 0.6, 0.08);
+                level.sendParticles(com.soulless.item.SoulRing.ember(s.ring), player.getX(), player.getY() + 0.1, player.getZ(), 40, 0.6, 0.05, 0.6, 0.08);
                 level.sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY() + 0.1, player.getZ(), 12, 0.5, 0.05, 0.5, 0.05);
             } else if (age == SlamTimeline.PLUNGE) {
                 Vec3 v = player.getDeltaMovement();
@@ -182,12 +179,7 @@ public final class SlamManager {
         double groundY = groundPos != null ? groundPos.getY() + 1.0 : player.getY();
         center = new Vec3(center.x, groundY, center.z);
         int stun = Math.round(STUN_SECONDS * 20) + (withRing ? com.soulless.item.SoulRing.STUN_BONUS_TICKS : 0);
-        if (withRing) {
-            for (int i = 0; i < 24; i++) {
-                double a = Math.PI * 2 * i / 24;
-                com.soulless.item.SoulRing.sparkle(level, center.add(Math.cos(a) * 2.5, 0.3, Math.sin(a) * 2.5), 3, 0.2);
-            }
-        }
+
 
         AABB box = new AABB(center, center).inflate(RADIUS, 3.0, RADIUS);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator())) {
@@ -209,26 +201,26 @@ public final class SlamManager {
         // Shockwave: rings of soul embers, dragon breath and debris from the struck block.
         BlockState ground = groundPos != null ? level.getBlockState(groundPos) : null;
         level.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.3, center.z, 3, 0.6, 0.2, 0.6, 0);
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, center.x, center.y + 0.5, center.z, 80, 1.5, 0.6, 1.5, 0.4);
+        level.sendParticles(com.soulless.item.SoulRing.accent(withRing, ParticleTypes.REVERSE_PORTAL), center.x, center.y + 0.5, center.z, 80, 1.5, 0.6, 1.5, 0.4);
         for (int ring = 1; ring <= (int) RADIUS; ring++) {
             int points = ring * 10;
             for (int i = 0; i < points; i++) {
                 double a = Math.PI * 2 * i / points;
                 double x = center.x + Math.cos(a) * ring;
                 double z = center.z + Math.sin(a) * ring;
-                level.sendParticles(ModParticles.SOUL_EMBER.get(), x, center.y + 0.1, z, 1, 0.1, 0.05, 0.1, 0.02);
+                level.sendParticles(com.soulless.item.SoulRing.ember(withRing), x, center.y + 0.1, z, 1, 0.1, 0.05, 0.1, 0.02);
                 if (i % 3 == 0) {
-                    level.sendParticles(ParticleTypes.DRAGON_BREATH, x, center.y + 0.2, z, 1, 0.05, 0.1, 0.05, 0.03);
+                    level.sendParticles(com.soulless.item.SoulRing.accent(withRing, ParticleTypes.DRAGON_BREATH), x, center.y + 0.2, z, 1, 0.05, 0.1, 0.05, 0.03);
                 }
                 if (ground != null && i % 2 == 0) {
                     level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, ground), x, center.y + 0.1, z, 2, 0.2, 0.3, 0.2, 0.15);
                 }
             }
         }
-        level.sendParticles(ModParticles.SOUL_EMBER.get(), center.x, center.y + 0.5, center.z, 60, 0.6, 1.2, 0.6, 0.12);
+        level.sendParticles(com.soulless.item.SoulRing.ember(withRing), center.x, center.y + 0.5, center.z, 60, 0.6, 1.2, 0.6, 0.12);
 
         if (groundPos != null) {
-            CrackManager.start(level, groundPos, RADIUS + 1.5F);
+            CrackManager.start(level, groundPos, RADIUS + 1.5F, withRing);
         }
         ModNetwork.sendNear(level, center, 48, new SlamImpactPacket(player.getId(), center.x, center.y, center.z, RADIUS));
         player.fallDistance = 0;

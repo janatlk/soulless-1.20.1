@@ -143,9 +143,6 @@ public final class RendManager {
             s.prevAge = s.age;
             s.age += s.speed;
             double age = s.age;
-            if (s.ring && ((int) age) % 2 == 0) {
-                com.soulless.item.SoulRing.sparkle(level, com.soulless.item.SoulRing.swordPoint(player).add(0, 0.6, 0), 3, 0.25);
-            }
             if (age < RendTimeline.WINDUP + RendTimeline.HIT_AT && !(player.getMainHandItem().getItem() instanceof SoulForgedItem)) {
                 abort(player);
                 it.remove();
@@ -164,12 +161,7 @@ public final class RendManager {
             }
             if (s.crossed(RendTimeline.WINDUP + RendTimeline.HIT_AT)) {
                 strike(player, s.power);
-                if (s.ring) {
-                    net.minecraft.world.phys.Vec3 look = player.getLookAngle();
-                    for (int i = 0; i < 10; i++) {
-                        com.soulless.item.SoulRing.sparkle(level, player.getEyePosition().add(look.scale(1.5 + i * 0.6)), 4, 0.35);
-                    }
-                }
+
                 setSlow(player, -0.3);
             }
             if (age >= RendTimeline.TOTAL) {
@@ -194,6 +186,7 @@ public final class RendManager {
         Vec3 from = player.getEyePosition().add(0, -0.3, 0).add(sight.scale(1.2));
         slash.moveTo(from.x, from.y, from.z);
         slash.setup(player, sight, (power - RendTimeline.MIN_POWER) / (1 - RendTimeline.MIN_POWER));
+        slash.setGold(com.soulless.item.SoulRing.worn(player));
         level.addFreshEntity(slash);
 
         player.getCooldowns().addCooldown(player.getMainHandItem().getItem(), SlamManager.COOLDOWN_TICKS);

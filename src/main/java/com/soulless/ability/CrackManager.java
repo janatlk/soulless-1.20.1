@@ -32,9 +32,12 @@ public final class CrackManager {
         final long start;
         final int peak;
         final int hold;
+        /** Opened by a wielder wearing the Soulsmith's Ring: the cracks glow gold. */
+        final boolean gold;
         int shown = -1;
 
-        Crack(ServerLevel level, BlockPos pos, int breakerId, long start, int peak, int hold) {
+        Crack(ServerLevel level, BlockPos pos, int breakerId, long start, int peak, int hold, boolean gold) {
+            this.gold = gold;
             this.level = level;
             this.pos = pos;
             this.breakerId = breakerId;
@@ -44,7 +47,7 @@ public final class CrackManager {
         }
     }
 
-    public static void start(ServerLevel level, BlockPos center, float radius) {
+    public static void start(ServerLevel level, BlockPos center, float radius, boolean gold) {
         RandomSource rnd = level.getRandom();
         long now = level.getGameTime();
         int r = (int) Math.ceil(radius);
@@ -58,7 +61,7 @@ public final class CrackManager {
                 if (surface == null) continue;
                 int peak = Math.max(2, Math.min(9, 9 - (int) (d * 1.15) + rnd.nextInt(3) - 1));
                 long begin = now + (long) (d * 1.6);
-                CRACKS.add(new Crack(level, surface, nextId--, begin, peak, HOLD_TICKS + rnd.nextInt(30)));
+                CRACKS.add(new Crack(level, surface, nextId--, begin, peak, HOLD_TICKS + rnd.nextInt(30), gold));
                 if (nextId < -0x7F_0000) nextId = -0x50_0000;
             }
         }
@@ -103,7 +106,7 @@ public final class CrackManager {
                 it.remove();
             } else if (age > 4 && age < 4 + c.hold && c.level.getRandom().nextInt(40) == 0) {
                 // the fissure still smoulders with soul fire
-                c.level.sendParticles(ModParticles.SOUL_EMBER.get(), c.pos.getX() + 0.5, c.pos.getY() + 1.02, c.pos.getZ() + 0.5,
+                c.level.sendParticles(com.soulless.item.SoulRing.ember(c.gold), c.pos.getX() + 0.5, c.pos.getY() + 1.02, c.pos.getZ() + 0.5,
                         1, 0.3, 0, 0.3, 0.01);
             }
         }

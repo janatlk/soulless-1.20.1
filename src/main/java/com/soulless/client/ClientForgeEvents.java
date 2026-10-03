@@ -215,19 +215,11 @@ public final class ClientForgeEvents {
             Vec3 blade = forward.scale(0.5).add(0, 0.866, 0);
             at = hand.add(blade.scale(0.4 + rnd.nextDouble() * 1.6)).add(right.scale((rnd.nextDouble() - 0.5) * 0.3));
         }
-        if (com.soulless.item.SoulRing.worn(p)) {
-            // with the Soulsmith's Ring: golden embers cooling to orange, and now and then a glint
-            if (rnd.nextInt(4) == 0) {
-                level.addParticle(ParticleTypes.WAX_ON, at.x, at.y, at.z, (rnd.nextDouble() - 0.5) * 0.4, 0.2, (rnd.nextDouble() - 0.5) * 0.4);
-            } else {
-                level.addParticle(com.soulless.item.SoulRing.EMBER, at.x, at.y, at.z, 0, 0.02 + rnd.nextDouble() * 0.02, 0);
-            }
-            return;
-        }
+        boolean gold = com.soulless.item.SoulRing.worn(p);
         if (rnd.nextInt(3) == 0) {
-            level.addParticle(ParticleTypes.SOUL, at.x, at.y, at.z, 0, 0.015 + rnd.nextDouble() * 0.015, 0);
+            level.addParticle(com.soulless.item.SoulRing.soul(gold), at.x, at.y, at.z, 0, 0.015 + rnd.nextDouble() * 0.015, 0);
         } else {
-            level.addParticle(ModParticles.SOUL_EMBER.get(), at.x, at.y, at.z, 0, 0.01 + rnd.nextDouble() * 0.02, 0);
+            level.addParticle(com.soulless.item.SoulRing.ember(gold), at.x, at.y, at.z, 0, 0.01 + rnd.nextDouble() * 0.02, 0);
         }
     }
 
@@ -243,20 +235,20 @@ public final class ClientForgeEvents {
             double a = rnd.nextDouble() * Math.PI * 2, r = 2.0 + rnd.nextDouble() * 1.2;
             Vec3 from = blade.add(Math.cos(a) * r, (rnd.nextDouble() - 0.5) * 2.4, Math.sin(a) * r);
             Vec3 v = blade.subtract(from).scale(0.13);
-            level.addParticle(ModParticles.SOUL_EMBER.get(), from.x, from.y, from.z, v.x, v.y, v.z);
+            level.addParticle(com.soulless.item.SoulRing.ember(e), from.x, from.y, from.z, v.x, v.y, v.z);
         }
         // a slowly turning ring of soul fire around the feet, tightening as the strike nears
         double ringR = 1.6 - 0.6 * k;
         for (int i = 0; i < 2; i++) {
             double a = t * 0.22 + i * Math.PI;
-            level.addParticle(ModParticles.SOUL_EMBER.get(), e.getX() + Math.cos(a) * ringR, e.getY() + 0.05,
+            level.addParticle(com.soulless.item.SoulRing.ember(e), e.getX() + Math.cos(a) * ringR, e.getY() + 0.05,
                     e.getZ() + Math.sin(a) * ringR, 0, 0.01, 0);
         }
         if (t == RendTimeline.WINDUP - 20) {
             // fully charged: the blade flares
             level.addParticle(ParticleTypes.FLASH, blade.x, blade.y, blade.z, 0, 0, 0);
             for (int i = 0; i < 40; i++) {
-                level.addParticle(ModParticles.SOUL_EMBER.get(), blade.x, blade.y, blade.z,
+                level.addParticle(com.soulless.item.SoulRing.ember(e), blade.x, blade.y, blade.z,
                         (rnd.nextDouble() - 0.5) * 0.5, (rnd.nextDouble() - 0.3) * 0.5, (rnd.nextDouble() - 0.5) * 0.5);
             }
         }
@@ -279,7 +271,7 @@ public final class ClientForgeEvents {
                 // the buried blade keeps venting soul fire
                 Vec3 tip = e.position().add(forward.scale(1.1));
                 for (int i = 0; i < 2; i++) {
-                    level.addParticle(ModParticles.SOUL_EMBER.get(), tip.x + (rnd.nextDouble() - 0.5) * 0.3, tip.y + 0.1,
+                    level.addParticle(com.soulless.item.SoulRing.ember(e), tip.x + (rnd.nextDouble() - 0.5) * 0.3, tip.y + 0.1,
                             tip.z + (rnd.nextDouble() - 0.5) * 0.3, 0, 0.12 + rnd.nextDouble() * 0.12, 0);
                 }
             }
@@ -291,7 +283,7 @@ public final class ClientForgeEvents {
                 double a = rnd.nextDouble() * Math.PI * 2, r = 1.8 + rnd.nextDouble() * 0.8;
                 Vec3 from = c.add(Math.cos(a) * r, (rnd.nextDouble() - 0.4) * 1.6, Math.sin(a) * r);
                 Vec3 v = c.add(forward.scale(0.5)).subtract(from).scale(0.14);
-                level.addParticle(ModParticles.SOUL_EMBER.get(), from.x, from.y, from.z, v.x, v.y, v.z);
+                level.addParticle(com.soulless.item.SoulRing.ember(e), from.x, from.y, from.z, v.x, v.y, v.z);
             }
         } else if (t < SlamTimeline.PLUNGE) {
             // a burning arc traced by the blade during the flip
@@ -300,12 +292,12 @@ public final class ClientForgeEvents {
             for (int i = 0; i < 4; i++) {
                 double a = ang - i * 0.18;
                 Vec3 p = c.add(forward.scale(Math.sin(a) * 1.6)).add(0, Math.cos(a) * 1.6, 0);
-                level.addParticle(ModParticles.SOUL_EMBER.get(), p.x, p.y, p.z, 0, 0.01, 0);
+                level.addParticle(com.soulless.item.SoulRing.ember(e), p.x, p.y, p.z, 0, 0.01, 0);
             }
         } else {
             // diving: a comet tail of soul fire
             for (int i = 0; i < 6; i++) {
-                level.addParticle(ModParticles.SOUL_EMBER.get(), e.getX() + (rnd.nextDouble() - 0.5) * 0.6,
+                level.addParticle(com.soulless.item.SoulRing.ember(e), e.getX() + (rnd.nextDouble() - 0.5) * 0.6,
                         e.getY() + rnd.nextDouble() * 1.8, e.getZ() + (rnd.nextDouble() - 0.5) * 0.6, 0, 0.5, 0);
             }
         }

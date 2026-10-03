@@ -28,6 +28,7 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onParticles(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SOUL_EMBER.get(), SoulEmberParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.GOLD_EMBER.get(), SoulEmberParticle.Provider::new);
     }
 
     @SubscribeEvent

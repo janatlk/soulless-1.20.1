@@ -19,7 +19,8 @@ import org.joml.Matrix4f;
  * down to the lower left, drawn additively so it blooms over the world, then fading out.
  */
 public final class SlashTrails {
-    public record Trail(Vec3 origin, float yaw, long start) {}
+    /** {@code gold}: thrown with the Soulsmith's Ring on, drawn in gold instead of violet. */
+    public record Trail(Vec3 origin, float yaw, long start, boolean gold) {}
 
     private static final int LIFE = 16;
     private static final int SWEEP_TICKS = 4;
@@ -75,38 +76,40 @@ public final class SlashTrails {
                 Vec3 p0 = point(t, b, a0, in0), p1 = point(t, b, a0, out), p2 = point(t, b, a1, out), p3 = point(t, b, a1, in1);
                 int alpha0 = (int) (255 * fade * Math.sqrt(w0)), alpha1 = (int) (255 * fade * Math.sqrt(w1));
                 // drawn twice: additive blending makes the overlap glow
-                quad(vc, m, p0, p1, p2, p3, alpha0, alpha1);
-                quad(vc, m, p0, p1, p2, p3, alpha0, alpha1);
+                quad(vc, m, p0, p1, p2, p3, alpha0, alpha1, t.gold());
+                quad(vc, m, p0, p1, p2, p3, alpha0, alpha1, t.gold());
                 // a hot white core along the outer edge
                 Vec3 c0 = point(t, b, a0, out - 0.25F * grow), c3 = point(t, b, a1, out - 0.25F * grow);
-                quadWhite(vc, m, c0, p1, p2, c3, (int) (alpha0 * 0.9F), (int) (alpha1 * 0.9F));
+                quadWhite(vc, m, c0, p1, p2, c3, (int) (alpha0 * 0.9F), (int) (alpha1 * 0.9F), t.gold());
             }
         }
         ps.popPose();
         buffers.endBatch(RenderType.lightning());
     }
 
-    private static void quad(VertexConsumer vc, Matrix4f m, Vec3 in0, Vec3 out0, Vec3 out1, Vec3 in1, int a0, int a1) {
-        // purple, double-sided (lightning culls back faces)
-        v(vc, m, in0, 110, 20, 210, a0 / 2);
-        v(vc, m, out0, 200, 80, 255, a0);
-        v(vc, m, out1, 200, 80, 255, a1);
-        v(vc, m, in1, 110, 20, 210, a1 / 2);
-        v(vc, m, in1, 110, 20, 210, a1 / 2);
-        v(vc, m, out1, 200, 80, 255, a1);
-        v(vc, m, out0, 200, 80, 255, a0);
-        v(vc, m, in0, 110, 20, 210, a0 / 2);
+    private static void quad(VertexConsumer vc, Matrix4f m, Vec3 in0, Vec3 out0, Vec3 out1, Vec3 in1, int a0, int a1, boolean gold) {
+        // violet (or gold with the ring), double-sided (lightning culls back faces)
+        int r = gold ? 255 : 200, g = gold ? 175 : 80, b = gold ? 50 : 255;
+        v(vc, m, in0, r, g, b, 0);
+        v(vc, m, out0, r, g, b, a0);
+        v(vc, m, out1, r, g, b, a1);
+        v(vc, m, in1, r, g, b, 0);
+        v(vc, m, in1, r, g, b, 0);
+        v(vc, m, out1, r, g, b, a1);
+        v(vc, m, out0, r, g, b, a0);
+        v(vc, m, in0, r, g, b, 0);
     }
 
-    private static void quadWhite(VertexConsumer vc, Matrix4f m, Vec3 in0, Vec3 out0, Vec3 out1, Vec3 in1, int a0, int a1) {
-        v(vc, m, in0, 255, 220, 255, 0);
-        v(vc, m, out0, 255, 235, 255, a0);
-        v(vc, m, out1, 255, 235, 255, a1);
-        v(vc, m, in1, 255, 220, 255, 0);
-        v(vc, m, in1, 255, 220, 255, 0);
-        v(vc, m, out1, 255, 235, 255, a1);
-        v(vc, m, out0, 255, 235, 255, a0);
-        v(vc, m, in0, 255, 220, 255, 0);
+    private static void quadWhite(VertexConsumer vc, Matrix4f m, Vec3 in0, Vec3 out0, Vec3 out1, Vec3 in1, int a0, int a1, boolean gold) {
+        int g = gold ? 245 : 220, b = gold ? 200 : 255, g2 = gold ? 250 : 235, b2 = gold ? 215 : 255;
+        v(vc, m, in0, 255, g, b, 0);
+        v(vc, m, out0, 255, g2, b2, a0);
+        v(vc, m, out1, 255, g2, b2, a1);
+        v(vc, m, in1, 255, g, b, 0);
+        v(vc, m, in1, 255, g, b, 0);
+        v(vc, m, out1, 255, g2, b2, a1);
+        v(vc, m, out0, 255, g2, b2, a0);
+        v(vc, m, in0, 255, g, b, 0);
     }
 
     private static void v(VertexConsumer vc, Matrix4f m, Vec3 p, int r, int g, int b, int a) {
@@ -114,8 +117,8 @@ public final class SlashTrails {
     }
 
     /** Soul fire scattered along the whole cut, sweep flashes, and embers flung outward. */
-    public static void burst(ClientLevel level, Vec3 origin, float yaw) {
-        Trail t = new Trail(origin, yaw, 0);
+    public static void burst(ClientLevel level, Vec3 origin, float yaw, boolean gold) {
+        Trail t = new Trail(origin, yaw, 0, gold);
         Vec3[] b = basis(yaw);
         RandomSource rnd = level.getRandom();
         for (int i = 0; i <= 30; i++) {
@@ -123,13 +126,13 @@ public final class SlashTrails {
             float r = Mth.lerp(rnd.nextFloat(), R_IN, R_OUT);
             Vec3 p = point(t, b, a, r);
             Vec3 out = p.subtract(origin.add(0, 1.45, 0)).normalize().scale(0.12 + rnd.nextDouble() * 0.12);
-            level.addParticle(ModParticles.SOUL_EMBER.get(), p.x, p.y, p.z, out.x, out.y + 0.04, out.z);
+            level.addParticle(com.soulless.item.SoulRing.ember(gold), p.x, p.y, p.z, out.x, out.y + 0.04, out.z);
             if (i % 6 == 3) {
                 Vec3 s = point(t, b, a, (R_IN + R_OUT) / 2);
                 level.addParticle(ParticleTypes.SWEEP_ATTACK, s.x, s.y, s.z, 0, 0, 0);
             }
             if (i % 2 == 0) {
-                level.addParticle(ParticleTypes.REVERSE_PORTAL, p.x, p.y, p.z, out.x * 2, out.y * 2, out.z * 2);
+                level.addParticle(com.soulless.item.SoulRing.accent(gold, ParticleTypes.REVERSE_PORTAL), p.x, p.y, p.z, out.x * 2, out.y * 2, out.z * 2);
             }
         }
     }

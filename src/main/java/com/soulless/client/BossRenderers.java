@@ -248,9 +248,11 @@ public final class BossRenderers {
                 float th0 = thickness(t0), th1 = thickness(t1);
                 int a0 = (int) (220 * fade * Mth.sin(t0 * Mth.PI)), a1 = (int) (220 * fade * Mth.sin(t1 * Mth.PI));
                 // body of the wave, both sides
-                ribbon(vc, m, c0, c1, th0, th1, 120, 30, 220, a0 / 2, 200, 90, 255, a0, a1);
+                if (e.gold()) ribbon(vc, m, c0, c1, th0, th1, 210, 120, 20, a0 / 2, 255, 200, 70, a0, a1);
+                else ribbon(vc, m, c0, c1, th0, th1, 120, 30, 220, a0 / 2, 200, 90, 255, a0, a1);
                 // bright leading edge
-                ribbon(vc, m, c0.add(0, 0, 0.05), c1.add(0, 0, 0.05), th0 * 0.25F, th1 * 0.25F, 255, 230, 255, 0, 255, 240, 255, a0, a1);
+                if (e.gold()) ribbon(vc, m, c0.add(0, 0, 0.05), c1.add(0, 0, 0.05), th0 * 0.25F, th1 * 0.25F, 255, 245, 200, 0, 255, 250, 220, a0, a1);
+                else ribbon(vc, m, c0.add(0, 0, 0.05), c1.add(0, 0, 0.05), th0 * 0.25F, th1 * 0.25F, 255, 230, 255, 0, 255, 240, 255, a0, a1);
             }
             ps.popPose();
         }

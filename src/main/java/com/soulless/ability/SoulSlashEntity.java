@@ -37,6 +37,8 @@ public class SoulSlashEntity extends Entity {
     public static final double HALF_WIDTH = 2.8, HEIGHT = 3.2;
 
     private static final EntityDataAccessor<Float> POWER = SynchedEntityData.defineId(SoulSlashEntity.class, EntityDataSerializers.FLOAT);
+    /** Thrown by a wielder wearing the Soulsmith's Ring: drawn and burning in gold. */
+    private static final EntityDataAccessor<Boolean> GOLD = SynchedEntityData.defineId(SoulSlashEntity.class, EntityDataSerializers.BOOLEAN);
 
     private UUID owner;
     private final Set<Integer> struck = new HashSet<>();
@@ -66,6 +68,14 @@ public class SoulSlashEntity extends Entity {
         return entityData.get(POWER);
     }
 
+    public void setGold(boolean gold) {
+        entityData.set(GOLD, gold);
+    }
+
+    public boolean gold() {
+        return entityData.get(GOLD);
+    }
+
     public static float damageFor(float charge) {
         return MIN_DAMAGE + (MAX_DAMAGE - MIN_DAMAGE) * Mth.clamp(charge, 0, 1);
     }
@@ -73,6 +83,7 @@ public class SoulSlashEntity extends Entity {
     @Override
     protected void defineSynchedData() {
         entityData.define(POWER, 1F);
+        entityData.define(GOLD, false);
     }
 
     @Override
@@ -86,8 +97,8 @@ public class SoulSlashEntity extends Entity {
         Vec3 next = blocked ? hit.getLocation() : position().add(v);
         setPos(next.x, next.y, next.z);
         if (blocked && level() instanceof ServerLevel sl) {
-            sl.sendParticles(ModParticles.SOUL_EMBER.get(), next.x, next.y, next.z, 30, 0.4, 0.4, 0.4, 0.12);
-            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL, next.x, next.y, next.z, 8, 0.3, 0.3, 0.3, 0.05);
+            sl.sendParticles(com.soulless.item.SoulRing.ember(gold()), next.x, next.y, next.z, 30, 0.4, 0.4, 0.4, 0.12);
+            sl.sendParticles(com.soulless.item.SoulRing.soul(gold()), next.x, next.y, next.z, 8, 0.3, 0.3, 0.3, 0.05);
             sl.playSound(null, next.x, next.y, next.z, net.minecraft.sounds.SoundEvents.SOUL_ESCAPE, net.minecraft.sounds.SoundSource.PLAYERS, 1.2F, 0.7F);
         }
         if (level().isClientSide) {
@@ -96,7 +107,7 @@ public class SoulSlashEntity extends Entity {
                 Vec3 a = across(v);
                 Vec3 up = a.cross(v.normalize());
                 Vec3 p = position().add(a.scale(side)).add(up.scale((random.nextDouble() - 0.5) * HEIGHT));
-                level().addParticle(ModParticles.SOUL_EMBER.get(), p.x, p.y, p.z, 0, 0.02, 0);
+                level().addParticle(com.soulless.item.SoulRing.ember(gold()), p.x, p.y, p.z, 0, 0.02, 0);
             }
             return;
         }
@@ -135,7 +146,7 @@ public class SoulSlashEntity extends Entity {
                 if (healed == 0) level.sendParticles(net.minecraft.core.particles.ParticleTypes.HEART, player.getX(), player.getY() + 2.1, player.getZ(), 1, 0.2, 0.1, 0.2, 0);
                 healed = target;
             }
-            level.sendParticles(ModParticles.SOUL_EMBER.get(), t.getX(), t.getY() + t.getBbHeight() * 0.6, t.getZ(), 15, 0.3, 0.4, 0.3, 0.12);
+            level.sendParticles(com.soulless.item.SoulRing.ember(gold()), t.getX(), t.getY() + t.getBbHeight() * 0.6, t.getZ(), 15, 0.3, 0.4, 0.3, 0.12);
         }
         if (blocked) discard();
     }
