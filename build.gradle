@@ -87,7 +87,7 @@ minecraft {
 
         client {
             // keep the dev client light so it can run next to other games
-            jvmArgs '-Xmx2G', '-Xms512M'
+            jvmArgs '-Xmx4G', '-Xms1G'
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', mod_id
         }

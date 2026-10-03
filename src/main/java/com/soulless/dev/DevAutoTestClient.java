@@ -33,6 +33,8 @@ import org.lwjgl.glfw.GLFW;
 public final class DevAutoTestClient {
     /** A world only the autotest ever uses; never the user's own worlds. */
     public static final String WORLD = "soulless_autotest";
+    /** SOULLESS_PREVIEW_STRIP=1: film the preview animation from one view instead of walking around it. */
+    public static final boolean PREVIEW_STRIP = System.getenv("SOULLESS_PREVIEW_STRIP") != null;
     private static boolean started;
     private static int tick = -1;
     private static ArmorStand sideCam;
@@ -84,6 +86,11 @@ public final class DevAutoTestClient {
             if (tick == 15) {
                 opts.setCameraType(CameraType.FIRST_PERSON);
                 opts.hideGui = true;
+            }
+            if (PREVIEW_STRIP) {   // a 7 s film strip of one animation, a frame every 3 ticks
+                if (tick >= 60 && tick <= 200 && (tick - 60) % 3 == 0) shot(mc, String.format("strip_%03d", tick - 60));
+                if (tick == 210) mc.stop();
+                return;
             }
             for (int v = 0; v < 4; v++) {
                 if (tick == 60 + v * 40) shot(mc, "preview_" + v);

@@ -35,6 +35,10 @@ public final class ModEntities {
             () -> EntityType.Builder.<SoulEruptionEntity>of(SoulEruptionEntity::new, MobCategory.MISC)
                     .sized(3.0F, 3.5F).fireImmune().clientTrackingRange(8).build("soul_eruption"));
 
+    public static final RegistryObject<EntityType<com.soulless.boss.IceShardEntity>> ICE_SHARD = ENTITIES.register("ice_shard",
+            () -> EntityType.Builder.<com.soulless.boss.IceShardEntity>of(com.soulless.boss.IceShardEntity::new, MobCategory.MISC)
+                    .sized(1.0F, 1.0F).fireImmune().clientTrackingRange(8).updateInterval(20).build("ice_shard"));
+
     public static final RegistryObject<EntityType<com.soulless.ability.SoulSlashEntity>> SOUL_SLASH = ENTITIES.register("soul_slash",
             () -> EntityType.Builder.<com.soulless.ability.SoulSlashEntity>of(com.soulless.ability.SoulSlashEntity::new, MobCategory.MISC)
                     .sized(1.0F, 1.0F).fireImmune().clientTrackingRange(8).updateInterval(1).build("soul_slash"));

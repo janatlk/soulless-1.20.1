@@ -38,6 +38,7 @@ public final class ClientModEvents {
         event.registerEntityRenderer((net.minecraft.world.entity.EntityType) com.soulless.registry.ModEntities.ABYSS_HEAD.get(),
                 ctx -> new BossRenderers.AbyssHead(ctx));
         event.registerEntityRenderer(com.soulless.registry.ModEntities.SOUL_ERUPTION.get(), BossRenderers.Invisible::new);
+        event.registerEntityRenderer(com.soulless.registry.ModEntities.ICE_SHARD.get(), BossRenderers.IceShard::new);
         event.registerEntityRenderer(com.soulless.registry.ModEntities.SOUL_SLASH.get(), BossRenderers.Slash::new);
     }
 

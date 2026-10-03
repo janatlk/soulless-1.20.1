@@ -127,6 +127,14 @@ public final class DevAutoTest {
             // walk around it: front, front-left, side, back
             double[][] views = {{0, -9}, {-7, -7}, {-10, 0}, {0, 10}};
             int v = (tick - 30) / 40;
+            if (DevAutoTestClient.PREVIEW_STRIP) {   // filming one attack: stay at the front-left three-quarter view
+                if (tick == 30) {
+                    double px = cx - 4, pz = cz - 12;
+                    float yaw = (float) (Math.toDegrees(Math.atan2(cz - pz, cx - px)) - 90);
+                    p.teleportTo(level, px, p.getY(), pz, yaw, -10);
+                }
+                return;
+            }
             if (tick >= 30 && (tick - 30) % 40 == 0 && v < views.length) {
                 double px = cx + views[v][0], pz = cz + views[v][1];
                 float yaw = (float) (Math.toDegrees(Math.atan2(cz - pz, cx - px)) - 90);

@@ -33,6 +33,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -186,7 +187,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
                         level.sendParticles(ModParticles.SOUL_EMBER.get(), from.x, from.y, from.z, 0, v.x, v.y, v.z, 1);
                     }
                 }
-                if (stateTicks == ULT_RELEASE) releaseHeads(level);
+                if (stateTicks == ULT_RELEASE) castShardRain(level);
                 if (stateTicks >= ULT_TOTAL) stun(ULT_STUN, true);
             }
             case STUNNED -> {
@@ -230,20 +231,49 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         level.playSound(null, hand.x, hand.y, hand.z, ModSounds.BOLT_FLY.get(), SoundSource.HOSTILE, 1.5F, 1.0F);
     }
 
-    private void releaseHeads(ServerLevel level) {
-        // at chest height of a standing player, so the ring actually has to be dodged
-        Vec3 c = new Vec3(getX(), (target != null ? target.getY() : groundY()) + 1.0, getZ());
-        for (int i = 0; i < 10; i++) {
-            // the ring is turned so one head flies straight at the target: standing still is not safe
-            double toTarget = target != null ? Math.atan2(target.getZ() - getZ(), target.getX() - getX()) : 0;
-            double a = Math.PI * 2 * i / 10 + toTarget;
-            Vec3 dir = new Vec3(Math.cos(a), 0, Math.sin(a));
-            AbyssHeadEntity head = new AbyssHeadEntity(level, this, dir);
-            head.moveTo(c.x + dir.x * 1.5, c.y, c.z + dir.z * 1.5);
-            level.addFreshEntity(head);
+    /** Share of the arena the ultimate's ice shards cover. */
+    private static final double SHARD_COVERAGE = 0.65;
+    /** Spacing of the shard grid: hexagonal cells whose circumradius (spacing / sqrt 3) fits inside a shard's radius. */
+    private static final double SHARD_SPACING = 3.4;
+
+    /**
+     * The ultimate: ice shards rain on about two thirds of the arena. The arena is tiled with hexagonal cells;
+     * a random 65% of them (always including the cells the players stand in, so standing still is never safe)
+     * get a shard, each landing a little after the others for a cascading rain.
+     */
+    private void castShardRain(ServerLevel level) {
+        Vec3 c = home != null ? Vec3.atBottomCenterOf(home) : position();
+        double reach = SoulAltarBlockEntity.ARENA_RADIUS - 0.8;
+        java.util.List<Vec3> cells = new java.util.ArrayList<>();
+        double rowH = SHARD_SPACING * Math.sqrt(3) / 2;
+        for (int row = (int) -Math.ceil(reach / rowH); row <= Math.ceil(reach / rowH); row++) {
+            double off = (row & 1) == 0 ? 0 : SHARD_SPACING / 2;
+            for (double dx = -reach - off; dx <= reach + SHARD_SPACING; dx += SHARD_SPACING) {
+                double x = dx + off, z = row * rowH;
+                if (x * x + z * z <= reach * reach) cells.add(new Vec3(c.x + x, c.y, c.z + z));
+            }
         }
-        level.playSound(null, blockPosition(), SoundEvents.WITHER_SHOOT, SoundSource.HOSTILE, 3.0F, 0.6F);
-        level.sendParticles(ParticleTypes.SOUL, c.x, c.y, c.z, 120, 2, 1.5, 2, 0.2);
+        java.util.Collections.shuffle(cells, new java.util.Random(random.nextLong()));
+        int count = (int) Math.round(cells.size() * SHARD_COVERAGE);
+        java.util.List<Vec3> chosen = new java.util.ArrayList<>();
+        for (ServerPlayer p : level.getEntitiesOfClass(ServerPlayer.class, new AABB(BlockPos.containing(c)).inflate(reach + 4, 12, reach + 4))) {
+            cells.stream().min(java.util.Comparator.comparingDouble(v -> v.distanceToSqr(p.getX(), c.y, p.getZ())))
+                    .ifPresent(v -> {
+                        cells.remove(v);
+                        chosen.add(v);
+                    });
+        }
+        for (int i = 0; chosen.size() < count && i < cells.size(); i++) chosen.add(cells.get(i));
+        for (Vec3 v : chosen) {
+            BlockPos ground = com.soulless.ability.CrackManager.findSurface(level, BlockPos.containing(v.x, c.y + 1, v.z));
+            IceShardEntity shard = new IceShardEntity(ModEntities.ICE_SHARD.get(), level);
+            shard.setup(getId(), random.nextInt(15));
+            shard.moveTo(v.x, ground != null ? ground.getY() + 1 : c.y, v.z);
+            level.addFreshEntity(shard);
+        }
+        level.playSound(null, blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.HOSTILE, 4.0F, 0.5F);
+        level.playSound(null, blockPosition(), SoundEvents.PLAYER_HURT_FREEZE, SoundSource.HOSTILE, 3.0F, 0.6F);
+        level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 4, getZ(), 150, 2.5, 2, 2.5, 0.25);
     }
 
     /** Where the right hand is during a throw: up and to the side of the body, facing the target. */
@@ -327,7 +357,8 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (state() == State.EMERGE || source.is(DamageTypes.FALL) || source.is(DamageTypes.IN_WALL)) return false;
-        if (source.getEntity() == this || source.getDirectEntity() instanceof SoulBoltEntity || source.getDirectEntity() instanceof AbyssHeadEntity) {
+        if (source.getEntity() == this || source.getDirectEntity() instanceof SoulBoltEntity || source.getDirectEntity() instanceof AbyssHeadEntity
+                || source.getDirectEntity() instanceof IceShardEntity) {
             return false;
         }
         if (vulnerable) amount *= VULNERABLE_MULT;
@@ -450,6 +481,11 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     /** Preview statues ({@code /soulless preview}) play this animation on loop and do nothing else. */
     private static final EntityDataAccessor<String> PREVIEW = SynchedEntityData.defineId(WailingReaperEntity.class, EntityDataSerializers.STRING);
 
+    /** Lengths (ticks) of the one-shot animations, so a preview can replay them with a pause in between. */
+    private static final java.util.Map<String, Integer> PREVIEW_TICKS = java.util.Map.of(
+            "bolt", BOLT_TOTAL, "erupt", ERUPT_TOTAL, "ult", ULT_TOTAL, "emerge", EMERGE_TOTAL, "death", 60);
+    private int previewCycle = -1;
+
     public void makePreview(String animation) {
         entityData.set(PREVIEW, animation);
         setNoAi(true);
@@ -468,7 +504,17 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         controllers.add(new AnimationController<>(this, "ambient", 0, state -> state.setAndContinue(AMBIENT)));
         controllers.add(new AnimationController<>(this, "main", 4, state -> {
             if (isPreview()) {
-                return state.setAndContinue(RawAnimation.begin().thenLoop("animation.wailing_reaper." + entityData.get(PREVIEW)));
+                String anim = entityData.get(PREVIEW);
+                if (anim.equals("idle") || anim.equals("stunned")) {
+                    return state.setAndContinue(RawAnimation.begin().thenLoop("animation.wailing_reaper." + anim));
+                }
+                // one-shot attacks: play, hold the last pose a moment, then blend back to the start (no loop snap)
+                int period = PREVIEW_TICKS.getOrDefault(anim, 40) + 25;
+                if (tickCount / period != previewCycle) {
+                    previewCycle = tickCount / period;
+                    state.getController().forceAnimationReset();
+                }
+                return state.setAndContinue(RawAnimation.begin().thenPlayAndHold("animation.wailing_reaper." + anim));
             }
             if (isDeadOrDying()) return state.setAndContinue(DEATH);
             return state.setAndContinue(switch (state()) {

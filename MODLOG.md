@@ -59,3 +59,17 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
   overhead -> dive -> kneel with the blade buried, 9 soul-fire pillars, crack ring -> recover.
 - Dev live tuning: `SOULLESS_AUTOTEST=1 SOULLESS_TUNE=1 SOULLESS_TUNE_VIEW=fp|back|front|side`, edit
   `run/fp_tune.properties`, screenshots `run/screenshots/autotest_tune_t*.png`, sheet via `tools/tune_sheet.py`.
+
+## 2026-10-03 — Reaper rework
+- Model hand-built in `tools/gen_reaper.py` (voxelized fal mesh dropped): horned angular skull, rib cage over a
+  glowing core, skeletal arms, scarf + cape, no legs (levitates), two big blue feathered wings (3-joint chains,
+  feathers painted on 2x-density planes, arched leading edge). Offline preview: `gen_reaper.py --preview out.png`.
+- Animations: "ambient" controller = wing beat (face-first power stroke down+forward, folded recovery, wave
+  along the wing, body lifts on the downstroke) + cape; "main" = state anims built on anticipation / strike /
+  follow-through / recovery, strike keys land on the server ticks (bolt 0.8 s, erupt 0.7 s, ult 3.0 s).
+  Attack wing poses go through `*_wing_pose` bones so they add on top of the beat. Every state anim keys the
+  same pose bones so blends never snap. Anim rotation signs: x+ = back/bow/look down, z+ = right side outward.
+- Ult is now an ice-shard rain (`IceShardEntity`): 65% of a hex grid over the arena (always the players'
+  cells), frost rune telegraph with a filling disc for 2-2.7 s, then spikes fall, 20 dmg (armor applies).
+- Dev: `SOULLESS_PREVIEW_STRIP=1` + `SOULLESS_PREVIEW_ANIM=x` films one animation (tools/strip_sheet.py).
+  Preview statues replay one-shot anims with a hold. Client heap now -Xmx4G.

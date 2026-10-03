@@ -3,7 +3,7 @@ Blockbench project. Also the boss-adjacent textures: abyss head skull, soul bolt
 
 Follows art/gen/reaper_concept_2.png: a horned skull with burning eyes, a cage of dark ribs over a glowing
 soul core, a ragged scarf-mantle and cape, long skeletal arms with hooked claws, and instead of legs a
-pair of great blue feathered wings that keep it levitating. Little ghost souls orbit it.
+pair of great blue feathered wings that keep it levitating.
 About 7 blocks tall. Every cube is placed by hand (no mesh conversion); one texel = one model pixel.
 
     uv run --no-project --with pillow --with numpy tools/gen_reaper.py [--preview out.png]
@@ -112,7 +112,6 @@ def chain(name, b, mats, start, segs):
 
 # ------------------------------------------------------------------ model (faces -z = front)
 CAPE = [(-12, 44, -9), (-6, 52, -4), (0, 56, 0), (6, 50, 4), (12, 42, 8)]   # (x, length, fan angle)
-WISPS = 4
 #: wing beat: 1.6 s per flap (anim_time * BEAT degrees); the ambient loop holds a whole number of beats
 BEAT = 225
 AMBIENT_LEN = 14.4
@@ -155,7 +154,8 @@ def build_wings():
     E = WING_EDGE
     for s, side in ((-1, "left"), (1, "right")):
         arm, fore, hand = f"{side}_wing", f"{side}_wing_fore", f"{side}_wing_hand"
-        bone(arm, "chest", (s * E[0][0], E[0][1], WING_Z))
+        bone(f"{side}_wing_pose", "chest", (s * E[0][0], E[0][1], WING_Z))   # attack poses, on top of the beat
+        bone(arm, f"{side}_wing_pose", (s * E[0][0], E[0][1], WING_Z))
         bone(fore, arm, (s * E[1][0], E[1][1], WING_Z))
         bone(hand, fore, (s * E[2][0], E[2][1], WING_Z))
         # (bone, edge from, edge to, feather count, angle from..to, tip y from..to or lengths)
@@ -294,17 +294,6 @@ def build():
         chain(f"{side}_thumb", f"{side}_claws", ["bone", "pale"], (x - s * 1, 34, -2.6),
               [((-s * 0.5, -0.8, -0.35), 4, 1.4), ((-s * 0.85, -0.45, 0), 3, 1.0)])
 
-    # --- ghost souls circling the shoulders
-    bone("wisps", "hover", (0, 70, 0))
-    for i in range(WISPS):
-        a = 2 * math.pi * i / WISPS + 0.6
-        wx, wz, wy = math.cos(a) * 21, math.sin(a) * 21, 66 + (i % 2) * 12
-        wb = f"wisp{i}"
-        bone(wb, "wisps", (wx, wy, wz))
-        box(f"{wb}_head", wb, "ghost", wx, wy, wz, 4, 4, 4)
-        box(f"{wb}_body", wb, "ghost", wx, wy - 3, wz, 3, 3, 3)
-        box(f"{wb}_tail", wb, "ghost", wx, wy - 5.5, wz, 2, 2.5, 2)
-        box(f"{wb}_tip", wb, "ghost", wx, wy - 7, wz, 1, 1.5, 1)
 
 
 # ------------------------------------------------------------------ texture
@@ -542,7 +531,7 @@ def render_preview(base, out, yaws=(0, 35, 90, 180), scale=4, sub=3):
 # ------------------------------------------------------------------ animations
 def animations():
     t = "query.anim_time"
-    amb = {}   # always-on layer: wings, hover, cape, wisps (the state animations never touch these bones)
+    amb = {}   # always-on layer: wings, hover, cape (the state animations never touch these bones)
     # every frequency is a multiple of 25 deg/s so the 14.4 s loop wraps seamlessly
     # --- wing beat, after the classic flight-cycle rules (Animation Mentor "How to Animate Birds in Flight",
     # Williams' Animator's Survival Kit): a big sweep from the shoulder, the elbow and the hand following
@@ -575,69 +564,197 @@ def animations():
     for k, (_, _, fan) in enumerate(CAPE):
         amb[f"cape{k}"] = {"rotation": {0: [f"7 + math.sin({t} * 100 + {k * 40}) * 5", 0, f"{fan} + math.sin({t} * 75 + {k * 50}) * 2"]}}
         amb[f"cape{k}_low"] = {"rotation": {0: [f"6 + math.sin({t} * 100 + {k * 40 + 70}) * 9", 0, f"math.sin({t} * 100 + {k * 50}) * 4"]}}
-    amb["wisps"] = {"rotation": {0: [0, f"{t} * 50", 0]}}
-    for i in range(WISPS):
-        amb[f"wisp{i}"] = {"position": {0: [0, f"math.sin({t} * 150 + {i * 90}) * 3", 0]},
-                           "rotation": {0: [f"math.sin({t} * 200 + {i * 90}) * 10", f"-{t} * 50", 0]}}
-    for s in ("left", "right"):
-        amb[f"{s}_claws"] = {"rotation": {0: [0, 0, f"math.sin({t} * 75 + {0 if s == 'left' else 90}) * 6"]}}
+
+    # ------------------------------------------------------------------ state animations ("main" controller)
+    # Built on the three-phase attack anatomy (GDKeys "Anatomy of an Attack", gameanim.com "12 principles of
+    # animation in video games"): a long, readable ANTICIPATION whose silhouette is unique to each attack;
+    # a short, accelerating STRIKE landing exactly on the server tick the attack fires, with the hit pose
+    # held a moment; FOLLOW-THROUGH past the hit; then a slow-out RECOVERY to the neutral pose. Torso leads,
+    # arms drag behind, the head trails; wings join in through the *_wing_pose bones, on top of the beat.
+    # Rotation signs: x+ = limb swings back / chest bows / head looks down / jaw opens; y+ turns toward the
+    # model's right; z+ lifts the right arm / right wing outward (left side mirrored).
+    # Keyframes are {time: vector} or {time: (vector, easing)}; the easing shapes the move INTO that key.
+    def m(frames):   # mirror right-side keys onto the left side (negate y and z)
+        out = {}
+        for k, v in frames.items():
+            vec, ease = v if isinstance(v, tuple) else (v, None)
+            neg = [vec[0]] + [(-x if not isinstance(x, str) else f"-({x})") for x in vec[1:]]
+            out[k] = (neg, ease) if ease else neg
+        return out
+
+    def arms(right_arm, right_fore=None, right_claws=None, right_wing=None):
+        d = {"right_arm": {"rotation": right_arm}, "left_arm": {"rotation": m(right_arm)}}
+        if right_fore:
+            d["right_forearm"] = {"rotation": right_fore}
+            d["left_forearm"] = {"rotation": right_fore}
+        if right_claws:
+            d["right_claws"] = {"rotation": right_claws}
+            d["left_claws"] = {"rotation": m(right_claws)}
+        if right_wing:
+            d["right_wing_pose"] = {"rotation": right_wing}
+            d["left_wing_pose"] = {"rotation": m(right_wing)}
+        return d
 
     sway = f"math.sin({t} * 120)"
-    idle = {
-        "chest": {"rotation": {0: [f"math.sin({t} * 120 + 40) * 2", 0, 0]}, "scale": {0: [f"1 + {sway} * 0.015", 1, f"1 + {sway} * 0.015"]}},
+    idle = {   # 6 s loop, menacing and alive: slow breath, a hunting look around, claws flexing
+        "chest": {"rotation": {0: [f"3 + math.sin({t} * 120 + 40) * 2", 0, 0]},
+                  "scale": {0: [f"1 + {sway} * 0.015", 1, f"1 + {sway} * 0.015"]}},
         "left_arm": {"rotation": {0: [f"math.sin({t} * 120) * 4", 0, "-7"]}},
         "right_arm": {"rotation": {0: [f"math.sin({t} * 120 + 90) * 4", 0, "7"]}},
-        "left_forearm": {"rotation": {0: [f"-8 + math.sin({t} * 120 + 30) * 3", 0, 0]}},
-        "right_forearm": {"rotation": {0: [f"-8 + math.sin({t} * 120 + 120) * 3", 0, 0]}},
-        "head": {"rotation": {0: [f"math.sin({t} * 60) * 3", f"math.sin({t} * 35) * 6", 0]}},
-        "jaw": {"rotation": {0: [f"4 + math.sin({t} * 90) * 3", 0, 0]}},
+        "left_forearm": {"rotation": {0: [f"-10 + math.sin({t} * 120 + 30) * 3", 0, 0]}},
+        "right_forearm": {"rotation": {0: [f"-10 + math.sin({t} * 120 + 120) * 3", 0, 0]}},
+        "left_claws": {"rotation": {0: [0, 0, f"-math.sin({t} * 180) * 8"]}},
+        "right_claws": {"rotation": {0: [0, 0, f"math.sin({t} * 180 + 90) * 8"]}},
+        "head": {"rotation": {0: [f"4 + math.sin({t} * 60) * 3", f"math.sin({t} * 60) * 12", f"math.sin({t} * 120) * 2"]}},
+        "jaw": {"rotation": {0: [f"4 + math.sin({t} * 120) * 3", 0, 0]}},
     }
-    bolt = {  # 1.4 s: right hand winds back and hurls forward
-        "right_arm": {"rotation": {0: [0, 0, 7], 0.5: [40, 0, 30], 0.8: [-110, 0, 10], 1.4: [0, 0, 7]}},
-        "right_forearm": {"rotation": {0: [-8, 0, 0], 0.5: [-60, 0, 0], 0.8: [-10, 0, 0], 1.4: [-8, 0, 0]}},
-        "right_claws": {"rotation": {0: [0, 0, 0], 0.5: [0, 0, 25], 0.8: [0, 0, -30], 1.4: [0, 0, 0]}},
-        "chest": {"rotation": {0: [0, 0, 0], 0.5: [0, -20, 0], 0.8: [8, 15, 0], 1.4: [0, 0, 0]}},
-        "jaw": {"rotation": {0: [4, 0, 0], 0.7: [25, 0, 0], 1.0: [25, 0, 0], 1.4: [4, 0, 0]}},
-    }
-    erupt = {  # 1.5 s: both arms heave upward as if lifting the ground
-        "left_arm": {"rotation": {0: [0, 0, -7], 0.4: [30, 0, -15], 0.7: [-160, 0, -20], 1.2: [-160, 0, -20], 1.5: [0, 0, -7]}},
-        "right_arm": {"rotation": {0: [0, 0, 7], 0.4: [30, 0, 15], 0.7: [-160, 0, 20], 1.2: [-160, 0, 20], 1.5: [0, 0, 7]}},
-        "chest": {"rotation": {0: [0, 0, 0], 0.4: [15, 0, 0], 0.7: [-12, 0, 0], 1.5: [0, 0, 0]}},
-        "head": {"rotation": {0: [0, 0, 0], 0.7: [-20, 0, 0], 1.5: [0, 0, 0]}},
-        "jaw": {"rotation": {0: [4, 0, 0], 0.7: [30, 0, 0], 1.2: [30, 0, 0], 1.5: [4, 0, 0]}},
-    }
-    ult = {  # 3.5 s: hugs itself, trembling, then throws the arms wide and screams
-        "left_arm": {"rotation": {0: [0, 0, -7], 0.5: [-70, -60, 10], 2.8: [-70, -65, 10], 3.05: [-20, 0, -95], 3.5: [-20, 0, -95]}},
-        "right_arm": {"rotation": {0: [0, 0, 7], 0.5: [-70, 60, -10], 2.8: [-70, 65, -10], 3.05: [-20, 0, 95], 3.5: [-20, 0, 95]}},
-        "left_claws": {"rotation": {0: [0, 0, 0], 2.8: [0, 0, 0], 3.05: [0, 0, -35], 3.5: [0, 0, -35]}},
-        "right_claws": {"rotation": {0: [0, 0, 0], 2.8: [0, 0, 0], 3.05: [0, 0, 35], 3.5: [0, 0, 35]}},
-        "chest": {"rotation": {0: [0, 0, 0], 0.5: [20, 0, f"math.sin({t} * 2000) * 2"], 2.8: [25, 0, 0], 3.05: [-25, 0, 0], 3.5: [-20, 0, 0]}},
-        "head": {"rotation": {0: [0, 0, 0], 0.5: [30, 0, 0], 2.8: [35, 0, 0], 3.05: [-35, 0, 0], 3.5: [-30, 0, 0]}},
-        "jaw": {"rotation": {0: [4, 0, 0], 2.9: [4, 0, 0], 3.05: [40, 0, 0], 3.5: [35, 0, 0]}},
-    }
-    stunned = {  # slumped, swaying
-        "chest": {"rotation": {0: [30, 0, f"math.sin({t} * 90) * 6"]}},
-        "head": {"rotation": {0: [35, 0, f"math.sin({t} * 90 + 40) * 10"]}},
-        "jaw": {"rotation": {0: [20, 0, 0]}},
-        "left_arm": {"rotation": {0: [10, 0, "-2"]}},
-        "right_arm": {"rotation": {0: [10, 0, "2"]}},
-        "root": {"position": {0: [0, -6, 0]}},
-    }
-    emerge = {  # 2.5 s: rises out of the altar's souls, arms lifting
-        "root": {"position": {0: [0, -70, 0], 2.0: [0, 0, 0], 2.5: [0, 0, 0]}},
-        "left_arm": {"rotation": {0: [-150, 0, -20], 2.0: [-150, 0, -20], 2.5: [0, 0, -7]}},
-        "right_arm": {"rotation": {0: [-150, 0, 20], 2.0: [-150, 0, 20], 2.5: [0, 0, 7]}},
-        "head": {"rotation": {0: [-30, 0, 0], 2.5: [0, 0, 0]}},
-        "jaw": {"rotation": {0: [30, 0, 0], 2.0: [30, 0, 0], 2.5: [4, 0, 0]}},
-    }
-    death = {  # 3 s: collapses and sinks away
-        "root": {"position": {0: [0, 0, 0], 3.0: [0, -60, 0]}},
-        "chest": {"rotation": {0: [0, 0, 0], 1.0: [40, 0, 10], 3.0: [60, 0, 20]}},
-        "head": {"rotation": {0: [0, 0, 0], 1.0: [-40, 0, 0], 3.0: [30, 0, 0]}},
-        "jaw": {"rotation": {0: [0, 0, 0], 0.5: [40, 0, 0], 3.0: [40, 0, 0]}},
-        "left_arm": {"rotation": {0: [0, 0, -7], 1.0: [-100, 0, -40], 3.0: [10, 0, -10]}},
-        "right_arm": {"rotation": {0: [0, 0, 7], 1.0: [-100, 0, 40], 3.0: [10, 0, 10]}},
-    }
+
+    # BOLT, 1.4 s, the bolt leaves the hand at 0.8 s. Anticipation: the right arm rises and cocks far
+    # behind the head, the torso coils back and to the right, the left claw reaches out to aim, the wings
+    # flare. Strike: an overhand whip, elbow extending last, claws snapping open. Follow-through across the
+    # body, then a slow settle.
+    bolt = arms(
+        {0: [0, 0, 7], 0.3: ([-110, 0, 32], "easeOutSine"), 0.62: ([-172, 12, 22], "easeInOutSine"),
+         0.8: ([-62, -8, 4], "easeInCubic"), 0.95: ([-38, -14, -10], "easeOutQuad"), 1.4: ([0, 0, 7], "easeInOutSine")},
+        right_wing={0: [0, 0, 0], 0.62: ([0, -8, 16], "easeInOutSine"), 0.8: ([0, -22, 4], "easeInCubic"),
+                    1.0: ([0, -16, 0], "easeOutQuad"), 1.4: ([0, 0, 0], "easeInOutSine")})
+    bolt["left_arm"]["rotation"] = {0: [0, 0, -7], 0.62: ([-48, 10, -22], "easeInOutSine"),
+                                    0.8: ([8, 0, -14], "easeInCubic"), 1.4: ([0, 0, -7], "easeInOutSine")}
+    bolt.update({
+        "right_forearm": {"rotation": {0: [-10, 0, 0], 0.3: ([-45, 0, 0], "easeOutSine"), 0.62: ([-100, 0, 0], "easeInOutSine"),
+                                       0.74: ([-70, 0, 0], "easeInCubic"), 0.8: ([-4, 0, 0], "easeInCubic"),
+                                       0.95: ([-14, 0, 0], "easeOutQuad"), 1.4: ([-10, 0, 0], "easeInOutSine")}},
+        "left_forearm": {"rotation": {0: [-10, 0, 0], 0.62: ([-28, 0, 0], "easeInOutSine"), 1.4: ([-10, 0, 0], "easeInOutSine")}},
+        "right_claws": {"rotation": {0: [0, 0, 0], 0.5: ([0, 0, -22], "easeInOutSine"), 0.8: ([0, 0, 32], "easeOutBack"),
+                                     1.1: ([0, 0, 12], "easeOutQuad"), 1.4: ([0, 0, 0], "easeInOutSine")}},
+        "left_claws": {"rotation": {0: [0, 0, 0], 0.62: ([0, 0, -25], "easeInOutSine"), 1.4: ([0, 0, 0], "easeInOutSine")}},
+        "chest": {"rotation": {0: [0, 0, 0], 0.62: ([-9, 26, -3], "easeInOutSine"), 0.8: ([12, -16, 2], "easeInCubic"),
+                               0.95: ([15, -20, 2], "easeOutQuad"), 1.4: ([0, 0, 0], "easeInOutSine")}},
+        "head": {"rotation": {0: [0, 0, 0], 0.62: ([-6, -20, 0], "easeInOutSine"), 0.86: ([8, 12, 0], "easeInCubic"),
+                              1.4: ([0, 0, 0], "easeInOutSine")}},
+        "jaw": {"rotation": {0: [4, 0, 0], 0.62: ([12, 0, 0], "easeInOutSine"), 0.82: ([34, 0, 0], "easeOutBack"),
+                             1.05: ([28, 0, 0], "easeOutQuad"), 1.4: ([4, 0, 0], "easeInOutSine")}},
+        "body": {"position": {0: [0, 0, 0], 0.62: ([0, 2, 0], "easeInOutSine"), 0.8: ([0, -1.5, 0], "easeInCubic"),
+                              1.4: ([0, 0, 0], "easeInOutSine")}},
+    })
+
+    # ERUPT, 1.5 s, the eruption opens under the target at 0.7 s; afterwards it is spent (stunned).
+    # Anticipation: it hunches low over the ground, wings mantling forward, claws spread and plunging
+    # down. Strike: it tears both arms up over its head, chest arching, head thrown back, jaw wide, wings
+    # bursting upward, as if ripping the souls out of the earth. Hold, then sag (into the stun).
+    erupt = arms(
+        {0: [0, 0, 7], 0.4: ([-36, 0, 30], "easeInOutSine"), 0.5: ([-30, 0, 26], "easeInSine"),
+         0.72: ([-150, 0, 22], "easeOutCubic"), 0.88: ([-166, 0, 26], "easeOutSine"), 1.15: ([-156, 0, 30], "easeInOutSine"),
+         1.5: ([-40, 0, 14], "easeInOutSine")},
+        right_fore={0: [-10, 0, 0], 0.4: ([-22, 0, 0], "easeInOutSine"), 0.72: ([-8, 0, 0], "easeOutCubic"),
+                    0.88: ([-4, 0, 0], "easeOutSine"), 1.5: ([-14, 0, 0], "easeInOutSine")},
+        right_claws={0: [0, 0, 0], 0.4: ([0, 0, 30], "easeInOutSine"), 0.52: ([0, 0, -26], "easeInQuad"),
+                     0.76: ([0, 0, 34], "easeOutCubic"), 0.9: ([0, 0, 38], "easeOutSine"), 1.5: ([0, 0, 6], "easeInOutSine")},
+        right_wing={0: [0, 0, 0], 0.4: ([0, -32, -18], "easeInOutSine"), 0.74: ([0, 8, 24], "easeOutCubic"),
+                    0.9: ([0, 12, 30], "easeOutSine"), 1.5: ([0, 0, -6], "easeInOutSine")})
+    erupt.update({
+        "body": {"position": {0: [0, 0, 0], 0.4: ([0, -6, 0], "easeOutQuad"), 0.72: ([0, 2.5, 0], "easeOutCubic"),
+                              0.9: ([0, 3.5, 0], "easeOutSine"), 1.5: ([0, -2, 0], "easeInOutSine")}},
+        "chest": {"rotation": {0: [0, 0, 0], 0.4: ([34, 0, 0], "easeInOutSine"), 0.5: ([38, 0, 0], "easeInSine"),
+                               0.72: ([-14, 0, 0], "easeOutCubic"), 0.88: ([-20, 0, 0], "easeOutSine"), 1.5: ([16, 0, 0], "easeInOutSine")}},
+        "head": {"rotation": {0: [0, 0, 0], 0.4: ([22, 0, 0], "easeInOutSine"), 0.76: ([-26, 0, 0], "easeOutCubic"),
+                              0.92: ([-32, 0, 0], "easeOutSine"), 1.5: ([18, 0, 0], "easeInOutSine")}},
+        "jaw": {"rotation": {0: [4, 0, 0], 0.4: ([8, 0, 0], "easeInOutSine"), 0.74: ([36, 0, 0], "easeOutCubic"),
+                             0.92: ([42, 0, 0], "easeOutSine"), 1.5: ([16, 0, 0], "easeInOutSine")}},
+    })
+
+    # ULT, 3.5 s, the abyss heads burst out at 3.0 s, then a long vulnerable stun. Anticipation (it is the
+    # big one, so it is long and unmistakable): it folds in on itself, arms crossed over the soul core,
+    # wings wrapped around like a cocoon, trembling harder and harder while it slowly rises; a last tight
+    # squeeze, then it explodes open: arms and wings flung wide, chest arched, head back, a howl. Held.
+    def shake(amp, speed=1800):
+        return f"math.sin({t} * {speed}) * {amp}"
+
+    ult = arms(
+        {0: [0, 0, 7], 0.5: ([-72, 60, -10], "easeOutCubic"), 2.8: ([-76, 66, -12], "easeInOutSine"),
+         2.95: ([-62, 72, -16], "easeInQuad"), 3.08: ([-22, 0, 102], "easeOutExpo"), 3.5: ([-26, 0, 96], "easeOutSine")},
+        right_fore={0: [-10, 0, 0], 0.5: ([-72, 0, 0], "easeOutCubic"), 2.95: ([-84, 0, 0], "easeInQuad"),
+                    3.08: ([-4, 0, 0], "easeOutExpo"), 3.5: ([-6, 0, 0], "easeOutSine")},
+        right_claws={0: [0, 0, 0], 0.5: ([0, 0, -26], "easeOutCubic"), 2.95: ([0, 0, -30], "easeInQuad"),
+                     3.08: ([0, 0, 42], "easeOutBack"), 3.5: ([0, 0, 38], "easeOutSine")},
+        right_wing={0: [0, 0, 0], 0.5: ([0, -55, -10], "easeOutCubic"), 2.8: ([0, -60, -12], "easeInOutSine"),
+                    2.95: ([0, -66, -14], "easeInQuad"), 3.08: ([0, 26, 36], "easeOutExpo"), 3.5: ([0, 22, 32], "easeOutSine")})
+    ult.update({
+        "chest": {"rotation": {0: [0, 0, 0], 0.5: ([20, 0, shake(1)], "easeOutCubic"), 2.8: ([26, 0, shake(3.5)], "easeInSine"),
+                               2.95: ([32, 0, 0], "easeInQuad"), 3.08: ([-28, 0, 0], "easeOutExpo"), 3.5: ([-24, 0, 0], "easeOutSine")}},
+        "head": {"rotation": {0: [0, 0, 0], 0.5: ([30, 0, 0], "easeOutCubic"), 2.8: ([36, shake(3, 1500), 0], "easeInSine"),
+                              2.95: ([42, 0, 0], "easeInQuad"), 3.1: ([-42, 0, 0], "easeOutExpo"), 3.5: ([-36, 0, 0], "easeOutSine")}},
+        "jaw": {"rotation": {0: [4, 0, 0], 2.95: ([2, 0, 0], "easeInOutSine"), 3.1: ([46, 0, 0], "easeOutBack"),
+                             3.5: ([40, 0, 0], "easeOutSine")}},
+        "body": {"position": {0: [0, 0, 0], 0.5: ([0, -1, 0], "easeOutCubic"), 2.8: ([0, 4, 0], "easeInOutSine"),
+                              2.95: ([0, 2, 0], "easeInQuad"), 3.08: ([0, 7, 0], "easeOutExpo"), 3.5: ([0, 6, 0], "easeOutSine")}},
+    })
+
+    # STUNNED, 4 s loop (all frequencies are multiples of 90 deg/s so it wraps cleanly): spent and reeling,
+    # slumped forward and swaying, head lolling, jaw slack, arms dangling, wings drooping.
+    stunned = arms(
+        {0: [f"12 + math.sin({t} * 90) * 5", 0, f"3 + math.sin({t} * 90 + 45) * 3"]},
+        right_fore={0: [f"-4 + math.sin({t} * 180) * 3", 0, 0]},
+        right_claws={0: [0, 0, f"10 + math.sin({t} * 270) * 4"]},
+        right_wing={0: [0, f"10 + math.sin({t} * 90) * 4", f"-24 + math.sin({t} * 90 + 90) * 4"]})
+    stunned.update({
+        "body": {"position": {0: [f"math.sin({t} * 90) * 1", f"-5 + math.sin({t} * 180) * 1", 0]}},
+        "chest": {"rotation": {0: [f"28 + math.sin({t} * 180) * 3", f"math.sin({t} * 90) * 5", f"math.sin({t} * 90) * 7"]}},
+        "head": {"rotation": {0: [f"36 + math.sin({t} * 180 + 60) * 6", f"math.sin({t} * 90 + 30) * 12", f"math.sin({t} * 90 + 120) * 9"]}},
+        "jaw": {"rotation": {0: [f"22 + math.sin({t} * 180) * 5", 0, 0]}},
+    })
+
+    # EMERGE, 2.5 s: it rises out of the altar curled up (cocooned in its wings, arms crossed, head bowed),
+    # slows as it clears the ground, gathers itself, then unfurls in one violent burst and settles.
+    emerge = arms(
+        {0: [-72, 60, -10], 1.6: ([-74, 64, -12], "easeOutCubic"), 1.85: ([-66, 70, -16], "easeInQuad"),
+         2.05: ([-28, 0, 96], "easeOutExpo"), 2.5: ([0, 0, 7], "easeInOutSine")},
+        right_fore={0: [-75, 0, 0], 1.85: ([-84, 0, 0], "easeInQuad"), 2.05: ([-6, 0, 0], "easeOutExpo"),
+                    2.5: ([-10, 0, 0], "easeInOutSine")},
+        right_claws={0: [0, 0, -24], 1.85: ([0, 0, -28], "easeInQuad"), 2.05: ([0, 0, 40], "easeOutBack"),
+                     2.5: ([0, 0, 0], "easeInOutSine")},
+        right_wing={0: [0, -58, -12], 1.6: ([0, -60, -12], "easeOutCubic"), 1.85: ([0, -66, -14], "easeInQuad"),
+                    2.05: ([0, 24, 34], "easeOutExpo"), 2.5: ([0, 0, 0], "easeInOutSine")})
+    emerge.update({
+        "root": {"position": {0: [0, -70, 0], 1.6: ([0, -4, 0], "easeOutCubic"), 2.05: ([0, 3, 0], "easeOutBack"),
+                              2.5: ([0, 0, 0], "easeInOutSine")}},
+        "chest": {"rotation": {0: [44, 0, 0], 1.6: ([36, 0, 0], "easeOutCubic"), 1.85: ([42, 0, 0], "easeInQuad"),
+                               2.05: ([-22, 0, 0], "easeOutExpo"), 2.5: ([0, 0, 0], "easeInOutSine")}},
+        "head": {"rotation": {0: [40, 0, 0], 1.85: ([44, 0, 0], "easeInQuad"), 2.1: ([-34, 0, 0], "easeOutExpo"),
+                              2.5: ([0, 0, 0], "easeInOutSine")}},
+        "jaw": {"rotation": {0: [4, 0, 0], 1.85: ([2, 0, 0], "easeInQuad"), 2.1: ([42, 0, 0], "easeOutBack"),
+                             2.5: ([4, 0, 0], "easeInOutSine")}},
+    })
+
+    # DEATH, 3 s (the body is removed at 3.0 s): the killing blow snaps it back with arms and wings flung
+    # out; it convulses and clutches at its fading core; then it folds forward and sinks away, wings
+    # collapsing, jaw hanging.
+    death = arms(
+        {0: [0, 0, 7], 0.22: ([-42, 0, 74], "easeOutCubic"), 0.6: ([-55, 20, 60], "easeInOutSine"),
+         1.25: ([-80, 52, -4], "easeInOutCubic"), 3.0: ([14, 0, 14], "easeInQuad")},
+        right_fore={0: [-10, 0, 0], 0.22: ([-8, 0, 0], "easeOutCubic"), 1.25: ([-92, 0, 0], "easeInOutCubic"),
+                    3.0: ([-12, 0, 0], "easeInQuad")},
+        right_claws={0: [0, 0, 0], 0.22: ([0, 0, 40], "easeOutBack"), 1.25: ([0, 0, -28], "easeInOutCubic"),
+                     3.0: ([0, 0, 10], "easeInQuad")},
+        right_wing={0: [0, 0, 0], 0.22: ([0, 18, 34], "easeOutCubic"), 1.25: ([0, 6, 8], "easeInOutCubic"),
+                    3.0: ([0, 30, -48], "easeInQuad")})
+    death.update({
+        "root": {"position": {0: [0, 0, 0], 1.25: ([0, 2, 0], "easeOutSine"), 3.0: ([0, -46, 0], "easeInCubic")}},
+        "chest": {"rotation": {0: [0, 0, 0], 0.22: ([-26, 0, 8], "easeOutCubic"), 0.6: ([-14, 0, shake(4, 1600)], "easeInOutSine"),
+                               1.25: ([30, 0, -10], "easeInOutCubic"), 3.0: ([70, 0, 16], "easeInQuad")}},
+        "head": {"rotation": {0: [0, 0, 0], 0.26: ([-46, 0, 10], "easeOutCubic"), 1.25: ([-18, 16, 0], "easeInOutCubic"),
+                              3.0: ([46, 0, 22], "easeInQuad")}},
+        "jaw": {"rotation": {0: [4, 0, 0], 0.26: ([42, 0, 0], "easeOutBack"), 3.0: ([50, 0, 0], "easeInQuad")}},
+    })
+
+    # every state animation keys the same set of pose bones (zeros where unused), so the 4-tick blends
+    # between states never snap a bone back
+    pose = {"root": "position", "body": "position", "chest": "rotation", "head": "rotation", "jaw": "rotation",
+            "left_arm": "rotation", "right_arm": "rotation", "left_forearm": "rotation", "right_forearm": "rotation",
+            "left_claws": "rotation", "right_claws": "rotation", "left_wing_pose": "rotation", "right_wing_pose": "rotation"}
+    for anim in (idle, bolt, erupt, ult, stunned, emerge, death):
+        for b, ch in pose.items():
+            anim.setdefault(b, {}).setdefault(ch, {0: [0, 0, 0]})
     return {
         "animation.wailing_reaper.ambient": (True, AMBIENT_LEN, amb),
         "animation.wailing_reaper.idle": (True, 6.0, idle),
@@ -648,7 +765,6 @@ def animations():
         "animation.wailing_reaper.emerge": (False, 2.5, emerge),
         "animation.wailing_reaper.death": (False, 3.0, death),
     }
-
 
 def r(v):
     return round(float(v), 4)
@@ -693,7 +809,10 @@ def write_anims():
                 if list(kfs) == [0]:
                     bb[bname][ch] = [str(x) if isinstance(x, str) else x for x in kfs[0]]
                 else:
-                    bb[bname][ch] = {str(t): {"vector": v, "easing": "easeInOutSine"} for t, v in kfs.items()}
+                    bb[bname][ch] = {}
+                    for t, v in kfs.items():
+                        vec, ease = v if isinstance(v, tuple) else (v, "easeInOutSine")
+                        bb[bname][ch][str(t)] = {"vector": vec, "easing": ease}
         out[name] = {"loop": loop, "animation_length": length, "bones": bb}
     p = ASSETS / "animations/entity/wailing_reaper.animation.json"
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -725,6 +844,7 @@ def write_bbmodel(tex_png, tex_h):
             kfs = []
             for ch, frames in chans.items():
                 for t, v in frames.items():
+                    v = v[0] if isinstance(v, tuple) else v
                     kfs.append({"channel": ch, "data_points": [{"x": str(v[0]), "y": str(v[1]), "z": str(v[2])}],
                                 "uuid": uid(), "time": t, "color": -1, "interpolation": "linear"})
             animators[gid[bname]] = {"name": bname, "type": "bone", "keyframes": kfs}
@@ -823,6 +943,57 @@ def altar_textures():
     return side, top, filled, bottom
 
 
+ICE = ramp("3a8fd0", "6fc4f0", "a6e4ff", "d8f6ff", "ffffff")
+
+
+def ice_textures():
+    """The ultimate's ice shard: a frost rune for the ground warning (double ring, six snowflake spokes with
+    branches, rune ticks between the rings), a soft fill disc that grows inside it, and the crystal's ice."""
+    S = 128
+    rune = np.zeros((S, S, 4), np.float32)
+    fill = np.zeros((S, S, 4), np.float32)
+    c = (S - 1) / 2
+    for y in range(S):
+        for x in range(S):
+            dx, dy = (x - c) / c, (y - c) / c
+            d = math.hypot(dx, dy)
+            a = math.atan2(dy, dx)
+            if d > 1:
+                continue
+            fill[y, x] = ICE[2].copy()
+            fill[y, x, 3] = 255 * (0.25 + 0.75 * d ** 3)
+            v = 0.0
+            v = max(v, 1 - abs(d - 0.95) / 0.035)                       # outer ring
+            v = max(v, (1 - abs(d - 0.80) / 0.02) * 0.8)                # inner ring
+            sector = (a + math.pi) % (math.pi / 3) - math.pi / 6       # six spokes
+            perp = abs(math.sin(sector)) * d
+            if d < 0.8:
+                v = max(v, (1 - perp / 0.025) * (1 - d * 0.5))
+                for bd in (0.35, 0.58):                                 # snowflake branches
+                    along = d - bd
+                    if 0 < along < 0.14:
+                        v = max(v, (1 - abs(perp - along * 0.9) / 0.02) * 0.85)
+            if 0.82 < d < 0.93 and (int((a + math.pi) / (math.pi / 18)) % 3 == 0):   # rune ticks
+                v = max(v, 0.7 if abs(d - 0.875) < 0.03 else 0)
+            v = max(0.0, min(1.0, v))
+            if v > 0:
+                col = ICE[4] if v > 0.8 else ICE[3] if v > 0.5 else ICE[2]
+                rune[y, x] = col
+                rune[y, x, 3] = 255 * min(1, v * 1.3)
+            if d < 0.95 and rune[y, x, 3] == 0:
+                rune[y, x] = ICE[1]
+                rune[y, x, 3] = 255 * 0.12 * d                         # faint frost haze in the circle
+    shard = np.zeros((32, 32, 4), np.float32)
+    rnd = random.Random(11)
+    for y in range(32):
+        for x in range(32):
+            t = 0.45 + 0.4 * (1 - y / 31) + (rnd.random() - 0.5) * 0.2
+            if (x + y // 3) % 8 == 0:
+                t += 0.3                                                # bright streaks along the crystal
+            shard[y, x] = pick(ICE, t)
+    return rune, fill, shard
+
+
 def main():
     build()
     base, gm, tex_h = pack_and_paint()
@@ -835,6 +1006,10 @@ def main():
     (t / "wailing_reaper_glowmask.png").write_bytes(png(gm))
     (t / "abyss_head.png").write_bytes(png(abyss_head_texture()))
     (t / "soul_bolt.png").write_bytes(png(bolt_texture()))
+    rune, fill, shard = ice_textures()
+    (t / "ice_rune.png").write_bytes(png(rune))
+    (t / "ice_fill.png").write_bytes(png(fill))
+    (t / "ice_shard.png").write_bytes(png(shard))
     b = ASSETS / "textures/block"
     side, top, filled, bottom = altar_textures()
     (b / "soul_altar_side.png").write_bytes(png(side))
