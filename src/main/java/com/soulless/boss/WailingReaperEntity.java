@@ -440,6 +440,57 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     public void tick() {
         noPhysics = true;
         super.tick();
+        if (level().isClientSide) swingSpine();
+        else if (isPreview() && entityData.get(PREVIEW).equals("fly")) previewFly();
+    }
+
+    // ------------------------------------------------------------------ the dangling lower spine (client)
+
+    /** Swing of each free spine link (degrees; x: backward, z: toward the model's right), now and last tick. */
+    public final float[] spineX = new float[SPINE_LINKS], spineZ = new float[SPINE_LINKS];
+    public final float[] spineXo = new float[SPINE_LINKS], spineZo = new float[SPINE_LINKS];
+    public static final int SPINE_LINKS = 4;
+    private float spinePrevYaw = Float.NaN;
+
+    /**
+     * Follow-through on the hanging lower spine: the top link swings against the Reaper's motion (flying
+     * forward drags it back, sliding sideways or turning flings it to the other side) and every link below
+     * chases the one above a tick late, so a wave runs down to the tip and it keeps swaying after a stop.
+     */
+    private void swingSpine() {
+        float yaw = yBodyRot * Mth.DEG_TO_RAD;
+        Vec3 fwd = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
+        Vec3 right = new Vec3(-fwd.z, 0, fwd.x);
+        Vec3 v = new Vec3(getX() - xo, getY() - yo, getZ() - zo);
+        float turn = Float.isNaN(spinePrevYaw) ? 0 : Mth.wrapDegrees(yBodyRot - spinePrevYaw);
+        spinePrevYaw = yBodyRot;
+        float wantX = Mth.clamp((float) (v.dot(fwd) * 110 + v.y * 40), -40, 40);
+        float wantZ = Mth.clamp((float) (-v.dot(right) * 110) - turn * 1.6F, -35, 35);
+        for (int i = 0; i < SPINE_LINKS; i++) {
+            spineXo[i] = spineX[i];
+            spineZo[i] = spineZ[i];
+        }
+        for (int i = 0; i < SPINE_LINKS; i++) {
+            float sway = Mth.sin(tickCount * 0.09F - i * 0.9F) * 2.5F;
+            float tx = (i == 0 ? wantX * 0.45F : spineXo[i - 1] * 0.9F) + sway * 0.4F;
+            float tz = (i == 0 ? wantZ * 0.45F : spineZo[i - 1] * 0.9F) + sway;
+            spineX[i] += (tx - spineX[i]) * 0.3F;
+            spineZ[i] += (tz - spineZ[i]) * 0.3F;
+        }
+    }
+
+    @Nullable private Vec3 previewOrigin;
+
+    /** {@code /soulless preview reaper fly}: the statue circles slowly, so the spine's swing can be watched. */
+    private void previewFly() {
+        if (previewOrigin == null) previewOrigin = position();
+        double a = tickCount * 0.045;
+        double x = previewOrigin.x + Math.cos(a) * 6, z = previewOrigin.z + Math.sin(a) * 6;
+        double y = previewOrigin.y + 0.5 + Math.sin(tickCount * 0.1) * 0.4;
+        float facing = (float) (Mth.atan2(Math.cos(a), -Math.sin(a)) * Mth.RAD_TO_DEG) - 90;
+        moveTo(x, y, z, facing, 0);
+        setYBodyRot(facing);
+        setYHeadRot(facing);
     }
 
     private void stop() {
@@ -631,8 +682,8 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         controllers.add(new AnimationController<>(this, "main", 4, state -> {
             if (isPreview()) {
                 String anim = entityData.get(PREVIEW);
-                if (anim.equals("idle") || anim.equals("stunned")) {
-                    return state.setAndContinue(RawAnimation.begin().thenLoop("animation.wailing_reaper." + anim));
+                if (anim.equals("idle") || anim.equals("stunned") || anim.equals("fly")) {
+                    return state.setAndContinue(RawAnimation.begin().thenLoop("animation.wailing_reaper." + (anim.equals("fly") ? "idle" : anim)));
                 }
                 // one-shot attacks: play, hold the last pose a moment, then blend back to the start (no loop snap)
                 int period = PREVIEW_TICKS.getOrDefault(anim, 40) + 25;

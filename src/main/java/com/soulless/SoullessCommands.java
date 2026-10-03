@@ -57,7 +57,7 @@ public final class SoullessCommands {
                                 .executes(ctx -> preview(ctx.getSource(), "idle"))
                                 .then(Commands.argument("animation", com.mojang.brigadier.arguments.StringArgumentType.word())
                                         .suggests((c, b) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
-                                                new String[]{"idle", "bolt", "erupt", "ult", "stunned", "emerge", "death"}, b))
+                                                new String[]{"idle", "fly", "bolt", "erupt", "ult", "stunned", "emerge", "death"}, b))
                                         .executes(ctx -> preview(ctx.getSource(),
                                                 com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "animation")))))
                         .then(Commands.literal("clear").executes(ctx -> {

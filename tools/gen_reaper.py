@@ -208,15 +208,25 @@ def build():
     bone("root", None, (0, 0, 0))
     bone("hover", "root", (0, 38, 0))   # lifted by every wing beat
 
-    # --- pelvis, wrapped in a sash with ragged hanging cloth
+    # --- no pelvis: the body ends in its spine. The upper lumbar vertebrae are fixed; below them the spine hangs
+    # free in four links (spine_tail0..3) that the game swings behind the Reaper's motion (see
+    # WailingReaperModel), each link lagging more than the one above.
     bone("body", "hover", (0, 38, 0))
-    box("pelvis", "body", "bone", 0, 36, 0.5, 15, 5, 9)
-    box("sash", "body", "cloth", 0, 37, 0.5, 17, 4, 11)
-    box("loin_front", "body", "cloth", -1, 21, -5.6, 8, 18, 1)
-    box("loin_back", "body", "cloth", 0, 19, 6.6, 11, 20, 1)
-    box("spine_glow", "body", "core", 0, 40, 1.5, 2.4, 15, 2.4)
-    for k in range(4):
-        box(f"lumbar{k}", "body", "bone", 0, 41.5 + k * 3, 1.5, 4.5, 2, 4)
+    box("spine_glow", "body", "core", 0, 46, 1.5, 2.4, 9, 2.4)
+    for k in range(2):
+        box(f"lumbar{k}", "body", "bone", 0, 47.5 + k * 3, 1.5, 4.5, 2, 4)
+    parent = "body"
+    for k, (top, verts, w) in enumerate(((47, (44, 41), (4.3, 4.0)), (40.5, (37.5, 34.5), (3.6, 3.2)),
+                                          (34, (31, 28.3), (2.8, 2.4)), (27.7, (25.4,), (2.0,)))):
+        bn = f"spine_tail{k}"
+        bone(bn, parent, (0, top, 1.5))
+        low = verts[-1]
+        box(f"{bn}_glow", bn, "core", 0, low + 0.3, 1.5, 1.5, top - low, 1.5)
+        for v, wv in zip(verts, w):
+            box(f"{bn}_v{v}", bn, "bone", 0, v, 1.5, wv, 2, wv * 0.85)
+            box(f"{bn}_spur{v}", bn, "bone", 0, v + 0.4, 1.5 + wv * 0.55, 1, 1.2, 1.4)   # spinous process
+        parent = bn
+    chain("spine_tip", "spine_tail3", ["bone", "pale"], (0, 25.6, 1.5), [((0, -1, 0.15), 2.2, 1.4), ((0, -1, 0.25), 1.8, 0.8)])
 
     # --- chest: a cage of separate ribs over a glowing soul core
     bone("chest", "body", (0, 54, 0))
@@ -238,10 +248,10 @@ def build():
 
     # --- scarf around the neck and a mantle over the shoulders
     bone("cowl", "chest", (0, 76, 0))
-    box("scarf_front", "cowl", "cloth", 0, 73, -6.8, 17, 7, 3)
-    box("scarf_back", "cowl", "cloth", 0, 72, 7.3, 18, 8, 3)
+    box("scarf_front", "cowl", "cloth", 0, 73, -6.8, 17, 5, 3)
+    box("scarf_back", "cowl", "cloth", 0, 72, 7.3, 18, 6, 3)
     for s in (-1, 1):
-        box(f"scarf_side{s}", "cowl", "cloth", s * 8.5, 73, 0.5, 3, 7, 14)
+        box(f"scarf_side{s}", "cowl", "cloth", s * 8.5, 73, 0.5, 3, 5, 14)
         box(f"mantle{s}", "cowl", "cloth", s * 12, 72, 0.5, 14, 4.5, 16, rot=[0, 0, -s * 16], pivot=[s * 6, 76, 0.5])
     box("scarf_drape", "cowl", "cloth", -4.5, 58, -7.6, 6, 16, 1.4, rot=[0, 0, -10], pivot=[-4.5, 74, -7.6])
 
@@ -258,7 +268,7 @@ def build():
 
     # --- head: a compact closed helm. An angular mask narrowing to a point at the chin, pierced by a T-shaped
     # slit; behind it only darkness, and in the dark two red embers for eyes (painted with a glow fading into
-    # the black, not modelled as cubes). A circlet carries a crown of blade-like spikes.
+    # the black, not modelled as cubes), under a plain circlet.
     bone("head", "chest", (0, 80, 0))
     box("helm_dome", "head", "helm", 0, 88, 0.3, 10, 8, 10.5)
     box("helm_cap", "head", "helm", 0, 96, 0.3, 8, 1.2, 8.5)
@@ -272,22 +282,12 @@ def build():
     for sd in (-1, 1):
         box(f"mask_cheek{sd}", "head", "helm", sd * 2.5, 83.4, z, 4.0, 3.2, 0.9)
         box(f"mask_slit_end{sd}", "head", "helm", sd * 4.3, 86.6, z, 1.0, 1.0, 0.9)
-        box(f"mask_edge{sd}", "head", "trim", sd * 4.55, 82.2, z - 0.1, 0.5, 7.3, 1.0)
+        box(f"mask_edge{sd}", "head", "trim", sd * 4.9, 82.2, -5.35, 0.5, 7.3, 0.6)
     box("mask_chin1", "head", "helm", 0, 82.2, z, 7.0, 1.2, 0.9)
     box("mask_chin2", "head", "helm", 0, 81.1, z, 4.6, 1.1, 0.9)
     box("mask_chin3", "head", "trim", 0, 80.3, z, 2.0, 0.8, 0.9)
-    # circlet and a crown of blade spikes (tall and short in turn, leaning outward)
+    # a plain circlet
     box("circlet", "head", "trim", 0, 94.0, 0.3, 10.6, 1.2, 11.1)
-    for k in range(10):
-        a = math.radians(-90 + 36 * k)
-        ox, oz = math.cos(a), math.sin(a)
-        tall = k % 2 == 0
-        if k == 0:
-            continue   # nothing over the face
-        bx, bz = ox * 4.6, 0.3 + oz * 4.8
-        chain(f"crown{k}_", "head", ["helm", "helm", "trim"], (bx, 94.6, bz),
-              [((ox * 0.12, 1, oz * 0.12), 2.6 if tall else 1.8, 1.7), ((ox * 0.16, 1, oz * 0.16), 2.2 if tall else 1.2, 1.1),
-               ((ox * 0.2, 1, oz * 0.2), 1.5 if tall else 0.8, 0.5)])
     bone("jaw", "head", (0, 84, 2))   # kept (empty) so the animations' jaw keys stay valid
 
     # --- long skeletal arms: shoulder, humerus, elbow, two forearm bones, wrist, palm, hooked claws

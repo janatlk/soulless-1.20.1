@@ -28,7 +28,7 @@ public final class BossRenderers {
 
     public static class Reaper extends GeoEntityRenderer<WailingReaperEntity> {
         public Reaper(EntityRendererProvider.Context ctx) {
-            super(ctx, new DefaultedEntityGeoModel<>(Soulless.id("wailing_reaper")));
+            super(ctx, new WailingReaperModel());
             addRenderLayer(new AutoGlowingGeoLayer<>(this));
             shadowRadius = 1.4F;
         }
