@@ -68,7 +68,9 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     private static final int GAP = 34;
     private static final int BOLT_RELEASE = 16, BOLT_TOTAL = 28;
     private static final int ERUPT_RELEASE = 14, ERUPT_TOTAL = 30, ERUPT_STUN = 80;
-    private static final int ULT_RELEASE = 60, ULT_TOTAL = 70, ULT_STUN = 120;
+    private static final int ULT_RELEASE = 30, ULT_TOTAL = 70, ULT_STUN = 120;
+    /** Ticks after the cast until the ice rain's last spike lands (set by castShardRain). */
+    private int ultRainTicks = 40;
     private static final int EMERGE_TOTAL = 50;
     private static final float[] ULT_AT = {0.5F, 0.15F};
     private static final float VULNERABLE_MULT = 1.2F;
@@ -145,6 +147,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
 
         hover();
         faceTarget();
+        trackTarget();
         if (tickCount % 3 == 0) {
             level.sendParticles(ParticleTypes.SOUL, getX(), getY() + 1 + random.nextDouble() * 5, getZ(), 1, 0.6, 0.3, 0.6, 0.02);
             level.sendParticles(ModParticles.SOUL_EMBER.get(), getX(), getY() + 0.3, getZ(), 2, 0.5, 0.2, 0.5, 0.02);
@@ -169,7 +172,8 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
                 if (stateTicks == ERUPT_RELEASE && target != null) {
                     SoulEruptionEntity e = new SoulEruptionEntity(ModEntities.SOUL_ERUPTION.get(), level);
                     e.setOwnerId(getId());
-                    e.moveTo(target.getX(), target.getY(), target.getZ());
+                    Vec3 at = leadTarget(2.0);
+                    e.moveTo(at.x, at.y, at.z);
                     level.addFreshEntity(e);
                 }
                 if (stateTicks >= ERUPT_TOTAL) stun(ERUPT_STUN, false);
@@ -179,17 +183,20 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
                 if (stateTicks == 1) {
                     level.playSound(null, blockPosition(), ModSounds.REAPER_SCREAM.get(), SoundSource.HOSTILE, 4.0F, 0.7F);
                 }
-                if (stateTicks < ULT_RELEASE && stateTicks % 4 == 0) {
-                    // souls are pulled in as it gathers itself
-                    for (int i = 0; i < 6; i++) {
-                        double a = random.nextDouble() * Math.PI * 2, r = 6;
-                        Vec3 from = position().add(Math.cos(a) * r, 1 + random.nextDouble() * 5, Math.sin(a) * r);
-                        Vec3 v = position().add(0, 3.5, 0).subtract(from).scale(0.08);
-                        level.sendParticles(ModParticles.SOUL_EMBER.get(), from.x, from.y, from.z, 0, v.x, v.y, v.z, 1);
+                // arms raised to the sky the whole time: frost streams up from its hands, an icy howl rings out
+                if (stateTicks % 2 == 0) {
+                    for (int side = -1; side <= 1; side += 2) {
+                        float yaw = yBodyRot * Mth.DEG_TO_RAD;
+                        Vec3 right = new Vec3(-Mth.cos(yaw), 0, -Mth.sin(yaw)).scale(-side);
+                        Vec3 hand = position().add(0, 7.2, 0).add(right.scale(1.6));
+                        level.sendParticles(ParticleTypes.SNOWFLAKE, hand.x, hand.y, hand.z, 2, 0.2, 0.2, 0.2, 0.05);
+                        level.sendParticles(ModParticles.SOUL_EMBER.get(), hand.x, hand.y, hand.z, 0, 0, 0.6, 0, 1);
                     }
                 }
+                if (stateTicks % 16 == 2) level.playSound(null, blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.HOSTILE, 3.5F, 0.5F);
+                if (stateTicks % 40 == 10) level.playSound(null, blockPosition(), SoundEvents.PLAYER_HURT_FREEZE, SoundSource.HOSTILE, 2.5F, 0.5F);
                 if (stateTicks == ULT_RELEASE) castShardRain(level);
-                if (stateTicks >= ULT_TOTAL) stun(ULT_STUN, true);
+                if (stateTicks >= ULT_RELEASE + ultRainTicks) stun(ULT_STUN, true);
             }
             case STUNNED -> {
                 stop();
@@ -252,46 +259,53 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         level.playSound(null, hand.x, hand.y, hand.z, ModSounds.BOLT_FLY.get(), SoundSource.HOSTILE, 1.5F, 1.0F);
     }
 
-    /** Share of the arena the ultimate's ice shards cover. */
-    private static final double SHARD_COVERAGE = 0.65;
-    /** Spacing of the shard grid: hexagonal cells whose circumradius (spacing / sqrt 3) fits inside a shard's radius. */
-    private static final double SHARD_SPACING = 3.4;
+    /** The first spikes start falling this long after the runes appear. */
+    private static final int RAIN_WARN = 20;
+    /** Spikes fall four at a time, a group every this many ticks. */
+    private static final int RAIN_GROUP = 4, RAIN_EVERY = 3;
 
     /**
-     * The ultimate: ice shards rain on about two thirds of the arena. The arena is tiled with hexagonal cells;
-     * a random 65% of them (always including the cells the players stand in, so standing still is never safe)
-     * get a shard, each landing a little after the others for a cascading rain.
+     * The ultimate: a frost rune on every cell of a hexagonal grid over the whole arena; then ice spikes fall four
+     * at a time in random order, in two passes - every cell is struck twice, and its rune only goes out after the
+     * second. Nowhere is safe for long; the player has to keep moving onto cells that were already struck.
      */
     private void castShardRain(ServerLevel level) {
         Vec3 c = home != null ? Vec3.atBottomCenterOf(home) : position();
         double reach = SoulAltarBlockEntity.ARENA_RADIUS - 0.8;
+        double spacing = IceShardEntity.SPACING;
         java.util.List<Vec3> cells = new java.util.ArrayList<>();
-        double rowH = SHARD_SPACING * Math.sqrt(3) / 2;
+        double rowH = spacing * Math.sqrt(3) / 2;
         for (int row = (int) -Math.ceil(reach / rowH); row <= Math.ceil(reach / rowH); row++) {
-            double off = (row & 1) == 0 ? 0 : SHARD_SPACING / 2;
-            for (double dx = -reach - off; dx <= reach + SHARD_SPACING; dx += SHARD_SPACING) {
+            double off = (row & 1) == 0 ? 0 : spacing / 2;
+            for (double dx = -reach - off; dx <= reach + spacing; dx += spacing) {
                 double x = dx + off, z = row * rowH;
                 if (x * x + z * z <= reach * reach) cells.add(new Vec3(c.x + x, c.y, c.z + z));
             }
         }
-        java.util.Collections.shuffle(cells, new java.util.Random(random.nextLong()));
-        int count = (int) Math.round(cells.size() * SHARD_COVERAGE);
-        java.util.List<Vec3> chosen = new java.util.ArrayList<>();
-        for (ServerPlayer p : level.getEntitiesOfClass(ServerPlayer.class, new AABB(BlockPos.containing(c)).inflate(reach + 4, 12, reach + 4))) {
-            cells.stream().min(java.util.Comparator.comparingDouble(v -> v.distanceToSqr(p.getX(), c.y, p.getZ())))
-                    .ifPresent(v -> {
-                        cells.remove(v);
-                        chosen.add(v);
-                    });
+        java.util.Random rnd = new java.util.Random(random.nextLong());
+        int n = cells.size();
+        java.util.List<Integer> pass1 = new java.util.ArrayList<>(), pass2 = new java.util.ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            pass1.add(i);
+            pass2.add(i);
         }
-        for (int i = 0; chosen.size() < count && i < cells.size(); i++) chosen.add(cells.get(i));
-        for (Vec3 v : chosen) {
+        java.util.Collections.shuffle(pass1, rnd);
+        java.util.Collections.shuffle(pass2, rnd);
+        int[] first = new int[n], second = new int[n];
+        for (int k = 0; k < n; k++) first[pass1.get(k)] = RAIN_WARN + (k / RAIN_GROUP) * RAIN_EVERY;
+        int pass2Start = RAIN_WARN + ((n + RAIN_GROUP - 1) / RAIN_GROUP) * RAIN_EVERY;
+        for (int k = 0; k < n; k++) second[pass2.get(k)] = pass2Start + (k / RAIN_GROUP) * RAIN_EVERY;
+        int lastFall = 0;
+        for (int i = 0; i < n; i++) {
+            Vec3 v = cells.get(i);
             BlockPos ground = com.soulless.ability.CrackManager.findSurface(level, BlockPos.containing(v.x, c.y + 1, v.z));
             IceShardEntity shard = new IceShardEntity(ModEntities.ICE_SHARD.get(), level);
-            shard.setup(getId(), random.nextInt(15));
+            shard.setup(getId(), first[i], Math.max(second[i], first[i] + 20));
             shard.moveTo(v.x, ground != null ? ground.getY() + 1 : c.y, v.z);
             level.addFreshEntity(shard);
+            lastFall = Math.max(lastFall, Math.max(second[i], first[i] + 20));
         }
+        ultRainTicks = lastFall + IceShardEntity.FALL + 10;
         level.playSound(null, blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.HOSTILE, 4.0F, 0.5F);
         level.playSound(null, blockPosition(), SoundEvents.PLAYER_HURT_FREEZE, SoundSource.HOSTILE, 3.0F, 0.6F);
         level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 4, getZ(), 150, 2.5, 2, 2.5, 0.25);
@@ -541,6 +555,28 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         setYHeadRot(facing);
     }
 
+    /** The target's recent positions (one per tick), to read where it is heading. */
+    private final java.util.ArrayDeque<Vec3> targetTrail = new java.util.ArrayDeque<>();
+
+    private void trackTarget() {
+        if (target == null) {
+            targetTrail.clear();
+            return;
+        }
+        targetTrail.addLast(target.position());
+        while (targetTrail.size() > 6) targetTrail.removeFirst();
+    }
+
+    /** {@code blocks} ahead of the target along its movement (on the ground), or right under it if it stands still. */
+    private Vec3 leadTarget(double blocks) {
+        Vec3 now = target.position();
+        Vec3 then = targetTrail.isEmpty() ? now : targetTrail.peekFirst();
+        Vec3 move = new Vec3(now.x - then.x, 0, now.z - then.z);
+        Vec3 at = move.length() > 0.25 ? now.add(move.normalize().scale(blocks)) : now;
+        BlockPos ground = com.soulless.ability.CrackManager.findSurface((ServerLevel) level(), BlockPos.containing(at.x, now.y, at.z));
+        return new Vec3(at.x, ground != null ? ground.getY() + 1 : now.y, at.z);
+    }
+
     private void stop() {
         drift = drift.scale(0.6);
     }
@@ -696,7 +732,8 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.wailing_reaper.idle");
     private static final RawAnimation BOLT = RawAnimation.begin().thenPlay("animation.wailing_reaper.bolt");
     private static final RawAnimation ERUPT = RawAnimation.begin().thenPlay("animation.wailing_reaper.erupt");
-    private static final RawAnimation ULT = RawAnimation.begin().thenPlay("animation.wailing_reaper.ult");
+    private static final RawAnimation ULT = RawAnimation.begin().thenPlay("animation.wailing_reaper.ult")
+            .thenLoop("animation.wailing_reaper.ult_hold");
     private static final RawAnimation STUNNED = RawAnimation.begin().thenLoop("animation.wailing_reaper.stunned");
     private static final RawAnimation EMERGE = RawAnimation.begin().thenPlay("animation.wailing_reaper.emerge");
     private static final RawAnimation DEATH = RawAnimation.begin().thenPlay("animation.wailing_reaper.death");

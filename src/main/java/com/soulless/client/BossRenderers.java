@@ -57,20 +57,33 @@ public final class BossRenderers {
         }
     }
 
-    /** A glowing camera-facing orb. */
+    /** A burning skull (3D, wither-skull shaped) facing its flight, in a glowing halo of soul fire. */
     public static class Bolt extends EntityRenderer<SoulBoltEntity> {
         private static final ResourceLocation TEX = Soulless.id("textures/entity/soul_bolt.png");
+        private static final ResourceLocation SKULL = Soulless.id("textures/entity/abyss_head.png");
+        private final net.minecraft.client.model.SkullModel skull;
 
         public Bolt(EntityRendererProvider.Context ctx) {
             super(ctx);
+            skull = new net.minecraft.client.model.SkullModel(ctx.bakeLayer(net.minecraft.client.model.geom.ModelLayers.WITHER_SKULL));
         }
 
         @Override
         public void render(SoulBoltEntity e, float yaw, float pt, PoseStack ps, MultiBufferSource buffers, int light) {
+            // the skull
             ps.pushPose();
-            ps.translate(0, 0.3, 0);
+            ps.translate(0, -0.08, 0);
+            ps.scale(-1.5F, -1.5F, 1.5F);
+            float yRot = Mth.rotLerp(pt, e.yRotO, e.getYRot());
+            float xRot = Mth.lerp(pt, e.xRotO, e.getXRot());
+            skull.setupAnim(0, yRot, xRot);
+            skull.renderToBuffer(ps, buffers.getBuffer(RenderType.entityTranslucent(SKULL)), 0xF000F0, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
+            ps.popPose();
+            // the halo of soul fire around it, pulsing
+            ps.pushPose();
+            ps.translate(0, 0.32, 0);
             ps.mulPose(entityRenderDispatcher.cameraOrientation());
-            float s = 0.9F + Mth.sin((e.tickCount + pt) * 0.8F) * 0.1F;
+            float s = 1.35F + Mth.sin((e.tickCount + pt) * 0.8F) * 0.12F;
             ps.scale(s, s, s);
             VertexConsumer vc = buffers.getBuffer(RenderType.eyes(TEX));
             Matrix4f m = ps.last().pose();
@@ -116,38 +129,40 @@ public final class BossRenderers {
         @Override
         public void render(com.soulless.boss.IceShardEntity e, float yaw, float pt, PoseStack ps, MultiBufferSource buffers, int light) {
             float age = e.tickCount + pt;
-            int impact = e.impactTick();
-            // --- the warning rune
-            float after = age - impact;
-            float runeAlpha = after < 0 ? Math.min(1, age / 6F) : Mth.clamp(1 - after / 6F, 0, 1);
-            if (after < 0 && impact - age < 10) runeAlpha *= 0.75F + 0.25F * Mth.sin(age * 2.2F);   // urgent flicker
+            int first = e.impactTick(0), last = e.lastImpact();
+            // --- the rune: armed until the second spike lands, flaring at each impact
+            float after = age - last;
+            float runeAlpha = after < 0 ? Math.min(1, age / 5F) : Mth.clamp(1 - after / 5F, 0, 1);
+            int next = age < first ? first : last;
+            if (after < 0 && next - age < 8) runeAlpha *= 0.75F + 0.25F * Mth.sin(age * 2.4F);   // urgent flicker
+            if (after < 0 && age >= first && age < first + 4) runeAlpha = 1;                    // flare after the first
             if (runeAlpha > 0) {
-                float grow = 1 - (float) Math.pow(1 - Math.min(1, age / 8F), 3);   // ease-out pop in
+                float grow = 1 - (float) Math.pow(1 - Math.min(1, age / 6F), 3);   // ease-out pop in
                 float r = (float) com.soulless.boss.IceShardEntity.RADIUS * (0.4F + 0.6F * grow);
                 ps.pushPose();
                 ps.translate(0, 0.03, 0);
                 ps.mulPose(Axis.YP.rotationDegrees(age * 1.5F));
                 ground(buffers.getBuffer(RenderType.entityTranslucentEmissive(RUNE)), ps, r, runeAlpha);
-                float fill = e.warnProgress(pt);
                 if (after < 0) {
+                    float fill = e.warnProgress(pt);
                     ps.translate(0, 0.01, 0);
                     ground(buffers.getBuffer(RenderType.entityTranslucentEmissive(FILL)), ps, r * fill, runeAlpha * (0.35F + 0.5F * fill));
                 }
                 ps.popPose();
             }
-            // --- the spike
-            float tip = e.tipHeight(pt);
-            if (tip >= 0) {
-                float melt = tip > 0 ? 1 : e.meltScale(pt);
-                if (melt > 0) {
-                    ps.pushPose();
-                    ps.translate(0, tip > 0 ? tip : -0.9F, 0);
-                    ps.mulPose(Axis.YP.rotationDegrees(e.getId() * 37 % 360));
-                    ps.mulPose(Axis.XP.rotationDegrees(6 + e.getId() % 7));
-                    ps.scale(melt, melt, melt);
-                    spike(buffers.getBuffer(RenderType.entityTranslucentEmissive(SHARD)), ps);
-                    ps.popPose();
-                }
+            // --- the two spikes
+            for (int drop = 0; drop < 2; drop++) {
+                float tip = e.tipHeight(drop, pt);
+                if (tip < 0) continue;
+                float melt = tip > 0 ? 1 : e.meltScale(drop, pt);
+                if (melt <= 0) continue;
+                ps.pushPose();
+                ps.translate(0, tip > 0 ? tip : -0.9F, 0);
+                ps.mulPose(Axis.YP.rotationDegrees((e.getId() * 37 + drop * 140) % 360));
+                ps.mulPose(Axis.XP.rotationDegrees(6 + (e.getId() + drop * 3) % 7));
+                ps.scale(melt, melt, melt);
+                spike(buffers.getBuffer(RenderType.entityTranslucentEmissive(SHARD)), ps);
+                ps.popPose();
             }
         }
 

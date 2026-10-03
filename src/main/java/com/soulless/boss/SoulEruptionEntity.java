@@ -16,13 +16,18 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
 /**
- * Souls erupting from under a player: a glowing ring warns for {@link #WARN} ticks, then a column of soul
- * fire bursts up. Anything still inside takes heavy damage and is slowed.
+ * Souls erupting where a player is heading (two blocks ahead of them, or under them if they stand still): a
+ * glowing ring warns for {@link #WARN} ticks, then a column of soul fire bursts up. Anything still inside takes
+ * {@link #DAMAGE} (of which {@link #TRUE_DAMAGE} ignores armor: 8 hearts unarmored, about 4 in netherite) and is
+ * blinded.
  */
 public class SoulEruptionEntity extends Entity {
     public static final int WARN = 22;
     public static final double RADIUS = 1.8;
-    public static final float DAMAGE = 14.0F;
+    public static final float DAMAGE = 16.0F;
+    /** The part of the damage that goes through armor. */
+    public static final float TRUE_DAMAGE = 6.0F;
+    public static final int BLIND_TICKS = 100;
     private int ownerId = -1;
 
     public SoulEruptionEntity(EntityType<?> type, Level level) {
@@ -54,8 +59,11 @@ public class SoulEruptionEntity extends Entity {
             for (LivingEntity e : s.getEntitiesOfClass(LivingEntity.class, box, x -> x instanceof Player && x.isAlive())) {
                 double dx = e.getX() - getX(), dz = e.getZ() - getZ();
                 if (dx * dx + dz * dz > RADIUS * RADIUS) continue;
-                e.hurt(s.damageSources().indirectMagic(this, owner instanceof LivingEntity l ? l : null), DAMAGE);
-                e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 1));
+                LivingEntity src = owner instanceof LivingEntity l ? l : null;
+                e.hurt(s.damageSources().indirectMagic(this, src), TRUE_DAMAGE);
+                e.invulnerableTime = 0;
+                e.hurt(s.damageSources().mobProjectile(this, src), DAMAGE - TRUE_DAMAGE);
+                e.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, BLIND_TICKS, 0));
                 e.setDeltaMovement(e.getDeltaMovement().add(0, 0.6, 0));
                 e.hurtMarked = true;
             }
