@@ -3,7 +3,7 @@ Blockbench project. Also the boss-adjacent textures: abyss head skull, soul bolt
 
 Follows art/gen/reaper_concept_2.png: a horned skull with burning eyes, a cage of dark ribs over a glowing
 soul core, a ragged scarf-mantle and cape, long skeletal arms with hooked claws, and instead of legs a
-swirling column of violet soul flame that pools on the ground. Little ghost souls orbit it.
+pair of great blue feathered wings that keep it levitating. Little ghost souls orbit it.
 About 7 blocks tall. Every cube is placed by hand (no mesh conversion); one texel = one model pixel.
 
     uv run --no-project --with pillow --with numpy tools/gen_reaper.py [--preview out.png]
@@ -22,7 +22,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "src/main/resources/assets/soulless"
-TEX_W = 256
+TEX_W = 512
 rng_uuid = random.Random(77)
 
 
@@ -56,6 +56,7 @@ R = {
     "cloth": ramp("0f0b1c", "17112b", "21183d", "2c2052", "3a2a6b", "4c378a", "6347b0"),
     "flame": ramp("26104a", "3b167a", "5420ad", "7232d6", "9150f0", "b07dff", "d2b2ff", "efe2ff"),
     "core": ramp("5a1aa8", "7f2fe0", "a35cff", "c690ff", "e4c8ff", "fbf3ff"),
+    "wing": ramp("070d2a", "0b1640", "101f57", "172b72", "203b8e", "2b4eab", "3a64c6", "5180dc", "7aa2ee", "a8c4fa"),
     "ghost": ramp("8f7cc4", "ad9de0", "cbbff2", "e6ddff"),
 }
 EYE, EYE_RIM, SOCKET = hexc("fff0ff"), hexc("ff86ee"), hexc("060309")
@@ -69,6 +70,8 @@ class Cube:
         self.hi = tuple(max(a, b) for a, b in zip(lo, hi))
         self.rot, self.pivot = rot, list(pivot or [0, 0, 0])
         self.uv = {}
+        self.density = 1      # texels per model pixel
+        self.feathers = None  # for "plume" planes: the feathers painted onto them
 
     @property
     def size(self):
@@ -108,53 +111,100 @@ def chain(name, b, mats, start, segs):
 
 
 # ------------------------------------------------------------------ model (faces -z = front)
-FLAME = [  # (bone, parent, pivot y, centre x, bottom y, height, width, depth)
-    ("flame_d", "root", 0, 0.0, 3, 8, 26, 21),          # planted on the ground; the layers above swirl
-    ("flame_c", "flame_d", 10, -0.6, 10, 10, 21, 17),
-    ("flame_b", "flame_c", 19, 0.8, 19, 10, 16, 13),
-    ("flame_a", "flame_b", 28, 0.0, 28, 11, 12, 10),
-]
 CAPE = [(-12, 44, -9), (-6, 52, -4), (0, 56, 0), (6, 50, 4), (12, 42, 8)]   # (x, length, fan angle)
 WISPS = 4
-TONGUES = []   # (bone name, phase) for the flicker animation
+#: wing beat: 1.6 s per flap (anim_time * BEAT degrees); the ambient loop holds a whole number of beats
+BEAT = 225
+AMBIENT_LEN = 14.4
+
+
+def feather_plane(name, b, s, z, feathers, mat="plume", rot=None, pivot_y=None):
+    """A thin plane in the wing's x-y plane (span along x on side s, feathers hanging down), sized to fit
+    its feathers. Each feather is (root span-u, root y, angle outward from straight down, length, half-width);
+    the shapes are painted at 2x resolution and everything outside them is transparent."""
+    us, ys = [], []
+    for u, y, ang, length, hw in feathers:
+        a = math.radians(ang)
+        tip = (u + math.sin(a) * length, y - math.cos(a) * length)
+        us += [u - hw - 0.5, u + hw + 0.5, tip[0] - hw, tip[0] + hw]
+        ys += [y + 0.5, tip[1] - 0.5]
+    lo_u, hi_u, lo_y, hi_y = min(us), max(us), min(ys), max(ys)
+    c = Cube(name, b, mat, (s * lo_u, lo_y, z - 0.2), (s * hi_u, hi_y, z + 0.2), rot,
+             [s * (lo_u + hi_u) / 2, pivot_y if pivot_y is not None else hi_y, z] if rot else None)
+    c.density, c.feathers, c.side = 2, feathers, s
+    CUBES.append(c)
+
+
+#: the wing's leading edge in its spread pose (span u outward from the spine, y): shoulder, elbow, wrist, tip.
+#: It arches up to the wrist and falls toward the tip, like a real wing, and the feathers follow that perimeter.
+WS = 1.3   # wing scale
+WING_EDGE = [(5 + (u - 5) * WS, 72 + (y - 72) * WS) for u, y in ((5, 72), (12, 86), (20, 103), (34, 112))]
+WING_Z = 10
+
+
+def lerp2(a, b, t):
+    return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
+
+
+def build_wings():
+    """Two big feathered wings on the back. Each is a three-joint chain like a real wing (arm, forearm,
+    hand) so the beat can bend and lag along the span instead of flapping two flat boards. The leading edge
+    arches over shoulder, elbow and wrist; flight feathers hang from it and fan out over the hand so the
+    trailing edge is one smooth curve; coverts lie in layers on both faces and the flight feathers are
+    cupped back a little, so the wing has volume. Built spread; the ambient animation does all the posing."""
+    E = WING_EDGE
+    for s, side in ((-1, "left"), (1, "right")):
+        arm, fore, hand = f"{side}_wing", f"{side}_wing_fore", f"{side}_wing_hand"
+        bone(arm, "chest", (s * E[0][0], E[0][1], WING_Z))
+        bone(fore, arm, (s * E[1][0], E[1][1], WING_Z))
+        bone(hand, fore, (s * E[2][0], E[2][1], WING_Z))
+        # (bone, edge from, edge to, feather count, angle from..to, tip y from..to or lengths)
+        segs = (
+            (arm, E[0], E[1], 5, (0, 6), (72 - 31 * WS, 72 - 28 * WS), None),
+            (fore, E[1], E[2], 6, (8, 24), (72 - 27 * WS, 72 - 12 * WS), None),
+            (hand, E[2], E[3], 9, (30, 112), None, [L * WS for L in (40, 41, 41, 40, 38, 35, 32, 28, 23)]),
+        )
+        for bn, p0, p1, n, (a0, a1), tips, lengths in segs:
+            flights, cov1, cov2 = [], [], []
+            for k in range(n):
+                t = (k + 0.4) / n
+                ru, ry = lerp2(p0, p1, t)
+                ry -= 1.2
+                ang = a0 + (a1 - a0) * (k / max(1, n - 1)) ** (1.4 if lengths else 1)
+                if lengths:
+                    L = lengths[k]
+                else:
+                    L = (ry - (tips[0] + (tips[1] - tips[0]) * t)) / math.cos(math.radians(ang))
+                L *= 0.9 + 0.2 * hash3(k, ru, 5)   # ragged trailing edge
+                flights.append((ru, ry, ang, L, 2.5 * WS ** 0.5))
+            for k in range(n + 1):
+                t = k / n
+                ru, ry = lerp2(p0, p1, t)
+                ang = a0 + (a1 - a0) * t
+                cov1.append((ru, ry + 0.5, ang * 0.8, 7.5 * WS, 1.9 * WS ** 0.5))
+                if k < n:
+                    ru2, ry2 = lerp2(p0, p1, (k + 0.5) / n)
+                    cov2.append((ru2, ry2 - 1.5, ang * 0.9, (12 if bn != hand else 14) * WS, 2.2 * WS ** 0.5))
+            top = max(p0[1], p1[1]) + 1
+            feather_plane(f"{bn}_flights", bn, s, WING_Z, flights, rot=[-7, 0, 0], pivot_y=top)
+            for layer, dz in (("a", -0.75), ("b", 0.75)):
+                feather_plane(f"{bn}_greater_{layer}", bn, s, WING_Z + dz * 0.8, cov2, mat="covert")
+                feather_plane(f"{bn}_lesser_{layer}", bn, s, WING_Z + dz * 1.3, cov1, mat="covert")
+            # the leading edge: a thick rounded roll of small feathers
+            d = np.array([s * (p1[0] - p0[0]), p1[1] - p0[1], 0.0])
+            th = 3.4 if bn != hand else 2.8
+            chain(f"{bn}_edge", bn, "wingedge", (s * p0[0], p0[1] - 0.6, WING_Z),
+                  [((d[1], -d[0], 0) if False else d, float(np.linalg.norm(d)) + 0.8, th)])
 
 
 def build():
     BONES.clear()
     CUBES.clear()
-    TONGUES.clear()
     bone("root", None, (0, 0, 0))
-
-    # --- soul-flame lower body: a twisting column that widens and pools on the ground
-    for name, parent, py, cx, y0, h, w, d in FLAME:
-        bone(name, parent, (0, py, 0))
-        box(f"{name}_body", name, "flame", cx, y0, 0.5, w, h, d)
-    box("flame_pool", "flame_d", "flame", 0, 0, 0.5, 32, 3, 26)
-    rnd = random.Random(3)
-    n = 0
-    for name, parent, py, cx, y0, h, w, d in FLAME:
-        count = 3 if name != "flame_d" else 5
-        for k in range(count):
-            a = 2 * math.pi * (k + rnd.random() * 0.5) / count
-            rx, rz = math.cos(a) * (w / 2 - 1), math.sin(a) * (d / 2 - 1)
-            tb = f"tongue{n}"
-            base_y = y0 + h * (0.35 + rnd.random() * 0.4)
-            bone(tb, name, (cx + rx, base_y, 0.5 + rz))
-            th = 2.5 if name in ("flame_c", "flame_d") else 2.0
-            out = np.array([math.cos(a), 0, math.sin(a)])
-            chain(tb, tb, ["flame", "flametip"], (cx + rx, base_y, 0.5 + rz),
-                  [(out * 0.55 + [0, 1, 0], 4 + rnd.random() * 3, th), (out * 0.15 + [0, 1, 0], 3 + rnd.random() * 3, th * 0.6)])
-            TONGUES.append((tb, rnd.random() * 360))
-            n += 1
-    for k in range(8):   # flame curling outward along the ground
-        a = 2 * math.pi * (k + 0.5) / 8
-        out = np.array([math.cos(a), 0, math.sin(a)])
-        p0 = np.array([0, 0.5, 0.5]) + out * [14, 0, 11]
-        chain(f"curl{k}_", "flame_d", ["flame", "flame", "flametip"], p0,
-              [(out + [0, 0.12, 0], 6, 2.6), (out * 0.6 + [0, 1, 0], 4, 2.0), (-out * 0.6 + [0, 1, 0], 3, 1.4)])
+    bone("hover", "root", (0, 38, 0))   # lifted by every wing beat
 
     # --- pelvis, wrapped in a sash with ragged hanging cloth
-    bone("body", "root", (0, 38, 0))
+    bone("body", "hover", (0, 38, 0))
     box("pelvis", "body", "bone", 0, 36, 0.5, 15, 5, 9)
     box("sash", "body", "cloth", 0, 37, 0.5, 17, 4, 11)
     box("loin_front", "body", "cloth", -1, 21, -5.6, 8, 18, 1)
@@ -199,22 +249,28 @@ def build():
         bone(low, up, (x, 76 - half, 8))
         box(f"{low}_c", low, "cloth", x, 76 - length, 8, 6.2, half, 1.2)
 
-    # --- head: skull with deep burning sockets, cheekbones, teeth, a hanging jaw and two great horns
+    build_wings()
+
+    # --- head: an angular skull with a scowling V brow, slanted burning eye slits, sharp cheekbones,
+    # fangs, a long hanging jaw and two great horns
     bone("head", "chest", (0, 80, 0))
-    box("cranium", "head", "skull", 0, 87, 0, 12, 9.5, 12)
-    box("maxilla", "head", "bone", 0, 84, -1, 9, 3.5, 9.5)
-    box("brow", "head", "bone", 0, 91.5, -6.6, 12.5, 1.8, 1.6)
+    box("cranium", "head", "skull", 0, 87, 0.3, 12, 9.5, 11.5)
+    box("maxilla", "head", "bone", 0, 84, -1, 8.5, 3, 9)
     for s in (-1, 1):
-        box(f"eye{s}", "head", "eye", s * 2.8, 88.6, -6.15, 2.4, 1.6, 0.5)
-        box(f"cheek{s}", "head", "bone", s * 4.6, 85.5, -5.6, 2.6, 2.4, 2.2)
-        box(f"eyeflame{s}", "head", "flametip", s * 2.8, 93, -6.6, 1.2, 3, 1)
+        box(f"brow{s}", "head", "bone", s * 3.3, 90.6, -6.4, 6.2, 1.9, 2.2, rot=[0, 0, s * 22], pivot=[s * 3.3, 91.5, -6.4])
+        box(f"eye{s}", "head", "eye", s * 2.9, 88.45, -6.05, 3.4, 1.15, 0.5, rot=[0, 0, s * 22], pivot=[s * 2.9, 89, -6.05])
+        box(f"cheek{s}", "head", "bone", s * 4.5, 85.3, -5.4, 3.4, 1.5, 2.4, rot=[0, 0, s * 26], pivot=[s * 4.5, 86, -5.4])
+        box(f"temple{s}", "head", "bone", s * 6.2, 88, 0, 1, 5, 8)
         chain(f"horn{s}_", "head", "horn", (s * 4.6, 95, 1.5),
               [((s * 0.85, 0.55, 0.15), 5, 3.6), ((s * 0.4, 0.9, 0.2), 4, 3.1), ((s * 0.0, 1, 0.1), 3.5, 2.6),
                ((-s * 0.5, 0.85, 0), 3, 2.0), ((-s * 0.9, 0.45, -0.1), 2.5, 1.4)])
-    box("teeth_up", "head", "teeth", 0, 84, -5.85, 7, 1.6, 0.6)
+    for x, length in ((-2.9, 3.0), (-1.0, 1.4), (1.0, 1.4), (2.9, 3.0)):   # sparse fangs, long canines
+        box(f"fang_up{x}", "head", "fang", x, 84.2 - length, -5.75, 0.9, length + 0.2, 0.8)
     bone("jaw", "head", (0, 84, 2))
-    box("jaw", "jaw", "bone", 0, 81, -1.3, 9, 3, 9)
-    box("teeth_low", "jaw", "teeth", 0, 83.4, -5.6, 7, 1.2, 0.6)
+    box("jaw", "jaw", "bone", 0, 80.6, -1.2, 8, 3, 8.5)
+    box("chin", "jaw", "bone", 0, 79.6, -4.6, 4.5, 1.6, 2.2)
+    for x in (-1.95, 1.95):
+        box(f"fang_low{x}", "jaw", "fang", x, 83.2, -5.1, 0.8, 1.8, 0.7)
 
     # --- long skeletal arms: shoulder, humerus, elbow, two forearm bones, wrist, palm, hooked claws
     for s, side in ((-1, "left"), (1, "right")):
@@ -239,7 +295,7 @@ def build():
               [((-s * 0.5, -0.8, -0.35), 4, 1.4), ((-s * 0.85, -0.45, 0), 3, 1.0)])
 
     # --- ghost souls circling the shoulders
-    bone("wisps", "root", (0, 70, 0))
+    bone("wisps", "hover", (0, 70, 0))
     for i in range(WISPS):
         a = 2 * math.pi * i / WISPS + 0.6
         wx, wz, wy = math.cos(a) * 21, math.sin(a) * 21, 66 + (i % 2) * 12
@@ -306,8 +362,13 @@ def paint(c, f, W, H):
                 if j % 3 == 2 and side:
                     t -= 0.16   # ridges
                 col = pick(R["horn"], t)
-            elif m == "teeth":
-                col = pick(R["pale"], 0.7 + n * 0.2) if i % 2 == 0 else SOCKET.copy()
+            elif m in ("plume", "covert"):
+                col = paint_plume(c, x, y, f)
+            elif m == "wingedge":   # rows of tiny scale-like feathers
+                t = 0.5 + lt * 0.6 + n * 0.06 - (0.14 if (j + (i // 2)) % 3 == 0 else 0) - (0.1 if edge else 0)
+                col = pick(R["wing"], t)
+            elif m == "fang":
+                col = pick(R["pale"], 0.85 - 0.5 * (j + 0.5) / H + n * 0.1) if side else pick(R["pale"], 0.5)
             elif m == "cloth":
                 fold = 0.13 * math.sin(x * 1.25 + z * 1.25) + 0.06 * math.sin(x * 0.4 - y * 0.2)
                 t = 0.42 + lt + fold + n * 0.1 + (0.1 if top else 0) - (0.08 if edge else 0)
@@ -346,14 +407,50 @@ def paint(c, f, W, H):
     return img, glow
 
 
+def paint_plume(c, x, y, f):
+    """Overlapping feathers: each has a dark rim (so neighbours read apart), a pale shaft, vanes that darken
+    toward the tip and a rounded point; later feathers lie on top of earlier ones."""
+    u = c.side * x
+    if f not in ("north", "south"):
+        return hexc("000000", 0)   # the planes' paper-thin rims stay invisible
+    hit = None
+    for k, (ru, ry, ang, length, hw) in enumerate(c.feathers):
+        a = math.radians(ang)
+        du, dy = u - ru, y - ry
+        along = du * math.sin(a) - dy * math.cos(a)
+        across = du * math.cos(a) + dy * math.sin(a)
+        if not (0 <= along <= length):
+            continue
+        w = hw * min(1.0, 0.55 + along / 4)
+        tip = length - hw * 2.6
+        if along > tip:
+            w *= (length - along) / (hw * 2.6)   # long blade-like point
+        if abs(across) <= w:
+            hit = (k, along / length, across, w)
+    if hit is None:
+        return hexc("000000", 0)
+    k, v, across, w = hit
+    cov = c.mat == "covert"
+    t = (0.58 if cov else 0.52) - 0.3 * v + 0.04 * hash3(k, c.lo[0], 3) - (0.03 if f == "south" else 0)
+    if w - abs(across) < 0.5:
+        t -= 0.2                                     # rim
+    elif abs(across) < 0.3 and not cov:
+        t += 0.2                                     # shaft
+    elif math.sin(v * 60 + abs(across) * 4) > 0.85:
+        t -= 0.05                                    # barbs
+    return pick(R["wing"], t)
+
+
 def skull_face(col, x, y):
-    """Front of the cranium: two slanted sockets (the eye cubes sit inside them) and a nasal hole."""
+    """Front of the cranium: deep sockets slanting down toward the nose (the eye slits glow inside them)
+    and an inverted-triangle nasal hole."""
     for s in (-1, 1):
-        dx, dy = (x - s * 2.8) / 2.4, (y - 89.3) / 1.6
-        dy += dx * s * 0.35
-        if dx * dx + dy * dy < 1.0:
+        a = math.radians(s * 22)
+        dx, dy = x - s * 2.9, y - 89.0
+        u, v = dx * math.cos(a) + dy * math.sin(a), -dx * math.sin(a) + dy * math.cos(a)
+        if (u / 2.4) ** 2 + (v / 1.25) ** 2 < 1.0:
             return SOCKET.copy()
-    if abs(x) < 1.0 and 87 <= y < 88.2:
+    if 86.6 <= y < 88.4 and abs(x) < (y - 86.6) * 0.55 + 0.35:
         return SOCKET.copy()
     return col
 
@@ -363,7 +460,7 @@ def pack_and_paint():
     for c in CUBES:
         for f in FACES:
             a, b = face_dims(c, f)
-            faces.append((c, f, max(1, round(a)), max(1, round(b))))
+            faces.append((c, f, max(1, round(a * c.density)), max(1, round(b * c.density))))
     faces.sort(key=lambda t: (-t[3], -t[2]))
     x = y = row_h = 0
     for c, f, W, H in faces:
@@ -400,8 +497,8 @@ def rotmat(rx, ry, rz):
     return Rz @ Ry @ Rx
 
 
-def render_preview(base, out, yaws=(0, 35, 90, 180), scale=5, sub=3):
-    Wp, Hp = 80 * scale, 122 * scale
+def render_preview(base, out, yaws=(0, 35, 90, 180), scale=4, sub=3):
+    Wp, Hp = 190 * scale, 150 * scale
     sheets = []
     normals = {"north": (0, 0, -1), "south": (0, 0, 1), "east": (1, 0, 0), "west": (-1, 0, 0), "up": (0, 1, 0), "down": (0, -1, 0)}
     for yaw in yaws:
@@ -445,30 +542,41 @@ def render_preview(base, out, yaws=(0, 35, 90, 180), scale=5, sub=3):
 # ------------------------------------------------------------------ animations
 def animations():
     t = "query.anim_time"
-    amb = {}   # always-on layer: flames, cape, wisps, eye flames (the state animations never touch these bones)
-    for k, (name, *_rest) in enumerate(FLAME):
-        if name == "flame_d":
-            continue
-        # a planted swirl: each layer twists a little about the vertical and breathes; nothing bends sideways
-        # (bending the nested layers made the column wriggle like a worm)
-        sgn = 1 if k % 2 == 0 else -1
-        amb[name] = {"rotation": {0: [0, f"{sgn} * math.sin({t} * 50 + {k * 70}) * 4", 0]},
-                     "scale": {0: [f"1 + math.sin({t} * 160 + {k * 80}) * 0.025", 1, f"1 + math.sin({t} * 160 + {k * 80}) * 0.025"]}}
-    for tb, ph in TONGUES:
-        amb[tb] = {"scale": {0: [1, f"1 + math.sin({t} * 420 + {ph:.0f}) * 0.2", 1]}}
+    amb = {}   # always-on layer: wings, hover, cape, wisps (the state animations never touch these bones)
+    # every frequency is a multiple of 25 deg/s so the 14.4 s loop wraps seamlessly
+    # --- wing beat, after the classic flight-cycle rules (Animation Mentor "How to Animate Birds in Flight",
+    # Williams' Animator's Survival Kit): a big sweep from the shoulder, the elbow and the hand following
+    # later and later so a wave runs out along the wing (overlap, follow-through); a faster, fully spread
+    # downstroke and a slower upstroke with the wing partly folded back; the body lifting on the downstroke.
+    # Beat phase psi: 0 = wings at the top, 180 = at the bottom. The warp makes the downstroke ~40% of the beat.
+    psi = f"({t} * {BEAT} + 20 - 20 * math.cos({t} * {BEAT}))"
+
+    def elev(bias, amp, lag):   # absolute elevation of a wing segment (degrees above the spread pose)
+        return f"({bias} + {amp} * math.cos({psi} - {lag}))"
+
+    root, fore, hand = elev(-6, 30, 0), elev(-5, 32, 38), elev(-4, 34, 76)
+    fold = f"(12 * (1 - math.sin({psi})))"   # 0 at mid-downstroke (spread), 24 at mid-upstroke (tucked)
+    # signs (checked in game): +z lifts the right wing's tip, +y sweeps it back; the left side mirrors
+    for side, s in (("left", -1), ("right", 1)):
+        z = "" if s > 0 else "-"
+        amb[f"{side}_wing"] = {"rotation": {0: [f"math.sin({psi}) * 6", f"{s} * (12 - 6 * math.sin({psi}))", f"{z}{root}"]}}
+        amb[f"{side}_wing_fore"] = {"rotation": {0: [0, f"{s} * {fold} * 0.7", f"{z}({fore} - {root})"]}}
+        amb[f"{side}_wing_hand"] = {"rotation": {0: [0, f"{s} * {fold}", f"{z}({hand} - {fore})"]}}
+    # the body rises through each downstroke (a little after it, for weight) and settles on the upstroke
+    amb["hover"] = {"position": {0: [0, f"-1.6 * math.cos({psi} - 30)", 0]},
+                    "rotation": {0: [f"math.cos({psi} - 60) * 1.5", 0, 0]}}
     for k, (_, _, fan) in enumerate(CAPE):
-        amb[f"cape{k}"] = {"rotation": {0: [f"7 + math.sin({t} * 100 + {k * 40}) * 5", 0, f"{fan} + math.sin({t} * 80 + {k * 50}) * 2"]}}
-        amb[f"cape{k}_low"] = {"rotation": {0: [f"6 + math.sin({t} * 100 + {k * 40 + 70}) * 9", 0, f"math.sin({t} * 90 + {k * 50}) * 4"]}}
-    amb["wisps"] = {"rotation": {0: [0, f"{t} * 40", 0]}}
+        amb[f"cape{k}"] = {"rotation": {0: [f"7 + math.sin({t} * 100 + {k * 40}) * 5", 0, f"{fan} + math.sin({t} * 75 + {k * 50}) * 2"]}}
+        amb[f"cape{k}_low"] = {"rotation": {0: [f"6 + math.sin({t} * 100 + {k * 40 + 70}) * 9", 0, f"math.sin({t} * 100 + {k * 50}) * 4"]}}
+    amb["wisps"] = {"rotation": {0: [0, f"{t} * 50", 0]}}
     for i in range(WISPS):
         amb[f"wisp{i}"] = {"position": {0: [0, f"math.sin({t} * 150 + {i * 90}) * 3", 0]},
-                           "rotation": {0: [f"math.sin({t} * 200 + {i * 90}) * 10", f"-{t} * 40", 0]}}
+                           "rotation": {0: [f"math.sin({t} * 200 + {i * 90}) * 10", f"-{t} * 50", 0]}}
     for s in ("left", "right"):
-        amb[f"{s}_claws"] = {"rotation": {0: [0, 0, f"math.sin({t} * 70 + {0 if s == 'left' else 90}) * 6"]}}
+        amb[f"{s}_claws"] = {"rotation": {0: [0, 0, f"math.sin({t} * 75 + {0 if s == 'left' else 90}) * 6"]}}
 
     sway = f"math.sin({t} * 120)"
     idle = {
-        "body": {"position": {0: [0, f"{sway} * 1.0", 0]}},
         "chest": {"rotation": {0: [f"math.sin({t} * 120 + 40) * 2", 0, 0]}, "scale": {0: [f"1 + {sway} * 0.015", 1, f"1 + {sway} * 0.015"]}},
         "left_arm": {"rotation": {0: [f"math.sin({t} * 120) * 4", 0, "-7"]}},
         "right_arm": {"rotation": {0: [f"math.sin({t} * 120 + 90) * 4", 0, "7"]}},
@@ -524,7 +632,7 @@ def animations():
         "right_arm": {"rotation": {0: [0, 0, 7], 1.0: [-100, 0, 40], 3.0: [10, 0, 10]}},
     }
     return {
-        "animation.wailing_reaper.ambient": (True, 36.0, amb),
+        "animation.wailing_reaper.ambient": (True, AMBIENT_LEN, amb),
         "animation.wailing_reaper.idle": (True, 6.0, idle),
         "animation.wailing_reaper.bolt": (False, 1.4, bolt),
         "animation.wailing_reaper.erupt": (False, 1.5, erupt),
@@ -561,7 +669,7 @@ def write_geo(tex_h):
         bones.append(out)
     geo = {"format_version": "1.12.0", "minecraft:geometry": [{
         "description": {"identifier": "geometry.wailing_reaper", "texture_width": TEX_W, "texture_height": tex_h,
-                        "visible_bounds_width": 6, "visible_bounds_height": 8, "visible_bounds_offset": [0, 3.5, 0]},
+                        "visible_bounds_width": 10, "visible_bounds_height": 8, "visible_bounds_offset": [0, 3.5, 0]},
         "bones": bones}]}
     p = ASSETS / "geo/entity/wailing_reaper.geo.json"
     p.parent.mkdir(parents=True, exist_ok=True)

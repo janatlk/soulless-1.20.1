@@ -88,6 +88,9 @@ public final class DevAutoTestClient {
             for (int v = 0; v < 4; v++) {
                 if (tick == 60 + v * 40) shot(mc, "preview_" + v);
                 if (tick == 70 + v * 40) shot(mc, "preview_" + v + "b");
+                // a strip through one wing beat (every 3 ticks)
+                int k = tick - (62 + v * 40);
+                if (k >= 0 && k <= 30 && k % 3 == 0) shot(mc, String.format("cycle_%d_%02d", v, k));
             }
             if (tick == 240) mc.stop();
             return;

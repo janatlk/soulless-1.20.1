@@ -122,6 +122,7 @@ public final class DevAutoTest {
                 r.setYHeadRot(180);
                 r.makePreview(System.getenv().getOrDefault("SOULLESS_PREVIEW_ANIM", "idle"));
                 level.addFreshEntity(r);
+                p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);   // no sword particles in the shots
             }
             // walk around it: front, front-left, side, back
             double[][] views = {{0, -9}, {-7, -7}, {-10, 0}, {0, 10}};
