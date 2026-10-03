@@ -109,10 +109,10 @@ def chain(name, b, mats, start, segs):
 
 # ------------------------------------------------------------------ model (faces -z = front)
 FLAME = [  # (bone, parent, pivot y, centre x, bottom y, height, width, depth)
-    ("flame_a", "root", 38, 0.0, 28, 11, 12, 10),
-    ("flame_b", "flame_a", 28, 0.8, 19, 10, 16, 13),
-    ("flame_c", "flame_b", 19, -0.6, 10, 10, 21, 17),
-    ("flame_d", "flame_c", 10, 0.0, 3, 8, 26, 21),
+    ("flame_d", "root", 0, 0.0, 3, 8, 26, 21),          # planted on the ground; the layers above swirl
+    ("flame_c", "flame_d", 10, -0.6, 10, 10, 21, 17),
+    ("flame_b", "flame_c", 19, 0.8, 19, 10, 16, 13),
+    ("flame_a", "flame_b", 28, 0.0, 28, 11, 12, 10),
 ]
 CAPE = [(-12, 44, -9), (-6, 52, -4), (0, 56, 0), (6, 50, 4), (12, 42, 8)]   # (x, length, fan angle)
 WISPS = 4
@@ -340,9 +340,6 @@ def paint(c, f, W, H):
                 col = pick(R["ghost"], 0.55 + lt + n * 0.2 + 0.2 * (1 - (j + 0.5) / H))
                 col[3] = 175
                 glow[j, i] = True
-                if side and W == 4 and H == 4 and ((j == 1 and i in (0, 3)) or (j == 2 and i in (1, 2))):
-                    col = hexc("1a0f2e", 220)   # hollow eyes and a wailing mouth
-                    glow[j, i] = False
             img[j, i] = col
             if col[3] == 0:
                 glow[j, i] = False
@@ -450,11 +447,15 @@ def animations():
     t = "query.anim_time"
     amb = {}   # always-on layer: flames, cape, wisps, eye flames (the state animations never touch these bones)
     for k, (name, *_rest) in enumerate(FLAME):
-        amb[name] = {"rotation": {0: [f"math.sin({t} * 150 + {k * 55}) * {3 + k * 1.5}", f"math.sin({t} * 40 + {k * 30}) * {4 + k * 2}",
-                                      f"math.cos({t} * 120 + {k * 55}) * {3 + k * 1.5}"]}}
+        if name == "flame_d":
+            continue
+        # a planted swirl: each layer twists a little about the vertical and breathes; nothing bends sideways
+        # (bending the nested layers made the column wriggle like a worm)
+        sgn = 1 if k % 2 == 0 else -1
+        amb[name] = {"rotation": {0: [0, f"{sgn} * math.sin({t} * 50 + {k * 70}) * 4", 0]},
+                     "scale": {0: [f"1 + math.sin({t} * 160 + {k * 80}) * 0.025", 1, f"1 + math.sin({t} * 160 + {k * 80}) * 0.025"]}}
     for tb, ph in TONGUES:
-        amb[tb] = {"scale": {0: [1, f"1 + math.sin({t} * 420 + {ph:.0f}) * 0.22", 1]},
-                   "rotation": {0: [f"math.sin({t} * 260 + {ph:.0f}) * 8", 0, f"math.cos({t} * 230 + {ph:.0f}) * 8"]}}
+        amb[tb] = {"scale": {0: [1, f"1 + math.sin({t} * 420 + {ph:.0f}) * 0.2", 1]}}
     for k, (_, _, fan) in enumerate(CAPE):
         amb[f"cape{k}"] = {"rotation": {0: [f"7 + math.sin({t} * 100 + {k * 40}) * 5", 0, f"{fan} + math.sin({t} * 80 + {k * 50}) * 2"]}}
         amb[f"cape{k}_low"] = {"rotation": {0: [f"6 + math.sin({t} * 100 + {k * 40 + 70}) * 9", 0, f"math.sin({t} * 90 + {k * 50}) * 4"]}}
@@ -467,7 +468,7 @@ def animations():
 
     sway = f"math.sin({t} * 120)"
     idle = {
-        "root": {"position": {0: [0, f"{sway} * 1.2", 0]}},
+        "body": {"position": {0: [0, f"{sway} * 1.0", 0]}},
         "chest": {"rotation": {0: [f"math.sin({t} * 120 + 40) * 2", 0, 0]}, "scale": {0: [f"1 + {sway} * 0.015", 1, f"1 + {sway} * 0.015"]}},
         "left_arm": {"rotation": {0: [f"math.sin({t} * 120) * 4", 0, "-7"]}},
         "right_arm": {"rotation": {0: [f"math.sin({t} * 120 + 90) * 4", 0, "7"]}},

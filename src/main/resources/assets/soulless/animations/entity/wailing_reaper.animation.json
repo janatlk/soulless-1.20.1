@@ -5,200 +5,138 @@
    "loop": true,
    "animation_length": 36.0,
    "bones": {
-    "flame_a": {
+    "flame_c": {
      "rotation": [
-      "math.sin(query.anim_time * 150 + 0) * 3.0",
-      "math.sin(query.anim_time * 40 + 0) * 4",
-      "math.cos(query.anim_time * 120 + 0) * 3.0"
+      0,
+      "-1 * math.sin(query.anim_time * 50 + 70) * 4",
+      0
+     ],
+     "scale": [
+      "1 + math.sin(query.anim_time * 160 + 80) * 0.025",
+      1,
+      "1 + math.sin(query.anim_time * 160 + 80) * 0.025"
      ]
     },
     "flame_b": {
      "rotation": [
-      "math.sin(query.anim_time * 150 + 55) * 4.5",
-      "math.sin(query.anim_time * 40 + 30) * 6",
-      "math.cos(query.anim_time * 120 + 55) * 4.5"
+      0,
+      "1 * math.sin(query.anim_time * 50 + 140) * 4",
+      0
+     ],
+     "scale": [
+      "1 + math.sin(query.anim_time * 160 + 160) * 0.025",
+      1,
+      "1 + math.sin(query.anim_time * 160 + 160) * 0.025"
      ]
     },
-    "flame_c": {
+    "flame_a": {
      "rotation": [
-      "math.sin(query.anim_time * 150 + 110) * 6.0",
-      "math.sin(query.anim_time * 40 + 60) * 8",
-      "math.cos(query.anim_time * 120 + 110) * 6.0"
-     ]
-    },
-    "flame_d": {
-     "rotation": [
-      "math.sin(query.anim_time * 150 + 165) * 7.5",
-      "math.sin(query.anim_time * 40 + 90) * 10",
-      "math.cos(query.anim_time * 120 + 165) * 7.5"
+      0,
+      "-1 * math.sin(query.anim_time * 50 + 210) * 4",
+      0
+     ],
+     "scale": [
+      "1 + math.sin(query.anim_time * 160 + 240) * 0.025",
+      1,
+      "1 + math.sin(query.anim_time * 160 + 240) * 0.025"
      ]
     },
     "tongue0": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 225) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 225) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 225) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 225) * 8"
      ]
     },
     "tongue1": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 84) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 84) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 84) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 84) * 8"
      ]
     },
     "tongue2": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 230) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 230) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 230) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 230) * 8"
      ]
     },
     "tongue3": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 267) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 267) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 267) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 267) * 8"
      ]
     },
     "tongue4": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 108) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 108) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 108) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 108) * 8"
      ]
     },
     "tongue5": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 316) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 316) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 316) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 316) * 8"
      ]
     },
     "tongue6": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 160) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 160) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 160) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 160) * 8"
      ]
     },
     "tongue7": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 78) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 78) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 78) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 78) * 8"
      ]
     },
     "tongue8": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 183) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 183) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 183) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 183) * 8"
      ]
     },
     "tongue9": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 326) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 326) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 326) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 326) * 8"
      ]
     },
     "tongue10": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 242) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 242) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 242) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 242) * 8"
      ]
     },
     "tongue11": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 205) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 205) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 205) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 205) * 8"
      ]
     },
     "tongue12": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 103) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 103) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 103) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 103) * 8"
      ]
     },
     "tongue13": {
      "scale": [
       1,
-      "1 + math.sin(query.anim_time * 420 + 288) * 0.22",
+      "1 + math.sin(query.anim_time * 420 + 288) * 0.2",
       1
-     ],
-     "rotation": [
-      "math.sin(query.anim_time * 260 + 288) * 8",
-      0,
-      "math.cos(query.anim_time * 230 + 288) * 8"
      ]
     },
     "cape0": {
@@ -346,10 +284,10 @@
    "loop": true,
    "animation_length": 6.0,
    "bones": {
-    "root": {
+    "body": {
      "position": [
       0,
-      "math.sin(query.anim_time * 120) * 1.2",
+      "math.sin(query.anim_time * 120) * 1.0",
       0
      ]
     },
