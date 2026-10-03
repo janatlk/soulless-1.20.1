@@ -317,6 +317,9 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         double ground = groundY();
         altitude = Mth.lerp(0.06, altitude, altitudeWant);
         double wantY = ground + altitude + Math.sin(tickCount * 0.08) * 0.15;
+        // never above 5 blocks over the floor, and come down when the target is far below
+        if (target != null && target.getY() < wantY - 3) wantY = Math.max(ground, target.getY() - 0.5);
+        wantY = Math.min(wantY, ground + 5);
         Vec3 step = new Vec3(drift.x, Mth.clamp((wantY - getY()) * 0.2, -0.4, 0.4), drift.z);
         if (home != null) {
             Vec3 h = Vec3.atBottomCenterOf(home);
@@ -362,7 +365,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
                 Vec3 tangent = new Vec3(-radial.z, 0, radial.x).scale(orbitDir);
                 Vec3 want = tangent.scale(0.26).add(radial.scale(Mth.clamp((d - ORBIT_RADIUS) * 0.05, -0.22, 0.22)));
                 steer(want, 0.1);
-                altitudeWant = 2.2 + Math.sin(tickCount * 0.045) * 1.8;
+                altitudeWant = 0.8 + Math.sin(tickCount * 0.045) * 0.7;   // low enough to reach with a sword
                 if (moveTicks > 45 + random.nextInt(40)) {
                     moveTicks = 0;
                     if (random.nextInt(3) == 0) orbitDir = -orbitDir;
@@ -372,7 +375,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
             case SWOOP_WINDUP -> {
                 // rear back and up: the tell
                 steer(radial.scale(-0.12), 0.2);
-                altitudeWant = 4.5;
+                altitudeWant = 2.5;
                 if (moveTicks >= 12) {
                     move = Move.SWOOP;
                     moveTicks = 0;
@@ -418,10 +421,15 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         drift = new Vec3(Mth.lerp(rate, drift.x, want.x), 0, Mth.lerp(rate, drift.z, want.z));
     }
 
-    /** Top of the highest solid block in a few blocks above/below, so it rides over the altar dais. */
+    /**
+     * The surface it hovers over. In its arena that is always the arena floor (scanning upward would take the
+     * bone arches, chains and pillar capitals for ground and ratchet it up under the dome, out of reach).
+     * Elsewhere: the first solid block below it.
+     */
     private double groundY() {
+        if (home != null) return home.getY() - 1;
         BlockPos p = blockPosition();
-        for (int dy = 3; dy >= -8; dy--) {
+        for (int dy = 0; dy >= -8; dy--) {
             BlockPos q = p.offset(0, dy, 0);
             if (!level().getBlockState(q).isAir() && level().getBlockState(q.above()).isAir()) return q.getY() + 1;
         }
