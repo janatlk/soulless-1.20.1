@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The Reaper's basic attack: a burning skull (drawn in 3D, see BossRenderers.Bolt) that bends gently toward its
  * target - the turn rate is low enough that sprinting sideways gets out of its way. It sets whoever it hits on
- * fire; striking the ground it leaves a cross of fire that burns out after a few seconds.
+ * fire and slows them for a second.
  */
 public class SoulBoltEntity extends Projectile {
     public static final double SPEED = 0.7;
@@ -25,8 +25,8 @@ public class SoulBoltEntity extends Projectile {
     private static final double TURN_PER_TICK = Math.toRadians(2.5);
     private static final int LIFE = 100;
     public static final int IGNITE_SECONDS = 5;
-    /** The fire cross on the ground: arm length and how long it burns. */
-    private static final int CROSS_ARM = 2, CROSS_TICKS = 60;
+    /** Slowness I for a second on whoever it hits. */
+    private static final int SLOW_TICKS = 20;
 
     @Nullable private LivingEntity target;
 
@@ -86,6 +86,7 @@ public class SoulBoltEntity extends Projectile {
         if (!level().isClientSide) {
             e.hurt(damageSources().mobProjectile(this, getOwner() instanceof LivingEntity l ? l : null), DAMAGE);
             e.setSecondsOnFire(IGNITE_SECONDS);
+            if (e instanceof LivingEntity l) l.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, SLOW_TICKS, 0));
             burst();
             discard();
         }
@@ -94,20 +95,7 @@ public class SoulBoltEntity extends Projectile {
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result);
-        if (!level().isClientSide && result instanceof net.minecraft.world.phys.BlockHitResult bh) {
-            // a cross of fire where it struck
-            net.minecraft.core.BlockPos c = bh.getBlockPos().relative(bh.getDirection());
-            ServerLevel sl = (ServerLevel) level();
-            TempFire.light(sl, c, CROSS_TICKS);
-            for (net.minecraft.core.Direction d : net.minecraft.core.Direction.Plane.HORIZONTAL) {
-                for (int i = 1; i <= CROSS_ARM; i++) {
-                    net.minecraft.core.BlockPos p = c.relative(d, i);
-                    // follow the ground a block up or down
-                    if (!sl.getBlockState(p).isAir() && sl.getBlockState(p.above()).isAir()) p = p.above();
-                    else if (sl.getBlockState(p.below()).isAir()) p = p.below();
-                    TempFire.light(sl, p, CROSS_TICKS);
-                }
-            }
+        if (!level().isClientSide && result.getType() == HitResult.Type.BLOCK) {
             burst();
             discard();
         }
