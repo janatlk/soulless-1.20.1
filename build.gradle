@@ -127,6 +127,11 @@ repositories {
             includeGroupByRegex("software\\.bernie.*")
             includeGroup("com.eliotlash.mclib")
         }
+    maven {
+        // Curios API (ring / necklace / belt slots)
+        name = 'Illusive Soars'
+        url = 'https://maven.theillusivec4.top/'
+    }
     }
 
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
@@ -145,6 +150,9 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}")
+    // Curios: the Soulsmith's Ring is worn in its ring slot (optional at runtime: without Curios the ring works from the inventory)
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
+    runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

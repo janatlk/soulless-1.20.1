@@ -71,7 +71,11 @@ public final class ClientPacketHandler {
     }
 
     public static void rendStart(int entityId, int elapsed) {
-        ClientState.RENDS.put(entityId, ClientState.gameTime() - elapsed);
+        // elapsed is a position on the (possibly faster) timeline; convert it back to game ticks
+        Minecraft mc0 = Minecraft.getInstance();
+        net.minecraft.world.entity.Entity e = mc0.level != null ? mc0.level.getEntity(entityId) : null;
+        float speed = e != null ? com.soulless.item.SoulRing.rendSpeed(e) : 1F;
+        ClientState.RENDS.put(entityId, ClientState.gameTime() - Math.round(elapsed / speed));
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null && mc.player.getId() == entityId && elapsed == 0) {
             ClientState.rendReleaseSent = false;

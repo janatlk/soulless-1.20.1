@@ -38,6 +38,15 @@ public final class RendAnim {
             return charged(t);
         }
         float s = t - RendTimeline.WINDUP;
+        if (com.soulless.item.SoulRing.worn(entity)) {
+            // the ring: no recovery - after the cut the blade swings straight back to guard
+            if (s < CUT_TICKS) return SlamAnim.Pose.lerp(charged(RendTimeline.WINDUP), CUT, cutCurve(s / CUT_TICKS));
+            SlamAnim.Pose cut = SlamAnim.Pose.lerp(CUT, CUT, 0);
+            float back = (s - CUT_TICKS - RendTimeline.RING_HOLD) / RendTimeline.RING_RETURN;
+            if (back <= 0) return cut;
+            SlamAnim.Pose guard = SlamAnim.Pose.lerp(SlamAnim.GUARD, SlamAnim.GUARD, 0).legs(0);
+            return back < 1 ? SlamAnim.Pose.lerp(cut, guard, smooth(back)) : null;
+        }
         if (s < RendTimeline.STRIKE) {
             if (s < CUT_TICKS) return SlamAnim.Pose.lerp(charged(RendTimeline.WINDUP), CUT, cutCurve(s / CUT_TICKS));
             // the follow-through is held, the stance slowly relaxing
@@ -89,6 +98,12 @@ public final class RendAnim {
         if (t < 0) return null;
         if (t < RendTimeline.WINDUP) return new float[]{0, 4, smooth(t / HEAVE_TICKS)};
         float s = t - RendTimeline.WINDUP;
+        if (com.soulless.item.SoulRing.worn(entity)) {
+            if (s < CUT_TICKS) return new float[]{4, 5, cutCurve(s / CUT_TICKS)};
+            float back = (s - CUT_TICKS - RendTimeline.RING_HOLD) / RendTimeline.RING_RETURN;
+            if (back <= 0) return new float[]{5, 5, 1};
+            return back < 1 ? new float[]{5, 0, smooth(back)} : null;
+        }
         if (s < RendTimeline.STRIKE) {
             if (s < CUT_TICKS) return new float[]{4, 5, cutCurve(s / CUT_TICKS)};
             return new float[]{5, 5, 1};

@@ -1,10 +1,8 @@
 {
   "itemGroup.soulless": "Soulless",
-
   "item.soulless.soul_forged": "Кованная душа",
   "tooltip.soulless.soul_forged.subtitle": "Легендарный двуручный меч",
   "tooltip.soulless.soul_forged.stats": "⚔ %s урона · %s уд/с · дальность +%s",
-
   "tooltip.soulless.soul_forged.c.curse": "✦ Проклятье душ: поджигает врагов на %s с",
   "tooltip.soulless.section.passive": "Пассивные",
   "tooltip.soulless.section.active": "Активные",
@@ -12,7 +10,6 @@
   "tooltip.soulless.soul_forged.c.rend": "✦ [%s] Разрез душ: %s урона, КД %s с",
   "tooltip.soulless.soul_forged.c.traits": "✦ Скорость душ I · Тяжёлый",
   "tooltip.soulless.soul_forged.c.more": "Зажмите Shift, чтобы узнать больше",
-
   "tooltip.soulless.soul_forged.d.curse.title": "✦ Проклятье душ",
   "tooltip.soulless.soul_forged.d.curse.1": "  Поджигает на %s с: %s урона/с сквозь броню",
   "tooltip.soulless.soul_forged.d.curse.2": "  −%s%% скорости, цель не может прыгать",
@@ -41,7 +38,6 @@
   "message.soulless.souls_milestone": "Кованная душа поглотила %s душ: +%s%% урона",
   "tooltip.soulless.soul_forged.d.traits.4": "  Двуручный: вторая рука занята",
   "tooltip.soulless.soul_forged.lore": "«Выкован из душ, что так и не обрели покоя»",
-
   "item.soulless.wraithsteel_ingot": "Слиток призрачной стали",
   "item.soulless.wraithsteel_ingot.desc": "Холодный металл, в котором шепчут чужие голоса",
   "item.soulless.soulflame_core": "Ядро пламени душ",
@@ -52,7 +48,6 @@
   "item.soulless.abyssal_heart.desc": "Оно всё ещё бьётся",
   "tooltip.soulless.material.used_for": "Компонент Кованной души",
   "tooltip.soulless.material.source": "Источник: ??? — неведомые стражи (скоро)",
-
   "entity.soulless.wailing_reaper": "Скорбный Жнец",
   "entity.soulless.soul_bolt": "Сгусток душ",
   "entity.soulless.abyss_head": "Голова бездны",
@@ -72,14 +67,12 @@
   "effect.soulless.stun": "Оглушение",
   "death.attack.soulless.soul_curse": "%1$s сгорел в пламени душ",
   "death.attack.soulless.soul_curse.player": "%1$s сгорел в пламени душ, спасаясь от %2$s",
-
   "key.categories.soulless": "Soulless",
   "key.soulless.slam": "Сокрушение душ",
   "message.soulless.slam_cooldown": "Сокрушение душ перезаряжается: %s сек.",
   "message.soulless.rend_cooldown": "Разрез душ перезаряжается: %s сек.",
   "message.soulless.slam_ground": "Сокрушение душ можно применить только стоя на земле",
   "hud.soulless.rmb": "ПКМ",
-
   "command.soulless.zones.on": "%s: зоны способностей показаны (держите Кованную душу)",
   "command.soulless.zones.off": "%s: зоны способностей скрыты",
   "command.soulless.resetcd": "Перезарядка способностей сброшена (игроков: %s)",
@@ -92,8 +85,14 @@
   "message.soulless.dummy.hit": "[Манекен] −%s урона · всего %s",
   "message.soulless.dummy.curse": " · проклятье %s/с (%s с)",
   "message.soulless.dummy.stun": " · оглушение %s с",
-
   "subtitles.soulless.slam_windup": "Меч набирает силу",
   "subtitles.soulless.slam_impact": "Сокрушающий удар",
-  "subtitles.soulless.curse_ignite": "Вспыхивает пламя душ"
+  "subtitles.soulless.curse_ignite": "Вспыхивает пламя душ",
+  "item.soulless.soul_ring": "Перстень Кузнеца душ",
+  "tooltip.soulless.soul_ring.lore": "Последнее, что выковал Кузнец душ, прежде чем Жнец забрал его",
+  "tooltip.soulless.soul_ring.with": "Надетый вместе с «Кованной душой»:",
+  "tooltip.soulless.soul_ring.slam": "  ✦ Сокрушение душ: прыжок выше на %s%%, урон +%s%%",
+  "tooltip.soulless.soul_ring.slam_air": "  ✦ Сокрушение душ можно применять в воздухе",
+  "tooltip.soulless.soul_ring.rend": "  ✦ Разрез душ быстрее на %s%%",
+  "tooltip.soulless.soul_ring.rend_recover": "  ✦ После Разреза душ нет восстановления"
 }

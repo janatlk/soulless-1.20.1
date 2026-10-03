@@ -19,6 +19,16 @@ public final class RendTimeline {
     public static final int HIT_AT = 4;
     public static final int RECOVER = 70;
     public static final int TOTAL = WINDUP + STRIKE + RECOVER;
+    /**
+     * With the Soulsmith's Ring there is no recovery: after the cut (6 ticks) the blade is held a moment and
+     * swung straight back to guard, and the sword is free again.
+     */
+    public static final int RING_HOLD = 6, RING_RETURN = 12;
+    public static final int RING_AFTER = 6 + RING_HOLD + RING_RETURN;
+
+    public static int total(boolean ring) {
+        return ring ? WINDUP + RING_AFTER : TOTAL;
+    }
     public static final int COOLDOWN = 31 * 20;
 
     private RendTimeline() {}

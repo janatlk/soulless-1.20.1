@@ -70,8 +70,9 @@ public final class ClientState {
     public static float rendTicks(Entity entity) {
         long start = RENDS.getOrDefault(entity.getId(), Long.MIN_VALUE);
         if (start == Long.MIN_VALUE) return -1;
-        float t = gameTime() - start + Minecraft.getInstance().getFrameTime();
-        return t >= 0 && t < RendTimeline.TOTAL ? t : -1;
+        boolean ring = com.soulless.item.SoulRing.worn(entity);
+        float t = (gameTime() - start + Minecraft.getInstance().getFrameTime()) * (ring ? com.soulless.item.SoulRing.REND_SPEED : 1F);
+        return t >= 0 && t < RendTimeline.total(ring) ? t : -1;
     }
 
     public static boolean isStunned(Entity entity) {

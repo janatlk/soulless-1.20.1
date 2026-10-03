@@ -60,11 +60,16 @@ public final class SlamManager {
     private static final class State {
         final long start;
         final double startY;
+        /** Wearing the Soulsmith's Ring: a higher leap, more damage, allowed in mid-air. */
+        final boolean ring;
+        final boolean fromAir;
         long impact = -1;
 
-        State(long start, double startY) {
+        State(long start, double startY, boolean ring, boolean fromAir) {
             this.start = start;
             this.startY = startY;
+            this.ring = ring;
+            this.fromAir = fromAir;
         }
     }
 
@@ -79,14 +84,15 @@ public final class SlamManager {
         ItemStack stack = player.getMainHandItem();
         if (!(stack.getItem() instanceof SoulForgedItem item) || !player.isAlive() || player.isSpectator()) return;
         if (player.getCooldowns().isOnCooldown(item) || ACTIVE.containsKey(player.getUUID()) || RendManager.isActive(player)) return;
-        if (!player.onGround()) {
+        boolean ring = com.soulless.item.SoulRing.worn(player);
+        if (!player.onGround() && !ring) {
             player.displayClientMessage(Component.translatable("message.soulless.slam_ground"), true);
             return;
         }
 
         ServerLevel level = player.serverLevel();
         player.getCooldowns().addCooldown(item, COOLDOWN_TICKS);
-        ACTIVE.put(player.getUUID(), new State(level.getGameTime(), player.getY()));
+        ACTIVE.put(player.getUUID(), new State(level.getGameTime(), player.getY(), ring, !player.onGround()));
 
         item.triggerAnim(player, GeoItem.getOrAssignId(stack, level), SoulForgedItem.CONTROLLER, SoulForgedItem.SLAM_ANIM);
         ModNetwork.sendTrackingAndSelf(player, new SlamStartPacket(player.getId()));
@@ -110,6 +116,9 @@ public final class SlamManager {
             long now = level.getGameTime();
             long age = now - s.start;
             player.fallDistance = 0;
+            if (s.ring && s.impact < 0 && age % 2 == 0) {
+                com.soulless.item.SoulRing.sparkle(level, com.soulless.item.SoulRing.swordPoint(player), 4, 0.25);
+            }
 
             if (s.impact >= 0) {
                 // kneeling with the sword in the ground, then the stance is released
@@ -121,7 +130,9 @@ public final class SlamManager {
                 root(player);
             } else if (age == SlamTimeline.CHARGE) {
                 Vec3 look = horizontalLook(player);
-                player.setDeltaMovement(look.x * SlamTimeline.LEAP_FORWARD, SlamTimeline.LEAP_UP, look.z * SlamTimeline.LEAP_FORWARD);
+                double up = s.fromAir ? com.soulless.item.SoulRing.SLAM_AIR_KICK
+                        : SlamTimeline.LEAP_UP * (s.ring ? com.soulless.item.SoulRing.SLAM_LEAP_UP : 1);
+                player.setDeltaMovement(look.x * SlamTimeline.LEAP_FORWARD, up, look.z * SlamTimeline.LEAP_FORWARD);
                 player.hurtMarked = true;
                 level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 0.5F);
                 level.sendParticles(ModParticles.SOUL_EMBER.get(), player.getX(), player.getY() + 0.1, player.getZ(), 40, 0.6, 0.05, 0.6, 0.08);
@@ -133,7 +144,7 @@ public final class SlamManager {
             }
             if ((age > SlamTimeline.PLUNGE && player.onGround()) || age >= MAX_FALL_TICKS) {
                 s.impact = now;
-                impact(player, s.startY);
+                impact(player, s.startY, s.ring);
             }
         }
         CrackManager.tick(event.getServer());
@@ -175,14 +186,20 @@ public final class SlamManager {
         ACTIVE.remove(event.getEntity().getUUID());
     }
 
-    private static void impact(ServerPlayer player, double startY) {
+    private static void impact(ServerPlayer player, double startY, boolean withRing) {
         ServerLevel level = player.serverLevel();
         Vec3 look = horizontalLook(player);
         Vec3 center = impactCenter(player);
         BlockPos groundPos = CrackManager.findSurface(level, BlockPos.containing(center.x, player.getY(), center.z));
         double groundY = groundPos != null ? groundPos.getY() + 1.0 : player.getY();
         center = new Vec3(center.x, groundY, center.z);
-        float maxDamage = centreDamage(startY - player.getY());
+        float maxDamage = centreDamage(startY - player.getY()) * (withRing ? com.soulless.item.SoulRing.SLAM_DAMAGE_MULT : 1);
+        if (withRing) {
+            for (int i = 0; i < 24; i++) {
+                double a = Math.PI * 2 * i / 24;
+                com.soulless.item.SoulRing.sparkle(level, center.add(Math.cos(a) * 2.5, 0.3, Math.sin(a) * 2.5), 3, 0.2);
+            }
+        }
 
         AABB box = new AABB(center, center).inflate(RADIUS, 3.0, RADIUS);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator())) {

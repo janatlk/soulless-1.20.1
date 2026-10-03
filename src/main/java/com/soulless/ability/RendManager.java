@@ -60,15 +60,24 @@ public final class RendManager {
     private static final UUID SLOW_UUID = UUID.fromString("2b7d0e55-3c1a-4a8e-9f6d-7c4b1a2e9d30");
 
     private static final class State {
-        /** Game time the (possibly fast-forwarded) timeline started. */
-        long start;
+        /** Position on the timeline (ticks; it advances faster with the Soulsmith's Ring). */
+        double age;
+        /** Last tick's position, so moments are caught when the faster timeline steps over them. */
+        double prevAge = -1;
+        final float speed;
+        final boolean ring;
         float power = 1;
         /** Wind-up age at which the player let go of right click, or -1 while still held. */
-        long releaseAt = -1;
+        double releaseAt = -1;
         boolean released;
 
-        State(long start) {
-            this.start = start;
+        State(boolean ring) {
+            this.ring = ring;
+            this.speed = ring ? com.soulless.item.SoulRing.REND_SPEED : 1F;
+        }
+
+        boolean crossed(double moment) {
+            return prevAge < moment && age >= moment;
         }
     }
 
@@ -78,10 +87,10 @@ public final class RendManager {
     public static void release(ServerPlayer player) {
         State s = ACTIVE.get(player.getUUID());
         if (s == null || s.released || s.releaseAt >= 0) return;
-        long age = player.serverLevel().getGameTime() - s.start;
+        double age = s.age;
         if (age >= RendTimeline.WINDUP) return;
         s.releaseAt = Math.max(age, RendTimeline.HEAVE);
-        s.power = Math.max(RendTimeline.MIN_POWER, age / (float) RendTimeline.WINDUP);
+        s.power = Math.max(RendTimeline.MIN_POWER, (float) (age / RendTimeline.WINDUP));
     }
 
     /** Stop the ability without a cut (the sword left the hand). */
@@ -114,7 +123,7 @@ public final class RendManager {
             player.displayClientMessage(Component.translatable("message.soulless.rend_cooldown", Mth.ceil((ready - now) / 20F)), true);
             return;
         }
-        ACTIVE.put(player.getUUID(), new State(now));
+        ACTIVE.put(player.getUUID(), new State(com.soulless.item.SoulRing.worn(player)));
         setSlow(player, -0.55);
         ModNetwork.sendTrackingAndSelf(player, new RendStartPacket(player.getId(), 0));
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PORTAL_TRIGGER, SoundSource.PLAYERS, 0.5F, 1.4F);
@@ -135,8 +144,12 @@ public final class RendManager {
                 continue;
             }
             ServerLevel level = player.serverLevel();
-            long now = level.getGameTime();
-            long age = now - s.start;
+            s.prevAge = s.age;
+            s.age += s.speed;
+            double age = s.age;
+            if (s.ring && ((int) age) % 2 == 0) {
+                com.soulless.item.SoulRing.sparkle(level, com.soulless.item.SoulRing.swordPoint(player).add(0, 0.6, 0), 3, 0.25);
+            }
             if (age < RendTimeline.WINDUP + RendTimeline.HIT_AT && !(player.getMainHandItem().getItem() instanceof SoulForgedItem)) {
                 abort(player);
                 it.remove();
@@ -145,19 +158,25 @@ public final class RendManager {
             if (s.releaseAt >= 0 && !s.released && age >= s.releaseAt) {
                 // fast-forward the timeline to the cut and tell everyone to do the same
                 s.released = true;
-                s.start = now - RendTimeline.WINDUP;
-                age = RendTimeline.WINDUP;
+                s.prevAge = RendTimeline.WINDUP - 0.001;
+                s.age = age = RendTimeline.WINDUP;
                 ModNetwork.sendTrackingAndSelf(player, new RendStartPacket(player.getId(), RendTimeline.WINDUP));
             }
-            if (age == RendTimeline.WINDUP - 20 && !s.released) {
+            if (s.crossed(RendTimeline.WINDUP - 20) && !s.released) {
                 // the blade is fully charged: one last breath before the cut
                 level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.9F, 1.6F);
             }
-            if (age == RendTimeline.WINDUP + RendTimeline.HIT_AT) {
+            if (s.crossed(RendTimeline.WINDUP + RendTimeline.HIT_AT)) {
                 strike(player, s.power);
+                if (s.ring) {
+                    net.minecraft.world.phys.Vec3 look = player.getLookAngle();
+                    for (int i = 0; i < 10; i++) {
+                        com.soulless.item.SoulRing.sparkle(level, player.getEyePosition().add(look.scale(1.5 + i * 0.6)), 4, 0.35);
+                    }
+                }
                 setSlow(player, -0.3);
             }
-            if (age >= RendTimeline.TOTAL) {
+            if (age >= RendTimeline.total(s.ring)) {
                 setSlow(player, 0);
                 it.remove();
             }
