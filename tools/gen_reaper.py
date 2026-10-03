@@ -56,7 +56,9 @@ R = {
     "cloth": ramp("0f0b1c", "17112b", "21183d", "2c2052", "3a2a6b", "4c378a", "6347b0"),
     "flame": ramp("26104a", "3b167a", "5420ad", "7232d6", "9150f0", "b07dff", "d2b2ff", "efe2ff"),
     "core": ramp("5a1aa8", "7f2fe0", "a35cff", "c690ff", "e4c8ff", "fbf3ff"),
-    "wing": ramp("0a1a5c", "10308f", "1747c2", "2163ea", "3480ff", "549dff", "7cb9ff", "a9d3ff", "d6ebff", "ffffff"),
+    "wing": ramp("1a0838", "2c0f5e", "421a8a", "5a26b8", "7438df", "8f55f5", "aa7cff", "c7a6ff", "e3d2ff", "ffffff"),
+    "helm": ramp("0b0a11", "13121b", "1b1a27", "252435", "323148", "45445f", "605f80"),
+    "trim": ramp("3a3f55", "565d7a", "7c84a6", "a9b1cf", "d5daf0"),
     "ghost": ramp("8f7cc4", "ad9de0", "cbbff2", "e6ddff"),
 }
 EYE, EYE_RIM, SOCKET = hexc("fff0ff"), hexc("ff86ee"), hexc("060309")
@@ -111,7 +113,7 @@ def chain(name, b, mats, start, segs):
 
 
 # ------------------------------------------------------------------ model (faces -z = front)
-CAPE = [(-12, 44, -9), (-6, 52, -4), (0, 56, 0), (6, 50, 4), (12, 42, 8)]   # (x, length, fan angle)
+CAPE = []   # (x, length, fan angle) - the hanging cape was removed
 #: wing beat: 1.6 s per flap (anim_time * BEAT degrees); the ambient loop holds a whole number of beats
 BEAT = 225
 AMBIENT_LEN = 14.4
@@ -254,26 +256,30 @@ def build():
 
     build_wings()
 
-    # --- head: an angular skull with a scowling V brow, slanted burning eye slits, sharp cheekbones,
-    # fangs, a long hanging jaw and two great horns
+    # --- head: a deep closed helm - cheek guards down to the jaw line, a chin guard, a scowling V brow and a
+    # nasal bar over a narrow opening; inside, only darkness and two red points of light. Horns rise from
+    # metal sockets on its sides, sweeping out, then back and up.
     bone("head", "chest", (0, 80, 0))
-    box("cranium", "head", "skull", 0, 87, 0.3, 12, 9.5, 11.5)
-    box("maxilla", "head", "bone", 0, 84, -1, 8.5, 3, 9)
+    box("helm_dome", "head", "helm", 0, 90, 0.4, 13, 7, 13)
+    box("helm_cap", "head", "helm", 0, 97, 0.4, 11, 1.5, 11)
+    box("helm_crest", "head", "trim", 0, 97.6, 0.9, 1.4, 1.6, 11.5)
+    box("helm_back", "head", "helm", 0, 81, 5.9, 13, 9, 2)
+    box("helm_void", "head", "void", 0, 81.5, -1.5, 7.4, 8.5, 6)
+    box("helm_bevor", "head", "helm", 0, 79.6, -5.4, 7.2, 2.4, 2.6)
+    box("helm_nasal", "head", "trim", 0, 85.2, -6.5, 1.0, 4.6, 1.0)
+    box("helm_rim", "head", "trim", 0, 89.9, 0.4, 13.4, 0.8, 13.4)
     for s in (-1, 1):
-        box(f"brow{s}", "head", "bone", s * 3.3, 90.6, -6.4, 6.2, 1.9, 2.2, rot=[0, 0, s * 22], pivot=[s * 3.3, 91.5, -6.4])
-        box(f"eye{s}", "head", "eye", s * 2.9, 88.45, -6.05, 3.4, 1.15, 0.5, rot=[0, 0, s * 22], pivot=[s * 2.9, 89, -6.05])
-        box(f"cheek{s}", "head", "bone", s * 4.5, 85.3, -5.4, 3.4, 1.5, 2.4, rot=[0, 0, s * 26], pivot=[s * 4.5, 86, -5.4])
-        box(f"temple{s}", "head", "bone", s * 6.2, 88, 0, 1, 5, 8)
-        chain(f"horn{s}_", "head", "horn", (s * 4.6, 95, 1.5),
-              [((s * 0.85, 0.55, 0.15), 5, 3.6), ((s * 0.4, 0.9, 0.2), 4, 3.1), ((s * 0.0, 1, 0.1), 3.5, 2.6),
-               ((-s * 0.5, 0.85, 0), 3, 2.0), ((-s * 0.9, 0.45, -0.1), 2.5, 1.4)])
-    for x, length in ((-2.9, 3.0), (-1.0, 1.4), (1.0, 1.4), (2.9, 3.0)):   # sparse fangs, long canines
-        box(f"fang_up{x}", "head", "fang", x, 84.2 - length, -5.75, 0.9, length + 0.2, 0.8)
-    bone("jaw", "head", (0, 84, 2))
-    box("jaw", "jaw", "bone", 0, 80.6, -1.2, 8, 3, 8.5)
-    box("chin", "jaw", "bone", 0, 79.6, -4.6, 4.5, 1.6, 2.2)
-    for x in (-1.95, 1.95):
-        box(f"fang_low{x}", "jaw", "fang", x, 83.2, -5.1, 0.8, 1.8, 0.7)
+        box(f"helm_cheek{s}", "head", "helm", s * 5.75, 80.5, -1.2, 1.5, 9.5, 11)
+        box(f"helm_guard{s}", "head", "helm", s * 4.95, 80.4, -6.25, 3.1, 8.0, 1.3)
+        box(f"helm_guard_trim{s}", "head", "trim", s * 3.55, 80.4, -6.5, 0.6, 8.0, 0.8)
+        box(f"helm_liner{s}", "head", "helm", s * 4.2, 81.5, -5.0, 1.6, 8.5, 2)
+        box(f"helm_brow{s}", "head", "helm", s * 3.3, 88.7, -6.7, 6.6, 1.6, 1.6, rot=[0, 0, s * 13], pivot=[s * 3.3, 89.5, -6.7])
+        box(f"eye{s}", "head", "redeye", s * 1.7, 86.7, -4.75, 1.0, 0.8, 0.5)
+        box(f"horn_socket{s}", "head", "trim", s * 6.9, 91.4, 0.6, 1.6, 3.6, 3.6)
+        chain(f"horn{s}_", "head", "horn", (s * 7.4, 93.2, 0.6),
+              [((s * 1.0, 0.28, 0.25), 4.5, 3.2), ((s * 0.65, 0.55, 0.55), 4.0, 2.7), ((s * 0.2, 0.75, 0.7), 4.0, 2.2),
+               ((0, 0.6, 0.85), 3.5, 1.7), ((-s * 0.1, 0.35, 1.0), 3.0, 1.2)])
+    bone("jaw", "head", (0, 84, 2))   # kept (empty) so the animations' jaw keys stay valid
 
     # --- long skeletal arms: shoulder, humerus, elbow, two forearm bones, wrist, palm, hooked claws
     for s, side in ((-1, "left"), (1, "right")):
@@ -360,6 +366,18 @@ def paint(c, f, W, H):
             elif m == "wingedge":   # rows of tiny scale-like feathers
                 t = 0.62 + lt * 0.5 + n * 0.06 - (0.12 if (j + (i // 2)) % 3 == 0 else 0) + (0.15 if top else 0)
                 col = pick(R["wing"], t)
+                glow[j, i] = True
+            elif m == "helm":
+                t = 0.42 + lt + n * 0.08 + (0.14 if top else 0) - (0.1 if edge or bottom else 0)
+                if hash3(round(x * 2), round(y * 2), round(z * 2), 21) > 0.975:
+                    t += 0.28   # rivets
+                col = pick(R["helm"], t)
+            elif m == "trim":
+                col = pick(R["trim"], 0.5 + lt + n * 0.08 + (0.15 if top else 0))
+            elif m == "void":
+                col = hexc("030205")
+            elif m == "redeye":
+                col = hexc("ff1a1a") if not side or (0 < i < W - 1 or W <= 2) else hexc("b00000")
                 glow[j, i] = True
             elif m == "fang":
                 col = pick(R["pale"], 0.85 - 0.5 * (j + 0.5) / H + n * 0.1) if side else pick(R["pale"], 0.5)
@@ -1002,6 +1020,75 @@ def ice_textures():
     return rune, fill, shard
 
 
+def boss_bar_texture():
+    """The Reaper's boss bar (256x64): a dark-metal frame with spiked end caps holding red gems and a small
+    crown of spikes in the middle (0,0 256x20; the bar slot is x 26..229, y 7..12), the violet fill with a
+    notch every 10% (0,24 204x6) and a soft white shimmer that slides along it (0,32 24x6)."""
+    img = np.zeros((64, 256, 4), np.float32)
+    metal = ramp("0d0a14", "1a1426", "2a2140", "3d3159", "574a7a", "8577a8")
+    gem, gem_rim = hexc("ff3434"), hexc("9c0010")
+
+    def put(x, y, c):
+        if 0 <= x < 256 and 0 <= y < 64:
+            img[y, x] = c
+
+    # plate
+    for y in range(3, 17):
+        for x in range(18, 238):
+            t = 0.55 - (y - 3) / 14 * 0.4 + (0.18 if y == 3 else 0) - (0.2 if y == 16 else 0)
+            put(x, y, pick(metal, t))
+    for x in range(20, 236, 6):   # engraved studs
+        put(x, 4, metal[5])
+        put(x, 15, metal[3])
+    # end caps: pointed, like spread wing tips
+    for side in (0, 1):
+        for y in range(0, 20):
+            for x in range(0, 28):
+                # inside a lozenge pointing outward
+                dy = abs(y - 9.5)
+                reach = 1 + (27 - 1) * (1 - dy / 9.5) ** 0.6 if dy < 9.5 else 0
+                if 27 - x > reach:
+                    continue
+                t = 0.6 - y / 19 * 0.45 + (0.2 if 27 - x > reach - 1.2 else 0)
+                c = pick(metal, t)
+                put(x if side == 0 else 255 - x, y, c)
+        gx = 12 if side == 0 else 243
+        for dy in range(-1, 2):
+            for dx in range(-1, 2):
+                put(gx + dx, 9 + dy, gem if dx == 0 or dy == 0 else gem_rim)
+        put(gx - 1, 8, hexc("ffb0b0"))
+    # a crown of three spikes over the middle, and one under it
+    for cx, tip in ((119, 0), (128, -2), (137, 0)):   # spike tip rows (the plate starts at y 3)
+        for y in range(max(0, tip), 4):
+            w = (y - tip) // 2
+            for x in range(cx - w - 1, cx + w + 1):
+                put(x, y, metal[4] if x < cx else metal[3])
+    for y in range(17, 20):
+        for x in range(127 - (19 - y), 129 + (19 - y)):
+            put(x, y, metal[2])
+    for x in (127, 128):
+        put(x, 4, gem)
+        put(x, 5, gem_rim)
+    # bar slot
+    for y in range(6, 14):
+        for x in range(25, 231):
+            put(x, y, hexc("2a1745") if y in (6, 13) or x in (25, 230) else hexc("070310"))
+    # fill
+    rows = ["e2c6ff", "a35cff", "8236f0", "6624cc", "4a16a3", "320c75"]
+    for y in range(6):
+        for x in range(204):
+            c = hexc(rows[y]) * (0.92 + 0.08 * math.sin(x * 0.3))
+            c[3] = 255
+            if 1 <= y <= 4 and x > 0 and int(x % 20.4) == 0:
+                c = hexc("1a0640")
+            img[24 + y, x] = c
+    # shimmer
+    for y in range(6):
+        for x in range(24):
+            img[32 + y, x] = [255, 255, 255, 170 * (1 - abs(x - 11.5) / 12)]
+    return img
+
+
 def main():
     build()
     base, gm, tex_h = pack_and_paint()
@@ -1018,6 +1105,9 @@ def main():
     (t / "ice_rune.png").write_bytes(png(rune))
     (t / "ice_fill.png").write_bytes(png(fill))
     (t / "ice_shard.png").write_bytes(png(shard))
+    gui = ASSETS / "textures/gui"
+    gui.mkdir(parents=True, exist_ok=True)
+    (gui / "reaper_boss_bar.png").write_bytes(png(boss_bar_texture()))
     b = ASSETS / "textures/block"
     side, top, filled, bottom = altar_textures()
     (b / "soul_altar_side.png").write_bytes(png(side))
