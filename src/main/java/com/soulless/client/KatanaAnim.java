@@ -36,8 +36,9 @@ public final class KatanaAnim implements IAnimation {
     private static final float BLEND_TICKS = 4;
     /** An attack within this many ticks after a cut ends continues the combo. */
     private static final float COMBO_GRACE = 10;
-    public static final int KESA = 0, GYAKU = 1, TSUKI = 2, RITUAL = 3;
-    private static final String[] CUTS = {KatanaPoses.KESA, KatanaPoses.GYAKU, KatanaPoses.TSUKI, KatanaPoses.RITUAL};
+    public static final int KESA = 0, GYAKU = 1, TSUKI = 2, RITUAL = 3, PARRY = 4, PARRIED = 5;
+    private static final String[] CUTS = {KatanaPoses.KESA, KatanaPoses.GYAKU, KatanaPoses.TSUKI, KatanaPoses.RITUAL,
+            KatanaPoses.PARRY, KatanaPoses.PARRIED};
 
     private final AbstractClientPlayer player;
     private float weight, weightO;
@@ -104,7 +105,7 @@ public final class KatanaAnim implements IAnimation {
         }
         if (step >= KESA && step <= TSUKI && crossed(before, t, KatanaTrails.sweepDelay(step))) KatanaTrails.whoosh(player, step);
         if (step == RITUAL && crossed(before, t, KatanaPoses.number("ritual.stab"))) KatanaRitualFx.stab(player);
-        if (currentCut(0) != null && step != RITUAL) {
+        if (currentCut(0) != null && step <= TSUKI) {
             // the body turns into the cut smoothly (vanilla would snap it on an arm swing)
             player.yBodyRot += Mth.wrapDegrees(player.getYHeadRot() - player.yBodyRot) * 0.25F;
         }
@@ -131,7 +132,7 @@ public final class KatanaAnim implements IAnimation {
         if (anim == null) return;
         if (move == -1) {
             if (anim.step == RITUAL) anim.stop();
-        } else if (move == RITUAL || (move >= KESA && move <= TSUKI && p != mc.player)) {
+        } else if (move >= RITUAL || (move >= KESA && move <= TSUKI && p != mc.player)) {
             anim.thrustQueued = false;
             anim.start(move, 0, fast ? com.soulless.item.KatanaCombat.BLESSED_RATE : 1);
         }
@@ -174,7 +175,7 @@ public final class KatanaAnim implements IAnimation {
     /** False while a move (or a queued thrust) is under way: clicks then do nothing. */
     public boolean canAttack() {
         if (thrustQueued) return false;
-        if (step == RITUAL) return currentCut(0) == null;
+        if (step == RITUAL || step == PARRY) return currentCut(0) == null;
         return step < 0 || cutTime(0) >= KatanaPoses.number(CUTS[step] + ".chain");
     }
 

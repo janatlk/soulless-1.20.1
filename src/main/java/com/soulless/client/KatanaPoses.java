@@ -34,7 +34,8 @@ public final class KatanaPoses {
     private static final Map<String, float[]> CACHE = new HashMap<>();
     private static final Map<String, List<Key>> TIMELINES = new HashMap<>();
 
-    public static final String GUARD = "guard", KESA = "kesa", GYAKU = "gyaku", TSUKI = "tsuki", RITUAL = "ritual";
+    public static final String GUARD = "guard", KESA = "kesa", GYAKU = "gyaku", TSUKI = "tsuki", RITUAL = "ritual",
+            PARRY = "parry", PARRIED = "parried";
 
     static {
         // jodan-no-kamae: both hands on the grip above the forehead, the blade raised back over the head;
@@ -248,6 +249,41 @@ public final class KatanaPoses {
         def("ritual.chain", "46");
         def("ritual.fade", "3");
 
+        // parry: the blade comes down from jodan and across in front of the chest, held level, edge out; on a parry
+        // it is knocked back a little (recoil) and returns to jodan
+        def("p_block.rArm", "-75 -25 0");
+        def("p_block.lArm", "-70 35 0");
+        def("p_block.rBend", "0 -50");
+        def("p_block.lBend", "0 -55");
+        def("p_block.torso", "0 -12 0");
+        def("p_block.rLeg", "14 0 6");
+        def("p_block.lLeg", "-30 0 -6");
+        def("p_block.rLegBend", "0 35");
+        def("p_block.lLegBend", "0 45");
+        def("p_block.bodyPos", "0 -1 0");
+        def("p_block.item", "-90 0 0");
+        def("p_block.fp", "0.25 -0.45 -0.95 0 90 88");
+        def("p_recoil.rArm", "-90 -30 0");
+        def("p_recoil.lArm", "-85 40 0");
+        def("p_recoil.rBend", "0 -70");
+        def("p_recoil.lBend", "0 -75");
+        def("p_recoil.torso", "-6 -18 0");
+        def("p_recoil.rLeg", "20 0 6");
+        def("p_recoil.lLeg", "-26 0 -6");
+        def("p_recoil.rLegBend", "0 40");
+        def("p_recoil.lLegBend", "0 45");
+        def("p_recoil.bodyPos", "0 -1 -1.5");
+        def("p_recoil.item", "-95 0 0");
+        def("p_recoil.fp", "0.3 -0.3 -0.8 12 90 80");
+        def("parry.keys", "guard@0 p_block@2.5:out p_block@9 guard@16:inout");
+        def("parry.fpkeys", "guard@0 p_block@2.5:out p_block@9 guard@16:inout");
+        def("parried.keys", "p_block@0 p_recoil@2:out p_block@5:inout guard@12:inout");
+        def("parried.fpkeys", "p_block@0 p_recoil@2:out p_block@5:inout guard@12:inout");
+        def("parry.chain", "10");
+        def("parried.chain", "4");
+        def("parry.fade", "1.5");
+        def("parried.fade", "0.5");
+
         def("kesa.keys", "guard@0 kesa_wind@3:out kesa_mid@5:in kesa_end@8:lin kesa_follow@11:out kesa_follow@13 guard@20:inout");
         def("gyaku.keys", "guard@0 gyaku_wind@4:out gyaku_mid@6:in gyaku_end@9:lin gyaku_follow@12:out gyaku_follow@14 guard@21:inout");
         def("tsuki.keys", "tsuki_wind@0 tsuki_load@6:inout tsuki_load@8 tsuki_end@9.5:out tsuki_end@13 guard@22:inout");
@@ -338,7 +374,7 @@ public final class KatanaPoses {
      * sample as all zeros - arms hanging down mid-cut, which reads as a jerk.
      */
     private static void validate() {
-        for (String cut : new String[]{KESA, GYAKU, TSUKI, RITUAL}) {
+        for (String cut : new String[]{KESA, GYAKU, TSUKI, RITUAL, PARRY, PARRIED}) {
             for (Key k : timeline(cut)) {
                 if (!P.containsKey(k.pose + ".rArm")) Soulless.LOGGER.error("katana pose '{}' (in {}) is not defined", k.pose, cut);
             }

@@ -115,3 +115,10 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
 - Effects (KatanaTrails): slim crimson arc for kesa/gyaku (normal blending - additive red turns pink over the sky - plus a glowing edge), pale streak for the thrust, wind lines + dust puff for the dash.
 - Sounds (tools/gen_katana_sounds.py, soft): katana_swing x3, katana_thrust, katana_hit, katana_dash. Whooshes/gust play client-side at the sweep/dash; the hit's "shing" from the server.
 - Autotest resets the player on the server too (the drifting player made the side dummy fall out of the arc in later cycles).
+
+## 2026-10-04 — Kitsune ritual, parry, ult practice
+- R with the katana: Kitsune ritual (KitsuneRitual): kneel, reverse grip, blade through the belly at tick 19 (-50% current health), blessing 20 s: katana x1.25 (anim rate, hit delays, attack speed attr), longer dash, 5% lifesteal, 25% miss on physical blows (Reaper never misses). Hit before the stab breaks it (3 s cooldown). Autotest: hp 20 -> 10, blessing on, lifesteal heals.
+- Hold LMB keeps the combo going; the thrust only queues >= 5 ticks into gyaku (the press that started gyaku used to queue it).
+- RMB parry (KatanaParry): window ticks 1-9. Parries swung melee (attacker.swinging at hit time - mobs with an attack animation swing right before; contact damage doesn't) and knock-aside projectiles (ProjectileImpactEvent; not dragon fireball / wither skull / shulker bullet / throwables / fireworks). Melee attacker stunned 5 s unless a boss (forge:bosses tag + Reaper); next katana strike x1.2. Whiff: 1.5 s before the next parry.
+- /soulless ult [radius]: the Reaper's ice rain without the Reaper (WailingReaperEntity.iceRain). Ult softened: 1.5 s warning, 3 spikes / 5 ticks, 14 dmg, slowness I 1.2 s.
+- /soulless zones shows the katana's cut wedge, thrust line and would-be targets.

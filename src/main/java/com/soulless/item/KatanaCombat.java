@@ -96,6 +96,11 @@ public final class KatanaCombat {
         }
     }
 
+    /** A cut or thrust is under way (its hit not resolved yet). */
+    public static boolean isCutting(net.minecraft.world.entity.player.Player player) {
+        return PENDING.containsKey(player.getUUID());
+    }
+
     /** How fast this player's katana moves: faster under the Kitsune's blessing. */
     public static float rate(net.minecraft.world.entity.player.Player player) {
         return player.hasEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get()) ? BLESSED_RATE : 1;
@@ -165,7 +170,8 @@ public final class KatanaCombat {
             level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(),
                     SoundSource.PLAYERS, HIT_VOLUME, 0.95F + player.getRandom().nextFloat() * 0.15F);
         }
-        for (LivingEntity t : hit) strike(player, t, charge, 1, facing, 0.4F);
+        float bonus = hit.isEmpty() ? 1 : KatanaParry.consumeBonus(player);
+        for (LivingEntity t : hit) strike(player, t, charge, bonus, facing, 0.4F);
         if (!hit.isEmpty()) wear(player);
     }
 
@@ -178,7 +184,7 @@ public final class KatanaCombat {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(),
                 SoundSource.PLAYERS, HIT_VOLUME, 1.15F);
         level.sendParticles(ParticleTypes.CRIT, best.getX(), best.getY(0.6), best.getZ(), 12, 0.2, 0.2, 0.2, 0.3);
-        strike(player, best, charge, THRUST_DAMAGE_MULT, new Vec3(dir.x, 0, dir.z).normalize(), 0.7F);
+        strike(player, best, charge, THRUST_DAMAGE_MULT * KatanaParry.consumeBonus(player), new Vec3(dir.x, 0, dir.z).normalize(), 0.7F);
         wear(player);
     }
 

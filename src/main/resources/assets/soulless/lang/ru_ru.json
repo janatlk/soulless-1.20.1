@@ -100,5 +100,8 @@
   "tooltip.soulless.soul_katana.ritual": "%s - ритуал Кицунэ: половина здоровья за благословение",
   "tooltip.soulless.soul_katana.blessing": "%s с: катана на 25%% быстрее, вампиризм %s%%, %s%% ударов по вам мимо",
   "tooltip.soulless.soul_katana.ritual_cd": "Перезарядка %s с",
-  "command.soulless.ult": "Вокруг вас падает ледяной дождь Жнеца"
+  "command.soulless.ult": "Вокруг вас падает ледяной дождь Жнеца",
+  "message.soulless.parry": "Парирование!",
+  "tooltip.soulless.soul_katana.parry": "%s - парирование: удары и стрелы в момент блока",
+  "tooltip.soulless.soul_katana.parry_1": "Атакующий оглушён на %s с, следующий удар +%s%%"
 }

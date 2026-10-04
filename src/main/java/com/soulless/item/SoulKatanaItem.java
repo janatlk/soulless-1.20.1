@@ -42,6 +42,9 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
                 .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable(k + "combo").withStyle(ChatFormatting.DARK_AQUA));
         tooltip.add(Component.translatable(k + "thrust", v(fmt(KatanaCombat.THRUST_DAMAGE_MULT))).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "parry", Component.translatable("hud.soulless.rmb")).withStyle(ChatFormatting.AQUA));
+        tooltip.add(Component.translatable(k + "parry_1", v(KatanaParry.STUN_TICKS / 20), v(Math.round((KatanaParry.BONUS - 1) * 100)))
+                .withStyle(ChatFormatting.GRAY));
         String key = net.minecraftforge.fml.DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.slamKeyName(), () -> () -> "R");
         tooltip.add(Component.translatable(k + "ritual", key).withStyle(ChatFormatting.AQUA));
         tooltip.add(Component.translatable(k + "blessing", v(KitsuneRitual.BLESSING_SECONDS),
@@ -55,6 +58,18 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
 
     private static String fmt(double v) {
         return v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(Math.round(v * 10) / 10.0);
+    }
+
+    /** Right click: parry (KatanaParry; the server decides, the animation comes back from it). */
+    @Override
+    public net.minecraft.world.InteractionResultHolder<ItemStack> use(Level level, net.minecraft.world.entity.player.Player player,
+                                                                      net.minecraft.world.InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (hand == net.minecraft.world.InteractionHand.MAIN_HAND && !level.isClientSide
+                && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            KatanaParry.tryStart(sp);
+        }
+        return net.minecraft.world.InteractionResultHolder.pass(stack);
     }
 
     /** The katana's hits come from where the blade goes (KatanaCombat), never from vanilla's sweep. */

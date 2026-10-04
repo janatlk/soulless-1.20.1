@@ -100,5 +100,8 @@
   "tooltip.soulless.soul_katana.ritual": "%s - Kitsune ritual: lose half your health for the blessing",
   "tooltip.soulless.soul_katana.blessing": "%s s: katana 25%% faster, %s%% lifesteal, %s%% of blows miss you",
   "tooltip.soulless.soul_katana.ritual_cd": "Cooldown %s s",
-  "command.soulless.ult": "The Reaper's ice rain falls around you"
+  "command.soulless.ult": "The Reaper's ice rain falls around you",
+  "message.soulless.parry": "Parried!",
+  "tooltip.soulless.soul_katana.parry": "%s - parry: blows and arrows that reach you in the window",
+  "tooltip.soulless.soul_katana.parry_1": "The attacker is stunned for %s s, your next strike +%s%%"
 }
