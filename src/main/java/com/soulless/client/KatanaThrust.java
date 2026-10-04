@@ -12,13 +12,16 @@ import net.minecraft.world.phys.Vec3;
 public final class KatanaThrust {
     /** Forward speed given by the lunge on the ground (blocks/tick); it carries the player about two blocks. */
     public static final double DASH_SPEED = 0.95;
+    /** Under the Kitsune's blessing the lunge carries this much further. */
+    private static final double BLESSED_DASH = 1.35;
     /** In the air the lunge pushes less. */
     private static final double AIR_FACTOR = 0.4;
 
-    public static void dash(AbstractClientPlayer player) {
+    /** {@code rate} > 1 under the Kitsune's blessing: the lunge carries further. */
+    public static void dash(AbstractClientPlayer player, float rate) {
         float yaw = player.getYRot() * Mth.DEG_TO_RAD;
         Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
-        double speed = DASH_SPEED * (player.onGround() ? 1 : AIR_FACTOR);
+        double speed = DASH_SPEED * (rate > 1 ? BLESSED_DASH : 1) * (player.onGround() ? 1 : AIR_FACTOR);
         Vec3 v = player.getDeltaMovement();
         player.setDeltaMovement(forward.x * speed, v.y, forward.z * speed);   // along the ground, no hop
     }

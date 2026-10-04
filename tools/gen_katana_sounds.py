@@ -109,6 +109,23 @@ def dash(rng):
     return lowpass(lowpass(g * e + scuff * 0.4, 3000), 3000)
 
 
+def blessing(rng):
+    """The Kitsune answers: a soft rising pentatonic chime with a shimmer, over a breathy swell."""
+    n = int(SR * 1.6)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    notes = (659.3, 783.99, 987.77, 1174.66, 1318.5)       # E5 G5 B5 D6 E6
+    for i, f in enumerate(notes):
+        start = int(SR * 0.09 * i)
+        tt = t[: n - start]
+        tone = (np.sin(2 * np.pi * f * tt) + 0.35 * np.sin(2 * np.pi * f * 2.01 * tt) + 0.15 * np.sin(2 * np.pi * f * 3.02 * tt))
+        out[start:] += tone * np.exp(-tt * 2.6) * np.clip(tt / 0.01, 0, 1) * (0.8 + 0.05 * i)
+    shimmer = np.sin(2 * np.pi * 6 * t) * 0.15 + 1
+    breath = bandpass(rng.standard_normal(n), np.linspace(900, 2600, n), q=1.2)
+    breath = breath / (np.max(np.abs(breath)) + 1e-9) * np.sin(np.pi * np.clip(t / 1.2, 0, 1)) * 0.35
+    return lowpass(out * shimmer / len(notes) + breath, 6000)
+
+
 def main():
     rng = np.random.default_rng(23)
     for i, (lo, hi, end, length) in enumerate(((500, 2600, 900, 0.30), (450, 2300, 800, 0.33), (560, 2900, 1000, 0.28))):
@@ -116,6 +133,7 @@ def main():
     write_ogg(thrust(rng), "katana_thrust")
     write_ogg(hit(rng), "katana_hit", peak=0.8)
     write_ogg(dash(rng), "katana_dash")
+    write_ogg(blessing(rng), "kitsune_blessing", peak=0.7)
     print("katana sounds written")
 
 

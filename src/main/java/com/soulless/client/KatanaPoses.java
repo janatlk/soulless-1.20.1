@@ -34,7 +34,7 @@ public final class KatanaPoses {
     private static final Map<String, float[]> CACHE = new HashMap<>();
     private static final Map<String, List<Key>> TIMELINES = new HashMap<>();
 
-    public static final String GUARD = "guard", KESA = "kesa", GYAKU = "gyaku", TSUKI = "tsuki";
+    public static final String GUARD = "guard", KESA = "kesa", GYAKU = "gyaku", TSUKI = "tsuki", RITUAL = "ritual";
 
     static {
         // jodan-no-kamae: both hands on the grip above the forehead, the blade raised back over the head;
@@ -172,6 +172,82 @@ public final class KatanaPoses {
         def("tsuki_end.bodyPos", "0 -4 4");
         def("tsuki_end.item", "-55 0 0");
 
+        // the Kitsune ritual: kneel on the right knee and turn the blade around (reverse grip, the point toward
+        // the belly), raise it, drive it in - straight through, the point out of the back - bow over it, draw it out
+        // and rise back into jodan. Kneeling: the back thigh upright and its shin flat on the ground, the front
+        // thigh level and its shin upright, the hips lowered by a shin's length
+        def("r_kneel.rArm", "-95 -10 10");
+        def("r_kneel.lArm", "-90 10 -10");
+        def("r_kneel.rBend", "0 -45");
+        def("r_kneel.lBend", "0 -45");
+        def("r_kneel.rLeg", "0 0 4");
+        def("r_kneel.lLeg", "-85 0 -4");
+        def("r_kneel.rLegBend", "0 90");
+        def("r_kneel.lLegBend", "0 85");
+        def("r_kneel.bodyPos", "0 -6 0");
+        def("r_kneel.item", "150 0 0");
+        def("r_kneel.head", "10 0 0");
+        def("r_raise.rArm", "-140 -5 8");
+        def("r_raise.lArm", "-135 5 -8");
+        def("r_raise.rBend", "0 -35");
+        def("r_raise.lBend", "0 -35");
+        def("r_raise.rLeg", "0 0 4");
+        def("r_raise.lLeg", "-85 0 -4");
+        def("r_raise.rLegBend", "0 90");
+        def("r_raise.lLegBend", "0 85");
+        def("r_raise.bodyPos", "0 -6 0");
+        def("r_raise.item", "155 0 0");
+        def("r_raise.waist", "0 -6");
+        def("r_raise.head", "-5 0 0");
+        def("r_stab.rArm", "-45 -5 10");
+        def("r_stab.lArm", "-40 5 -10");
+        def("r_stab.rBend", "0 -75");
+        def("r_stab.lBend", "0 -75");
+        def("r_stab.rLeg", "0 0 4");
+        def("r_stab.lLeg", "-85 0 -4");
+        def("r_stab.rLegBend", "0 90");
+        def("r_stab.lLegBend", "0 85");
+        def("r_stab.bodyPos", "0 -6 0");
+        def("r_stab.item", "100 0 0");
+        def("r_stab.waist", "0 18");
+        def("r_stab.head", "25 0 0");
+        def("r_hold.rArm", "-40 -5 10");
+        def("r_hold.lArm", "-35 5 -10");
+        def("r_hold.rBend", "0 -80");
+        def("r_hold.lBend", "0 -80");
+        def("r_hold.rLeg", "0 0 4");
+        def("r_hold.lLeg", "-85 0 -4");
+        def("r_hold.rLegBend", "0 90");
+        def("r_hold.lLegBend", "0 85");
+        def("r_hold.bodyPos", "0 -6.5 0");
+        def("r_hold.item", "100 0 0");
+        def("r_hold.waist", "0 30");
+        def("r_hold.head", "35 0 0");
+        def("r_pull.rArm", "-80 -10 10");
+        def("r_pull.lArm", "-75 10 -10");
+        def("r_pull.rBend", "0 -40");
+        def("r_pull.lBend", "0 -40");
+        def("r_pull.rLeg", "0 0 4");
+        def("r_pull.lLeg", "-85 0 -4");
+        def("r_pull.rLegBend", "0 90");
+        def("r_pull.lLegBend", "0 85");
+        def("r_pull.bodyPos", "0 -6 0");
+        def("r_pull.item", "100 0 0");
+        def("r_pull.waist", "0 10");
+        def("r_pull.head", "10 0 0");
+        // first person: the view bows (KatanaRitualFx); the blade turns point-down toward the belly, rises, plunges
+        // toward the camera, is held, drawn out, and rises back to the guard
+        def("fr_turn.fp", "0.1 -0.3 -0.95 -45 90 180");
+        def("fr_raise.fp", "0.1 -0.1 -1.0 -35 90 180");
+        def("fr_stab.fp", "0.1 -0.6 -0.45 -62 90 180");
+        def("fr_hold.fp", "0.1 -0.65 -0.42 -64 90 180");
+        def("fr_pull.fp", "0.2 -0.55 -0.85 -45 90 180");
+        def("ritual.keys", "guard@0 r_kneel@8:inout r_raise@15:inout r_raise@17 r_stab@19:in r_hold@30 r_pull@37:inout guard@46:inout");
+        def("ritual.fpkeys", "guard@0 fr_turn@8:inout fr_raise@15:inout fr_raise@17 fr_stab@19:in fr_hold@30 fr_pull@37:inout guard@46:inout");
+        def("ritual.stab", "19");
+        def("ritual.chain", "46");
+        def("ritual.fade", "3");
+
         def("kesa.keys", "guard@0 kesa_wind@3:out kesa_mid@5:in kesa_end@8:lin kesa_follow@11:out kesa_follow@13 guard@20:inout");
         def("gyaku.keys", "guard@0 gyaku_wind@4:out gyaku_mid@6:in gyaku_end@9:lin gyaku_follow@12:out gyaku_follow@14 guard@21:inout");
         def("tsuki.keys", "tsuki_wind@0 tsuki_load@6:inout tsuki_load@8 tsuki_end@9.5:out tsuki_end@13 guard@22:inout");
@@ -260,7 +336,7 @@ public final class KatanaPoses {
      * sample as all zeros - arms hanging down mid-cut, which reads as a jerk.
      */
     private static void validate() {
-        for (String cut : new String[]{KESA, GYAKU, TSUKI}) {
+        for (String cut : new String[]{KESA, GYAKU, TSUKI, RITUAL}) {
             for (Key k : timeline(cut)) {
                 if (!P.containsKey(k.pose + ".rArm")) Soulless.LOGGER.error("katana pose '{}' (in {}) is not defined", k.pose, cut);
             }

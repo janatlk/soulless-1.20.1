@@ -223,6 +223,11 @@ public final class DevAutoTest {
             return;
         }
         if (KATANA) {
+            // the ritual every cycle: no cooldown, and the health it costs comes back between cycles
+            p.getCooldowns().removeCooldown(ModItems.SOUL_KATANA.get());
+            if (tick % 40 == 0 && !com.soulless.item.KitsuneRitual.isActive(p)) p.setHealth(p.getMaxHealth());
+            if (tick % 20 == 0) Soulless.LOGGER.info("[autotest] katana hp={} blessed={}", p.getHealth(),
+                    p.hasEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get()));
             if (tick == 20) {
                 p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(60), e -> !(e instanceof ServerPlayer))
                         .forEach(LivingEntity::discard);

@@ -183,7 +183,7 @@ public final class DevAutoTestClient {
     }
 
     /** Katana cycle length, and the ticks into it of the two attacks (kesa, then gyaku as the combo). */
-    private static final int KATANA_CYCLE = 66, KATANA_KESA = 4, KATANA_GYAKU = 18, KATANA_TSUKI = 24;
+    private static final int KATANA_CYCLE = 116, KATANA_KESA = 4, KATANA_GYAKU = 18, KATANA_TSUKI = 24, KATANA_RITUAL = 62;
     private static net.minecraft.world.phys.Vec3 katanaHome;
     private static final String[] KATANA_VIEWS = {"front", "side", "back", "fp"};
 
@@ -199,7 +199,7 @@ public final class DevAutoTestClient {
         String view = KATANA_VIEWS[cycle % KATANA_VIEWS.length];
         var p = mc.player;
         if (katanaHome == null) katanaHome = p.position();
-        if (c == 0) {   // back to the start after the thrust's dash - on the server too, where the hits are resolved
+        if (c == 0 || c == KATANA_RITUAL - 4) {   // back to the start after the thrust's dash - on the server too, where the hits are resolved
             p.setPos(katanaHome.x, katanaHome.y, katanaHome.z);
             p.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
             var server = mc.getSingleplayerServer();
@@ -242,10 +242,12 @@ public final class DevAutoTestClient {
         }
         // real attack-key presses: kesa, gyaku, then a press during gyaku that queues the thrust
         // (the katana ignores the crosshair, so a stand camera picking the player is harmless)
+        ClientState.showZones = true;
+        if (c == KATANA_RITUAL) net.minecraft.client.KeyMapping.click(com.soulless.client.ClientModEvents.SLAM_KEY.getKey());
         if (c == KATANA_KESA || c == KATANA_GYAKU || c == KATANA_TSUKI) {
             net.minecraft.client.KeyMapping.click(mc.options.keyAttack.getKey());
         }
-        if (c <= 58 && cycle >= 1) shot(mc, String.format("katana_%s_%02d", view, c));
+        if (c <= 112 && cycle >= 1) shot(mc, String.format("katana_%s_%02d", view, c));
     }
 
     /**

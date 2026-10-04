@@ -43,6 +43,8 @@ public final class KatanaCombat {
     public static final float THRUST_DAMAGE_MULT = 1.6F;
     /** Ticks from a cut's start to the blade sweeping past / the thrust's lunge (client.KatanaPoses timelines). */
     private static final int[] HIT_DELAY = {7, 8, 9};
+    /** Under the Kitsune's blessing the katana moves this much faster (animations, hits and attack recharge). */
+    public static final float BLESSED_RATE = 1.25F;
     /** The cut's arc: reach from the player's centre and half-angle around the facing. */
     public static final double CUT_REACH = 3.6;
     private static final double CUT_HALF_ANGLE = Math.toRadians(75);
@@ -62,16 +64,18 @@ public final class KatanaCombat {
     /** The client says a cut started (0 kesa, 1 gyaku, 2 tsuki); its hit is resolved when the blade gets there. */
     public static void announce(ServerPlayer player, int step) {
         if (step < KESA || step > THRUST_STEP || !(player.getMainHandItem().getItem() instanceof SoulKatanaItem)) return;
+        if (KitsuneRitual.isActive(player)) return;
         long now = player.level().getGameTime();
+        float rate = rate(player);
         Long last = LAST.get(player.getUUID());
-        if (PENDING.containsKey(player.getUUID()) || (last != null && now - last < MIN_GAP)) return;
+        if (PENDING.containsKey(player.getUUID()) || (last != null && now - last < MIN_GAP / rate)) return;
         LAST.put(player.getUUID(), now);
         float charge = player.getAttackStrengthScale(0.5F);
         player.resetAttackStrengthTicker();
-        PENDING.put(player.getUUID(), new Pending(step, now + HIT_DELAY[step], charge));
+        PENDING.put(player.getUUID(), new Pending(step, now + Math.round(HIT_DELAY[step] / rate), charge));
         // everyone else watching plays the cut on this player's model
         com.soulless.network.ModNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.TRACKING_ENTITY.with(() -> player),
-                new com.soulless.network.KatanaAnimPacket(player.getId(), step));
+                new com.soulless.network.KatanaAnimPacket(player.getId(), step, rate > 1));
     }
 
     @SubscribeEvent
@@ -92,11 +96,21 @@ public final class KatanaCombat {
         }
     }
 
-    /** Everything in the arc in front, at full damage each. */
-    private static void cut(ServerPlayer player, float charge) {
-        Vec3 c = player.position();
+    /** How fast this player's katana moves: faster under the Kitsune's blessing. */
+    public static float rate(net.minecraft.world.entity.player.Player player) {
+        return player.hasEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get()) ? BLESSED_RATE : 1;
+    }
+
+    /** Horizontal unit vector the player faces. */
+    public static Vec3 facing(net.minecraft.world.entity.player.Player player) {
         float yaw = player.getYRot() * Mth.DEG_TO_RAD;
-        Vec3 facing = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
+        return new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
+    }
+
+    /** What a cut made now would hit: everything in the arc in front (shared with the zones overlay). */
+    public static List<LivingEntity> cutTargets(net.minecraft.world.entity.player.Player player) {
+        Vec3 c = player.position();
+        Vec3 facing = facing(player);
         AABB box = new AABB(c.x - CUT_REACH, c.y - 0.6, c.z - CUT_REACH, c.x + CUT_REACH, c.y + player.getBbHeight() + 0.8, c.z + CUT_REACH);
         List<LivingEntity> hit = new ArrayList<>();
         for (LivingEntity t : player.level().getEntitiesOfClass(LivingEntity.class, box, t -> canHit(player, t))) {
@@ -110,6 +124,40 @@ public final class KatanaCombat {
             if (!player.hasLineOfSight(t)) continue;
             hit.add(t);
         }
+        return hit;
+    }
+
+    /** The thrust's line: from the chest along the look (shared with the zones overlay). */
+    public static Vec3[] thrustLine(net.minecraft.world.entity.player.Player player) {
+        Vec3 from = player.position().add(0, player.getBbHeight() * 0.7, 0);
+        return new Vec3[]{from, from.add(player.getLookAngle().scale(THRUST_REACH))};
+    }
+
+    /** What the thrust made now would run into: the first target along its line, or null. */
+    @org.jetbrains.annotations.Nullable
+    public static LivingEntity thrustTarget(net.minecraft.world.entity.player.Player player) {
+        Vec3[] line = thrustLine(player);
+        Vec3 from = line[0], to = line[1];
+        LivingEntity best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (LivingEntity t : player.level().getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1.0), t -> canHit(player, t))) {
+            AABB b = t.getBoundingBox().inflate(THRUST_RADIUS);
+            Vec3 at = b.contains(from) ? from : b.clip(from, to).orElse(null);
+            if (at == null || !player.hasLineOfSight(t)) continue;
+            double d = at.distanceToSqr(from);
+            if (d < bestDist) {
+                bestDist = d;
+                best = t;
+            }
+        }
+        return best;
+    }
+
+    /** Everything in the arc in front, at full damage each. */
+    private static void cut(ServerPlayer player, float charge) {
+        Vec3 c = player.position();
+        Vec3 facing = facing(player);
+        List<LivingEntity> hit = cutTargets(player);
         ServerLevel level = player.serverLevel();
         Vec3 front = c.add(facing.scale(1.6)).add(0, player.getBbHeight() * 0.55, 0);
         if (!hit.isEmpty()) {
@@ -123,21 +171,8 @@ public final class KatanaCombat {
 
     /** The first target along a narrow line from the chest, along the look (aimable up and down). */
     private static void thrust(ServerPlayer player, float charge) {
-        Vec3 from = player.position().add(0, player.getBbHeight() * 0.7, 0);
         Vec3 dir = player.getLookAngle();
-        Vec3 to = from.add(dir.scale(THRUST_REACH));
-        LivingEntity best = null;
-        double bestDist = Double.MAX_VALUE;
-        for (LivingEntity t : player.level().getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1.0), t -> canHit(player, t))) {
-            AABB b = t.getBoundingBox().inflate(THRUST_RADIUS);
-            Vec3 at = b.contains(from) ? from : b.clip(from, to).orElse(null);
-            if (at == null || !player.hasLineOfSight(t)) continue;
-            double d = at.distanceToSqr(from);
-            if (d < bestDist) {
-                bestDist = d;
-                best = t;
-            }
-        }
+        LivingEntity best = thrustTarget(player);
         ServerLevel level = player.serverLevel();
         if (best == null) return;
         level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(),
@@ -147,7 +182,7 @@ public final class KatanaCombat {
         wear(player);
     }
 
-    private static boolean canHit(ServerPlayer player, LivingEntity t) {
+    private static boolean canHit(net.minecraft.world.entity.player.Player player, LivingEntity t) {
         return t != player && t.isAlive() && t.isAttackable() && !t.isSpectator() && !player.isAlliedTo(t)
                 && t != player.getVehicle() && t.getVehicle() != player;
     }

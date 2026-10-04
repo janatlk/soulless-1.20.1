@@ -7,7 +7,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Client -> server: the player pressed the slam key. The server validates everything. */
+/** Client -> server: the player pressed the ability key (R): Soul Crush with Soul Forged, the Kitsune ritual with the katana. */
 public record SlamRequestPacket() {
     public void encode(FriendlyByteBuf buf) {}
 
@@ -18,7 +18,11 @@ public record SlamRequestPacket() {
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
         if (player != null) {
-            SlamManager.tryStart(player);
+            if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem) {
+                com.soulless.item.KitsuneRitual.tryStart(player);
+            } else {
+                SlamManager.tryStart(player);
+            }
         }
     }
 }

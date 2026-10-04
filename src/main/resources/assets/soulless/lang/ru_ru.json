@@ -90,5 +90,15 @@
   "subtitles.soulless.katana_swing": "Свист катаны",
   "subtitles.soulless.katana_thrust": "Укол катаной",
   "subtitles.soulless.katana_hit": "Катана рассекает",
-  "subtitles.soulless.katana_dash": "Резкий выпад"
+  "subtitles.soulless.katana_dash": "Резкий выпад",
+  "effect.soulless.kitsune_blessing": "Благословение Кицунэ",
+  "subtitles.soulless.kitsune_blessing": "Отзывается дух лисы",
+  "message.soulless.ritual_cooldown": "Ритуал Кицунэ будет готов через %s с",
+  "message.soulless.ritual_ground": "Для ритуала нужна твёрдая земля",
+  "message.soulless.ritual_broken": "Ритуал прерван",
+  "message.soulless.kitsune_miss": "Промах",
+  "tooltip.soulless.soul_katana.ritual": "%s - ритуал Кицунэ: половина здоровья за благословение",
+  "tooltip.soulless.soul_katana.blessing": "%s с: катана на 25%% быстрее, вампиризм %s%%, %s%% ударов по вам мимо",
+  "tooltip.soulless.soul_katana.ritual_cd": "Перезарядка %s с",
+  "command.soulless.ult": "Вокруг вас падает ледяной дождь Жнеца"
 }

@@ -90,5 +90,15 @@
   "subtitles.soulless.katana_swing": "Katana swishes",
   "subtitles.soulless.katana_thrust": "Katana thrusts",
   "subtitles.soulless.katana_hit": "Katana cuts",
-  "subtitles.soulless.katana_dash": "Someone lunges"
+  "subtitles.soulless.katana_dash": "Someone lunges",
+  "effect.soulless.kitsune_blessing": "Kitsune's Blessing",
+  "subtitles.soulless.kitsune_blessing": "A fox spirit answers",
+  "message.soulless.ritual_cooldown": "The Kitsune ritual is ready in %s s",
+  "message.soulless.ritual_ground": "Kneel on solid ground for the ritual",
+  "message.soulless.ritual_broken": "The ritual was broken",
+  "message.soulless.kitsune_miss": "Miss",
+  "tooltip.soulless.soul_katana.ritual": "%s - Kitsune ritual: lose half your health for the blessing",
+  "tooltip.soulless.soul_katana.blessing": "%s s: katana 25%% faster, %s%% lifesteal, %s%% of blows miss you",
+  "tooltip.soulless.soul_katana.ritual_cd": "Cooldown %s s",
+  "command.soulless.ult": "The Reaper's ice rain falls around you"
 }

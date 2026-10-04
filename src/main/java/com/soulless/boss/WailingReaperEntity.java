@@ -271,7 +271,19 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
      */
     private void castShardRain(ServerLevel level) {
         Vec3 c = home != null ? Vec3.atBottomCenterOf(home) : position();
-        double reach = SoulAltarBlockEntity.ARENA_RADIUS - 0.8;
+        int lastFall = iceRain(level, c, SoulAltarBlockEntity.ARENA_RADIUS - 0.8, getId(), random);
+        ultRainTicks = lastFall + IceShardEntity.FALL + 10;
+        level.playSound(null, blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.HOSTILE, 4.0F, 0.5F);
+        level.playSound(null, blockPosition(), SoundEvents.PLAYER_HURT_FREEZE, SoundSource.HOSTILE, 3.0F, 0.6F);
+        level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 4, getZ(), 150, 2.5, 2, 2.5, 0.25);
+    }
+
+    /**
+     * The ice rain itself, around {@code c} out to {@code reach}: a rune on every cell of a hexagonal grid, spikes
+     * falling four at a time over two passes. Also cast by {@code /soulless ult} to practise dodging it.
+     * Returns the tick (after casting) of the last spike's fall.
+     */
+    public static int iceRain(ServerLevel level, Vec3 c, double reach, int ownerId, net.minecraft.util.RandomSource random) {
         double spacing = IceShardEntity.SPACING;
         java.util.List<Vec3> cells = new java.util.ArrayList<>();
         double rowH = spacing * Math.sqrt(3) / 2;
@@ -300,15 +312,12 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
             Vec3 v = cells.get(i);
             BlockPos ground = com.soulless.ability.CrackManager.findSurface(level, BlockPos.containing(v.x, c.y + 1, v.z));
             IceShardEntity shard = new IceShardEntity(ModEntities.ICE_SHARD.get(), level);
-            shard.setup(getId(), first[i], Math.max(second[i], first[i] + 20));
+            shard.setup(ownerId, first[i], Math.max(second[i], first[i] + 20));
             shard.moveTo(v.x, ground != null ? ground.getY() + 1 : c.y, v.z);
             level.addFreshEntity(shard);
             lastFall = Math.max(lastFall, Math.max(second[i], first[i] + 20));
         }
-        ultRainTicks = lastFall + IceShardEntity.FALL + 10;
-        level.playSound(null, blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.HOSTILE, 4.0F, 0.5F);
-        level.playSound(null, blockPosition(), SoundEvents.PLAYER_HURT_FREEZE, SoundSource.HOSTILE, 3.0F, 0.6F);
-        level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 4, getZ(), 150, 2.5, 2, 2.5, 0.25);
+        return lastFall;
     }
 
     /** Where the right hand is during a throw: up and to the side of the body, facing the target. */

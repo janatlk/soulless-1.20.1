@@ -22,6 +22,7 @@ import java.util.List;
  * {@code /soulless zones [targets] [on|off]} - show where Soul Crush and Soul Rend would hit (no argument
  * toggles; anyone for themselves, operators for other players).
  * {@code /soulless resetcd [targets]} - clear both ability cooldowns (operators / cheats).
+ * {@code /soulless ult [radius]} - the Wailing Reaper's ice rain around you (no Reaper), to practise dodging it.
  * {@code /soulless dummy [clear]} - place / remove immortal training dummies that report damage in chat.
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
@@ -39,6 +40,11 @@ public final class SoullessCommands {
                                 .executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), null))
                                 .then(Commands.literal("on").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), true)))
                                 .then(Commands.literal("off").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), false)))))
+                .then(Commands.literal("ult")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> ult(ctx.getSource(), com.soulless.boss.SoulAltarBlockEntity.ARENA_RADIUS - 0.8))
+                        .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(4, 48))
+                                .executes(ctx -> ult(ctx.getSource(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
                 .then(Commands.literal("dummy")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> {
@@ -119,6 +125,17 @@ public final class SoullessCommands {
     }
 
     /** {@code show == null} toggles each player's own setting. */
+    /** {@code /soulless ult [radius]}: the Wailing Reaper's ice rain around the caller, without the Reaper. */
+    private static int ult(CommandSourceStack src, double radius) {
+        net.minecraft.server.level.ServerLevel level = src.getLevel();
+        net.minecraft.world.phys.Vec3 c = src.getPosition();
+        com.soulless.boss.WailingReaperEntity.iceRain(level, c, radius, -1, level.getRandom());
+        level.playSound(null, c.x, c.y, c.z, net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_RESONATE, net.minecraft.sounds.SoundSource.HOSTILE, 3.0F, 0.5F);
+        level.playSound(null, c.x, c.y, c.z, net.minecraft.sounds.SoundEvents.PLAYER_HURT_FREEZE, net.minecraft.sounds.SoundSource.HOSTILE, 2.0F, 0.6F);
+        src.sendSuccess(() -> Component.translatable("command.soulless.ult"), true);
+        return 1;
+    }
+
     private static int zones(CommandSourceStack src, Collection<ServerPlayer> players, Boolean show) {
         for (ServerPlayer player : players) {
             boolean on = show != null ? show : !player.getPersistentData().getBoolean("soulless_zones");

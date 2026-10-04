@@ -32,8 +32,8 @@ import java.util.List;
  * Everything rides with its player, so a dashing thrust carries its streak.
  */
 public final class KatanaTrails {
-    /** kind: 0 kesa, 1 gyaku, 2 tsuki; {@code start}: game time (ticks) the blade begins the traced part. */
-    private record Trail(int entityId, int kind, float start, float yaw) {}
+    /** kind: 0 kesa, 1 gyaku, 2 tsuki; {@code start}: game time (ticks) the blade begins the traced part; {@code rate}: speed. */
+    private record Trail(int entityId, int kind, float start, float yaw, float rate) {}
 
     /** The dash: where the lunge began. */
     private record Gust(int entityId, Vec3 from, float start) {}
@@ -56,8 +56,8 @@ public final class KatanaTrails {
     }
 
     /** A cut started on this player's model now. */
-    public static void add(Entity player, int kind) {
-        TRAILS.add(new Trail(player.getId(), kind, ClientState.gameTime() + DELAY[kind], player.getYRot()));
+    public static void add(Entity player, int kind, float rate) {
+        TRAILS.add(new Trail(player.getId(), kind, ClientState.gameTime() + DELAY[kind] / rate, player.getYRot(), rate));
     }
 
     /** The blade starts its sweep: a quiet whoosh (a whistle for the thrust), slightly varied. */
@@ -93,7 +93,7 @@ public final class KatanaTrails {
         }
         float partial = event.getPartialTick();
         float now = ClientState.gameTime() + partial;
-        TRAILS.removeIf(t -> now - t.start > SWEEP[t.kind] + LIFE_AFTER || mc.level.getEntity(t.entityId) == null);
+        TRAILS.removeIf(t -> now - t.start > SWEEP[t.kind] / t.rate + LIFE_AFTER || mc.level.getEntity(t.entityId) == null);
         GUSTS.removeIf(g -> now - g.start > GUST_LIFE || mc.level.getEntity(g.entityId) == null);
         if (TRAILS.isEmpty() && GUSTS.isEmpty()) return;
 
@@ -120,7 +120,7 @@ public final class KatanaTrails {
         float age = now - t.start;
         if (age < 0) return;
         Vec3 origin = mc.level.getEntity(t.entityId).getPosition(partial);
-        float sweep = SWEEP[t.kind];
+        float sweep = SWEEP[t.kind] / t.rate;
         float k = Mth.clamp(age / sweep, 0, 1);
         k = 1 - (1 - k) * (1 - k);                                     // the tip slows into the follow-through
         float fade = 1 - Mth.clamp((age - sweep) / LIFE_AFTER, 0, 1);

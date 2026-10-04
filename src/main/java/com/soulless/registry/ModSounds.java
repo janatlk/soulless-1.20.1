@@ -20,6 +20,7 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> KATANA_THRUST = sound("katana_thrust");
     public static final RegistryObject<SoundEvent> KATANA_HIT = sound("katana_hit");
     public static final RegistryObject<SoundEvent> KATANA_DASH = sound("katana_dash");
+    public static final RegistryObject<SoundEvent> KITSUNE_BLESSING = sound("kitsune_blessing");
 
     private static RegistryObject<SoundEvent> sound(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(Soulless.id(name)));

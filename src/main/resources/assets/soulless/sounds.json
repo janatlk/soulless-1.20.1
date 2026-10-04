@@ -8,5 +8,6 @@
   "katana_swing": {"subtitle": "subtitles.soulless.katana_swing", "sounds": ["soulless:katana_swing1", "soulless:katana_swing2", "soulless:katana_swing3"]},
   "katana_thrust": {"subtitle": "subtitles.soulless.katana_thrust", "sounds": ["soulless:katana_thrust"]},
   "katana_hit": {"subtitle": "subtitles.soulless.katana_hit", "sounds": ["soulless:katana_hit"]},
-  "katana_dash": {"subtitle": "subtitles.soulless.katana_dash", "sounds": ["soulless:katana_dash"]}
+  "katana_dash": {"subtitle": "subtitles.soulless.katana_dash", "sounds": ["soulless:katana_dash"]},
+  "kitsune_blessing": {"subtitle": "subtitles.soulless.kitsune_blessing", "sounds": ["soulless:kitsune_blessing"]}
 }

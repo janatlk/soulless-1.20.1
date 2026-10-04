@@ -91,7 +91,26 @@ public final class ClientForgeEvents {
         ClientLevel level = mc.level;
         if (player == null || level == null) return;
 
+        // the katana: holding the attack key keeps the combo going
+        if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem && mc.screen == null
+                && mc.options.keyAttack.isDown()) {
+            katanaAttack(mc);
+        }
         while (ClientModEvents.SLAM_KEY.consumeClick()) {
+            if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem katana) {
+                // the katana's ability: the Kitsune ritual (the server checks everything again)
+                float left = player.getCooldowns().getCooldownPercent(katana, 0);
+                KatanaAnim anim = KatanaAnim.of(player);
+                if (left > 0) {
+                    int seconds = Mth.ceil(left * com.soulless.item.KitsuneRitual.COOLDOWN_TICKS / 20F);
+                    player.displayClientMessage(Component.translatable("message.soulless.ritual_cooldown", seconds), true);
+                } else if (!player.onGround()) {
+                    player.displayClientMessage(Component.translatable("message.soulless.ritual_ground"), true);
+                } else if (anim == null || anim.canAttack()) {
+                    ModNetwork.sendToServer(new SlamRequestPacket());
+                }
+                continue;
+            }
             if (player.getMainHandItem().getItem() instanceof SoulForgedItem item && ClientState.rendTicks(player) < 0) {
                 float left = player.getCooldowns().getCooldownPercent(item, 0);
                 if (left > 0) {
@@ -340,6 +359,23 @@ public final class ClientForgeEvents {
         ClientState.renderingPlayer = null;
     }
 
+    /**
+     * A katana attack (a click, or every tick while the attack key is held - the combo then runs by itself:
+     * kesa, gyaku, the thrust, and over again).
+     */
+    private static void katanaAttack(Minecraft mc) {
+        KatanaAnim anim = KatanaAnim.of(mc.player);
+        if (anim == null) return;
+        if (anim.thrustNext()) {
+            anim.queueThrust();   // during gyaku (or right after it): the thrust follows on its own
+        } else if (anim.canAttack()) {
+            int step = anim.nextStep();
+            anim.localCut(step);
+            com.soulless.network.ModNetwork.sendToServer(new com.soulless.network.KatanaCutPacket(step));
+            mc.player.resetAttackStrengthTicker();
+        }
+    }
+
     /** The katana does not mine, so no block outline while it is drawn. */
     @SubscribeEvent
     public static void onBlockHighlight(net.minecraftforge.client.event.RenderHighlightEvent.Block event) {
@@ -356,16 +392,7 @@ public final class ClientForgeEvents {
             // server hits whatever the blade sweeps through (KatanaCombat). No vanilla arm swing either.
             event.setCanceled(true);
             event.setSwingHand(false);
-            KatanaAnim anim = KatanaAnim.of(mc.player);
-            if (anim == null) return;
-            if (anim.thrustNext()) {
-                anim.queueThrust();   // during gyaku (or right after it): the thrust follows on its own
-            } else if (anim.canAttack()) {
-                int step = anim.nextStep();
-                anim.localCut(step);
-                com.soulless.network.ModNetwork.sendToServer(new com.soulless.network.KatanaCutPacket(step));
-                mc.player.resetAttackStrengthTicker();
-            }
+            katanaAttack(mc);
             return;
         }
         if (!event.isAttack() || mc.player == null || !(mc.player.getMainHandItem().getItem() instanceof SoulForgedItem)) return;

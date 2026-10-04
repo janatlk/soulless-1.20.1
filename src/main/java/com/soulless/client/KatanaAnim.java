@@ -36,18 +36,20 @@ public final class KatanaAnim implements IAnimation {
     private static final float BLEND_TICKS = 4;
     /** An attack within this many ticks after a cut ends continues the combo. */
     private static final float COMBO_GRACE = 10;
-    public static final int KESA = 0, GYAKU = 1, TSUKI = 2;
-    private static final String[] CUTS = {KatanaPoses.KESA, KatanaPoses.GYAKU, KatanaPoses.TSUKI};
+    public static final int KESA = 0, GYAKU = 1, TSUKI = 2, RITUAL = 3;
+    private static final String[] CUTS = {KatanaPoses.KESA, KatanaPoses.GYAKU, KatanaPoses.TSUKI, KatanaPoses.RITUAL};
 
     private final AbstractClientPlayer player;
     private float weight, weightO;
     private int age;
-    /** The cut playing (or last played), -1 before the first. */
+    /** The move playing (or last played), -1 at rest. */
     private int step = -1;
     private int cutStart;
+    /** How fast the move plays: faster under the Kitsune's blessing. */
+    private float rate = 1;
     /** The local player asked for the thrust during gyaku: it starts as soon as gyaku has followed through. */
     private boolean thrustQueued;
-    /** Cross-fade from the pose the previous cut was in (frozen) into the new cut. */
+    /** Cross-fade from the pose the previous move was in (frozen) into the new one. */
     @Nullable private String fadeFrom;
     private float fadeFromTime;
     private int fadeStart = -100;
@@ -75,6 +77,7 @@ public final class KatanaAnim implements IAnimation {
     @Override
     public void tick() {
         KatanaPoses.maybeReload();
+        float before = step >= 0 ? cutTime(0) : -1;
         age++;
         weightO = weight;
         boolean allowed = stanceAllowed();
@@ -85,77 +88,108 @@ public final class KatanaAnim implements IAnimation {
             return;
         }
 
-        int t = age - cutStart;
-        if (thrustQueued && (step != GYAKU || t >= KatanaPoses.number("tsuki.from") || currentCut(0) == null)) {
+        float t = cutTime(0);
+        if (thrustQueued && step != RITUAL && (step != GYAKU || t >= KatanaPoses.number("tsuki.from") || currentCut(0) == null)) {
             thrustQueued = false;
-            start(TSUKI, 0);
+            start(TSUKI, 0, localRate());
             if (player.isLocalPlayer()) {
                 com.soulless.network.ModNetwork.sendToServer(new com.soulless.network.KatanaCutPacket(TSUKI));
             }
-            t = 0;
+            before = -1;
+            t = cutTime(0);
         }
-        if (step == TSUKI && t == (int) KatanaPoses.number("tsuki.dash")) {
-            if (player.isLocalPlayer()) KatanaThrust.dash(player);
+        if (step == TSUKI && crossed(before, t, KatanaPoses.number("tsuki.dash"))) {
+            if (player.isLocalPlayer()) KatanaThrust.dash(player, rate);
             KatanaTrails.dash(player);   // every client draws the gust behind whoever lunges
         }
-        if (step >= 0 && t == KatanaTrails.sweepDelay(step)) KatanaTrails.whoosh(player, step);
-        if (currentCut(0) != null) {
+        if (step >= KESA && step <= TSUKI && crossed(before, t, KatanaTrails.sweepDelay(step))) KatanaTrails.whoosh(player, step);
+        if (step == RITUAL && crossed(before, t, KatanaPoses.number("ritual.stab"))) KatanaRitualFx.stab(player);
+        if (currentCut(0) != null && step != RITUAL) {
             // the body turns into the cut smoothly (vanilla would snap it on an arm swing)
             player.yBodyRot += Mth.wrapDegrees(player.getYHeadRot() - player.yBodyRot) * 0.25F;
         }
     }
 
-    /** The local player's click started a cut (the server was told, KatanaCutPacket). */
-    public void localCut(int next) {
-        start(next, 0);
+    private static boolean crossed(float before, float now, float at) {
+        return before < at && now >= at;
     }
 
-    /** Another player's cut, sent by the server. */
-    public static void remoteCut(int entityId, int step) {
+    private float localRate() {
+        return com.soulless.item.KatanaCombat.rate(player);
+    }
+
+    /** The local player's click started a cut (the server was told, KatanaCutPacket). */
+    public void localCut(int next) {
+        start(next, 0, localRate());
+    }
+
+    /** A move sent by the server: another player's cut, anyone's ritual, or the ritual broken off (-1). */
+    public static void remoteMove(int entityId, int move, boolean fast) {
         var mc = net.minecraft.client.Minecraft.getInstance();
-        if (mc.level == null || step < KESA || step > TSUKI) return;
-        if (mc.level.getEntity(entityId) instanceof AbstractClientPlayer p && p != mc.player) {
-            KatanaAnim anim = of(p);
-            if (anim != null) anim.start(step, 0);
+        if (mc.level == null || !(mc.level.getEntity(entityId) instanceof AbstractClientPlayer p)) return;
+        KatanaAnim anim = of(p);
+        if (anim == null) return;
+        if (move == -1) {
+            if (anim.step == RITUAL) anim.stop();
+        } else if (move == RITUAL || (move >= KESA && move <= TSUKI && p != mc.player)) {
+            anim.thrustQueued = false;
+            anim.start(move, 0, fast ? com.soulless.item.KatanaCombat.BLESSED_RATE : 1);
         }
     }
 
-    private void start(int next, int skip) {
+    private void start(int next, int skip, float rate) {
         fadeFrom = currentCut(0);
         fadeFromTime = fadeFrom != null ? cutTime(0) : 0;
         fadeStart = age;
         step = next;
+        this.rate = next == RITUAL ? 1 : rate;
         cutStart = age - skip;
-        if (skip == 0) KatanaTrails.add(player, next);
+        if (skip == 0 && next <= TSUKI) KatanaTrails.add(player, next, this.rate);
+    }
+
+    /** Back to the guard from wherever the move is (the ritual broken off). */
+    private void stop() {
+        fadeFrom = currentCut(0);
+        fadeFromTime = fadeFrom != null ? cutTime(0) : 0;
+        fadeStart = age;
+        step = -1;
     }
 
     /** The cut a normal attack made now plays: gyaku right after kesa, otherwise kesa. */
     public int nextStep() {
-        return step == KESA && age - cutStart < KatanaPoses.length(CUTS[KESA]) + COMBO_GRACE ? GYAKU : KESA;
+        return step == KESA && cutTime(0) < KatanaPoses.length(CUTS[KESA]) + COMBO_GRACE ? GYAKU : KESA;
     }
 
     /** True when an attack now would be the thrust: during gyaku or right after it, and not already queued. */
     public boolean thrustNext() {
-        return step == GYAKU && !thrustQueued && age - cutStart < KatanaPoses.length(CUTS[GYAKU]) + COMBO_GRACE;
+        return step == GYAKU && !thrustQueued && cutTime(0) < KatanaPoses.length(CUTS[GYAKU]) + COMBO_GRACE;
     }
 
     public void queueThrust() {
         thrustQueued = true;
     }
 
-    /** False while a cut (or a queued thrust) is under way: clicks then do nothing. */
+    /** False while a move (or a queued thrust) is under way: clicks then do nothing. */
     public boolean canAttack() {
-        return !thrustQueued && (step < 0 || age - cutStart >= KatanaPoses.number(CUTS[step] + ".chain"));
+        if (thrustQueued) return false;
+        if (step == RITUAL) return currentCut(0) == null;
+        return step < 0 || cutTime(0) >= KatanaPoses.number(CUTS[step] + ".chain");
     }
 
-    /** The cut playing right now, null at rest. */
+    /** The ritual is under way: the player kneels and cannot move. */
+    public boolean inRitual() {
+        return step == RITUAL && currentCut(0) != null;
+    }
+
+    /** The move playing right now, null at rest. */
     @Nullable
     public String currentCut(float partial) {
         return step >= 0 && cutTime(partial) < KatanaPoses.length(CUTS[step]) ? CUTS[step] : null;
     }
 
+    /** Time into the move, in the move's own ticks (faster under the blessing). */
     public float cutTime(float partial) {
-        return age - cutStart + partial;
+        return (age - cutStart + partial) * rate;
     }
 
     /** How far the stance is blended in, 0..1. */
@@ -164,7 +198,7 @@ public final class KatanaAnim implements IAnimation {
         return w * w * (3 - 2 * w);
     }
 
-    /** A pose field right now: the current cut (or jodan), cross-faded from the previous cut's pose. */
+    /** A pose field right now: the current move (or jodan), cross-faded from the previous move's pose. */
     public float[] pose(String field, int size, float partial) {
         String cut = currentCut(partial);
         float[] out = KatanaPoses.sample(cut, cut != null ? cutTime(partial) : 0, field, new float[size]);
@@ -222,6 +256,10 @@ public final class KatanaAnim implements IAnimation {
             case "rightLeg", "leftLeg" -> {
                 // stance offsets on top of the walking legs
                 float[] r = rot(part.equals("rightLeg") ? "rLeg" : "lLeg", partial);
+                return new Vec3f(v0.getX() + r[0] * w, v0.getY() + r[1] * w, v0.getZ() + r[2] * w);
+            }
+            case "head" -> {
+                float[] r = rot("head", partial);
                 return new Vec3f(v0.getX() + r[0] * w, v0.getY() + r[1] * w, v0.getZ() + r[2] * w);
             }
             case "body", "rightItem" -> {

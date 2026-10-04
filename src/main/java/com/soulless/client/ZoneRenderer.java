@@ -18,7 +18,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 /**
- * {@code /soulless zones}: while the sword is held, outlines where each ability lands, using the same
+ * {@code /soulless zones}: while the sword (or the katana) is held, outlines where each ability lands, using the same
  * geometry as the server - Soul Crush as a purple circle on the ground, Soul Rend as a gold wedge in front -
  * and boxes every creature that would be hit, in the matching colour.
  */
@@ -30,7 +30,12 @@ public final class ZoneRenderer {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS || !ClientState.showZones) return;
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.level == null || !(player.getMainHandItem().getItem() instanceof SoulForgedItem)) return;
+        if (player == null || mc.level == null) return;
+        if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem) {
+            katana(event, mc, player);
+            return;
+        }
+        if (!(player.getMainHandItem().getItem() instanceof SoulForgedItem)) return;
 
         PoseStack ps = event.getPoseStack();
         Vec3 cam = event.getCamera().getPosition();
@@ -63,6 +68,43 @@ public final class ZoneRenderer {
                 LevelRenderer.renderLineBox(ps, vc, e.getBoundingBox().inflate(0.05), SLAM[0], SLAM[1], SLAM[2], 1);
             }
         }
+        ps.popPose();
+        buffers.endBatch(RenderType.lines());
+    }
+
+    private static final float[] CUT = {1.0F, 0.25F, 0.3F};
+    private static final float[] THRUST = {0.45F, 0.85F, 1.0F};
+
+    /**
+     * The katana: the cuts' arc as a red wedge at the feet (the same geometry KatanaCombat uses), the thrust's line
+     * in pale blue from the chest along the look, and boxes around what a cut (red) or the thrust (blue) would hit.
+     */
+    private static void katana(RenderLevelStageEvent event, Minecraft mc, LocalPlayer player) {
+        PoseStack ps = event.getPoseStack();
+        Vec3 cam = event.getCamera().getPosition();
+        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
+        VertexConsumer vc = buffers.getBuffer(RenderType.lines());
+        ps.pushPose();
+        ps.translate(-cam.x, -cam.y, -cam.z);
+        Matrix4f m = ps.last().pose();
+        Matrix3f n = ps.last().normal();
+
+        float yaw = player.getYRot();
+        Vec3 feet = player.position().add(0, 0.05, 0);
+        double r = com.soulless.item.KatanaCombat.CUT_REACH;
+        circle(vc, m, n, feet, r, yaw - 75, yaw + 75, CUT);
+        line(vc, m, n, feet.add(dir(yaw - 75).scale(0.8)), feet.add(dir(yaw - 75).scale(r)), CUT);
+        line(vc, m, n, feet.add(dir(yaw + 75).scale(0.8)), feet.add(dir(yaw + 75).scale(r)), CUT);
+        circle(vc, m, n, feet, 0.8, -180, 180, CUT);
+
+        Vec3[] thrust = com.soulless.item.KatanaCombat.thrustLine(player);
+        line(vc, m, n, thrust[0], thrust[1], THRUST);
+
+        for (LivingEntity e : com.soulless.item.KatanaCombat.cutTargets(player)) {
+            LevelRenderer.renderLineBox(ps, vc, e.getBoundingBox().inflate(0.05), CUT[0], CUT[1], CUT[2], 1);
+        }
+        LivingEntity t = com.soulless.item.KatanaCombat.thrustTarget(player);
+        if (t != null) LevelRenderer.renderLineBox(ps, vc, t.getBoundingBox().inflate(0.12), THRUST[0], THRUST[1], THRUST[2], 1);
         ps.popPose();
         buffers.endBatch(RenderType.lines());
     }
