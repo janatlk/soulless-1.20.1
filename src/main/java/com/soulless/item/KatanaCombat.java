@@ -66,10 +66,10 @@ public final class KatanaCombat {
         if (step < KESA || step > THRUST_STEP || !(player.getMainHandItem().getItem() instanceof SoulKatanaItem)) return;
         if (KitsuneRitual.isActive(player)) return;
         long now = player.level().getGameTime();
-        float rate = rate(player);
-        Long last = LAST.get(player.getUUID());
-        // right after a parry the riposte comes at once and at full strength, whatever the weapon's cooldown
+        // right after a parry the riposte comes at once, faster and at full strength, whatever the weapon's cooldown
         boolean riposte = KatanaParry.riposteReady(player);
+        float rate = rate(player) * (riposte && step != THRUST_STEP ? KatanaParry.RIPOSTE_RATE : 1);
+        Long last = LAST.get(player.getUUID());
         if (PENDING.containsKey(player.getUUID()) || (!riposte && last != null && now - last < MIN_GAP / rate)) return;
         LAST.put(player.getUUID(), now);
         float charge = riposte ? 1 : player.getAttackStrengthScale(0.5F);
@@ -77,7 +77,7 @@ public final class KatanaCombat {
         PENDING.put(player.getUUID(), new Pending(step, now + Math.round(HIT_DELAY[step] / rate), charge));
         // everyone else watching plays the cut on this player's model
         com.soulless.network.ModNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.TRACKING_ENTITY.with(() -> player),
-                new com.soulless.network.KatanaAnimPacket(player.getId(), step, rate > 1));
+                new com.soulless.network.KatanaAnimPacket(player.getId(), step, rate));
     }
 
     @SubscribeEvent

@@ -60,18 +60,6 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         return v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(Math.round(v * 10) / 10.0);
     }
 
-    /** Right click: parry (KatanaParry; the server decides, the animation comes back from it). */
-    @Override
-    public net.minecraft.world.InteractionResultHolder<ItemStack> use(Level level, net.minecraft.world.entity.player.Player player,
-                                                                      net.minecraft.world.InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-        if (hand == net.minecraft.world.InteractionHand.MAIN_HAND && !level.isClientSide
-                && player instanceof net.minecraft.server.level.ServerPlayer sp) {
-            KatanaParry.tryStart(sp);
-        }
-        return net.minecraft.world.InteractionResultHolder.pass(stack);
-    }
-
     /** The katana's hits come from where the blade goes (KatanaCombat), never from vanilla's sweep. */
     @Override
     public boolean canPerformAction(ItemStack stack, net.minecraftforge.common.ToolAction action) {

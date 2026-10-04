@@ -249,31 +249,31 @@ public final class KatanaPoses {
         def("ritual.chain", "46");
         def("ritual.fade", "3");
 
-        // parry: the blade comes down from jodan and across in front of the chest, held level, edge out; on a parry
-        // it is knocked back a little (recoil) and returns to jodan
-        def("p_block.rArm", "-75 -25 0");
-        def("p_block.lArm", "-70 35 0");
-        def("p_block.rBend", "0 -50");
-        def("p_block.lBend", "0 -55");
-        def("p_block.torso", "0 -12 0");
-        def("p_block.rLeg", "14 0 6");
-        def("p_block.lLeg", "-30 0 -6");
-        def("p_block.rLegBend", "0 35");
-        def("p_block.lLegBend", "0 45");
-        def("p_block.bodyPos", "0 -1 0");
-        def("p_block.item", "-90 0 0");
+        // parry: the knees bend deep and the hips drop as the blade comes down from jodan and turns level across
+        // the body in front of the chest, edge out; on a parry it is knocked back a little (recoil), back to jodan
+        def("p_block.rArm", "-70 -30 0");
+        def("p_block.lArm", "-65 40 0");
+        def("p_block.rBend", "0 -55");
+        def("p_block.lBend", "0 -60");
+        def("p_block.torso", "0 -10 0");
+        def("p_block.rLeg", "30 0 10");
+        def("p_block.lLeg", "-45 0 -10");
+        def("p_block.rLegBend", "0 70");
+        def("p_block.lLegBend", "0 80");
+        def("p_block.bodyPos", "0 -4.5 0");
+        def("p_block.item", "-90 90 0");
         def("p_block.fp", "0.25 -0.45 -0.95 0 90 88");
-        def("p_recoil.rArm", "-90 -30 0");
-        def("p_recoil.lArm", "-85 40 0");
-        def("p_recoil.rBend", "0 -70");
-        def("p_recoil.lBend", "0 -75");
-        def("p_recoil.torso", "-6 -18 0");
-        def("p_recoil.rLeg", "20 0 6");
-        def("p_recoil.lLeg", "-26 0 -6");
-        def("p_recoil.rLegBend", "0 40");
-        def("p_recoil.lLegBend", "0 45");
-        def("p_recoil.bodyPos", "0 -1 -1.5");
-        def("p_recoil.item", "-95 0 0");
+        def("p_recoil.rArm", "-85 -35 0");
+        def("p_recoil.lArm", "-80 45 0");
+        def("p_recoil.rBend", "0 -75");
+        def("p_recoil.lBend", "0 -80");
+        def("p_recoil.torso", "-6 -15 0");
+        def("p_recoil.rLeg", "34 0 10");
+        def("p_recoil.lLeg", "-40 0 -10");
+        def("p_recoil.rLegBend", "0 75");
+        def("p_recoil.lLegBend", "0 80");
+        def("p_recoil.bodyPos", "0 -5 -1.5");
+        def("p_recoil.item", "-95 90 0");
         def("p_recoil.fp", "0.3 -0.3 -0.8 12 90 80");
         def("parry.keys", "guard@0 p_block@2.5:out p_block@9 guard@16:inout");
         def("parry.fpkeys", "guard@0 p_block@2.5:out p_block@9 guard@16:inout");

@@ -61,6 +61,8 @@ public final class KatanaParry {
     public static final int WHIFF_COOLDOWN = 30;
     public static final int STUN_TICKS = 5 * 20;
     public static final float BONUS = 1.2F;
+    /** The riposte (the first cut after a parry) plays this much faster. */
+    public static final float RIPOSTE_RATE = 1.8F;
     /** The bonus waits this long for the next strike. */
     private static final int BONUS_TICKS = 60;
 
@@ -80,7 +82,7 @@ public final class KatanaParry {
     }
 
     private static void send(ServerPlayer player, int step) {
-        ModNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new KatanaAnimPacket(player.getId(), step, false));
+        ModNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new KatanaAnimPacket(player.getId(), step, 1));
     }
 
     private static boolean inWindow(Player player) {

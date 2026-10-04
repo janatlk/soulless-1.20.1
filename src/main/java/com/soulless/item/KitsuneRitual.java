@@ -76,7 +76,7 @@ public final class KitsuneRitual {
 
     private static void broadcast(ServerPlayer player, int step) {
         ModNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-                new KatanaAnimPacket(player.getId(), step, false));
+                new KatanaAnimPacket(player.getId(), step, 1));
     }
 
     @SubscribeEvent

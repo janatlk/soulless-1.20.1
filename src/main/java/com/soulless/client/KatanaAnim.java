@@ -121,11 +121,13 @@ public final class KatanaAnim implements IAnimation {
 
     /** The local player's click started a cut (the server was told, KatanaCutPacket). */
     public void localCut(int next) {
-        start(next, 0, localRate());
+        // a riposte: the first cut right after a parry is much faster
+        boolean riposte = step == PARRIED && age - cutStart < 60;
+        start(next, 0, localRate() * (riposte ? com.soulless.item.KatanaParry.RIPOSTE_RATE : 1));
     }
 
     /** A move sent by the server: another player's cut, anyone's ritual, or the ritual broken off (-1). */
-    public static void remoteMove(int entityId, int move, boolean fast) {
+    public static void remoteMove(int entityId, int move, float rate) {
         var mc = net.minecraft.client.Minecraft.getInstance();
         if (mc.level == null || !(mc.level.getEntity(entityId) instanceof AbstractClientPlayer p)) return;
         KatanaAnim anim = of(p);
@@ -134,7 +136,7 @@ public final class KatanaAnim implements IAnimation {
             if (anim.step == RITUAL) anim.stop();
         } else if (move >= RITUAL || (move >= KESA && move <= TSUKI && p != mc.player)) {
             anim.thrustQueued = false;
-            anim.start(move, 0, fast ? com.soulless.item.KatanaCombat.BLESSED_RATE : 1);
+            anim.start(move, 0, rate);
         }
     }
 
@@ -143,7 +145,7 @@ public final class KatanaAnim implements IAnimation {
         fadeFromTime = fadeFrom != null ? cutTime(0) : 0;
         fadeStart = age;
         step = next;
-        this.rate = next == RITUAL ? 1 : rate;
+        this.rate = next >= RITUAL ? 1 : rate;
         cutStart = age - skip;
         if (skip == 0 && next <= TSUKI) KatanaTrails.add(player, next, this.rate);
     }

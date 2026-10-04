@@ -7,7 +7,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Client -> server: a katana cut started (0 kesa, 1 gyaku, 2 tsuki); the server resolves its hit and tells the others. */
+/** Client -> server: a katana cut started (0 kesa, 1 gyaku, 2 tsuki) or a parry (4); the server resolves its hit and tells the others. */
 public record KatanaCutPacket(int step) {
     public void encode(FriendlyByteBuf buf) {
         buf.writeVarInt(step);
@@ -20,7 +20,8 @@ public record KatanaCutPacket(int step) {
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
         if (player != null) {
-            KatanaCombat.announce(player, step);
+            if (step == com.soulless.item.KatanaParry.PARRY) com.soulless.item.KatanaParry.tryStart(player);
+            else KatanaCombat.announce(player, step);
         }
     }
 }

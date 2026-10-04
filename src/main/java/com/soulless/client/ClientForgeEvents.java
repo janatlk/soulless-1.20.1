@@ -395,6 +395,18 @@ public final class ClientForgeEvents {
             katanaAttack(mc);
             return;
         }
+        if (event.isUseItem() && mc.player != null && mc.player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem
+                && event.getHand() == InteractionHand.MAIN_HAND && !mc.player.isShiftKeyDown()) {
+            // the katana's right click is the parry (Shift + right click still opens doors, chests...); sent directly,
+            // so the ritual's cooldown on the item does not block it
+            event.setCanceled(true);
+            event.setSwingHand(false);
+            KatanaAnim anim = KatanaAnim.of(mc.player);
+            if (anim == null || anim.canAttack()) {
+                com.soulless.network.ModNetwork.sendToServer(new com.soulless.network.KatanaCutPacket(com.soulless.item.KatanaParry.PARRY));
+            }
+            return;
+        }
         if (!event.isAttack() || mc.player == null || !(mc.player.getMainHandItem().getItem() instanceof SoulForgedItem)) return;
         if (ClientState.rendTicks(mc.player) >= 0) {
             // no attacks from the Soul Rend wind-up until its recovery ends
