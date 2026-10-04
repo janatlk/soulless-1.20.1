@@ -40,13 +40,18 @@ public final class CombatTrial {
     private static final class Trial {
         final Set<UUID> mobs = new HashSet<>();
         final long start;
-        final String weapon;
+        /** Damage dealt per weapon (what was in the main hand when each hit landed). */
+        final Map<String, Float> byWeapon = new HashMap<>();
         float dealt, taken, maxHit;
         int kills, parries, rituals, hits;
 
-        Trial(long start, String weapon) {
+        Trial(long start) {
             this.start = start;
-            this.weapon = weapon;
+        }
+
+        /** The weapon that dealt the most damage in the trial. */
+        String weapon() {
+            return byWeapon.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse("-");
         }
     }
 
@@ -65,7 +70,7 @@ public final class CombatTrial {
             if (i % 2 == 1) wave.add(EntityType.BLAZE);
             if (i >= 1) wave.add(EntityType.HUSK);
         }
-        Trial trial = new Trial(level.getGameTime(), player.getMainHandItem().getHoverName().getString());
+        Trial trial = new Trial(level.getGameTime());
         for (int i = 0; i < wave.size(); i++) {
             double a = Math.PI * 2 * i / wave.size();
             double r = 9 + level.random.nextDouble() * 3;
@@ -107,7 +112,7 @@ public final class CombatTrial {
     private static void report(ServerPlayer player, Trial t, int left) {
         float seconds = (player.level().getGameTime() - t.start) / 20F;
         String verdict = !player.isAlive() ? "died" : left > 0 ? "stopped" : "cleared";
-        player.sendSystemMessage(Component.translatable("trial.soulless." + verdict, t.weapon).withStyle(ChatFormatting.GOLD));
+        player.sendSystemMessage(Component.translatable("trial.soulless." + verdict, t.weapon()).withStyle(ChatFormatting.GOLD));
         player.sendSystemMessage(Component.translatable("trial.soulless.report1", String.format("%.1f", seconds), t.kills, t.kills + left)
                 .withStyle(ChatFormatting.GRAY));
         player.sendSystemMessage(Component.translatable("trial.soulless.report2", String.format("%.0f", t.dealt), String.format("%.1f", t.maxHit),
@@ -116,6 +121,7 @@ public final class CombatTrial {
                 .withStyle(ChatFormatting.GRAY));
         Soulless.LOGGER.info("[trial] {} {} {}s kills={}/{} dealt={} maxHit={} taken={} hitsTaken={} parries={} rituals={}", player.getGameProfile().getName(),
                 verdict, seconds, t.kills, t.kills + left, t.dealt, t.maxHit, t.taken, t.hits, t.parries, t.rituals);
+        Soulless.LOGGER.info("[trial] by weapon {}", t.byWeapon);
     }
 
     /** A katana parry landed (item.KatanaParry). */
@@ -143,6 +149,7 @@ public final class CombatTrial {
             if (t.mobs.contains(event.getEntity().getUUID()) && event.getSource().getEntity() instanceof Player p && p.getUUID().equals(e.getKey())) {
                 float dealt = Math.min(event.getAmount(), event.getEntity().getHealth());
                 t.dealt += dealt;
+                t.byWeapon.merge(p.getMainHandItem().getHoverName().getString(), dealt, Float::sum);
                 t.maxHit = Math.max(t.maxHit, event.getAmount());
             }
         }

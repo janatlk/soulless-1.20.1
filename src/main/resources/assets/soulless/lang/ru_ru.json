@@ -119,5 +119,8 @@
   "trial.soulless.stopped": "Испытание остановлено (%s)",
   "trial.soulless.report1": "Время %s с, убито %s из %s",
   "trial.soulless.report2": "Нанесено урона %s (сильнейший удар %s, %s в секунду)",
-  "trial.soulless.report3": "Получено урона %s сердец за %s ударов, парирований %s, ритуалов %s"
+  "trial.soulless.report3": "Получено урона %s сердец за %s ударов, парирований %s, ритуалов %s",
+  "entity.minecraft.villager.soulless.sensei": "Сенсей",
+  "entity.minecraft.villager.sensei": "Сенсей",
+  "message.soulless.sensei_ready": "Сенсей кивает: вы заслужили его свиток"
 }
