@@ -87,6 +87,7 @@ public final class SlamManager {
         ServerLevel level = player.serverLevel();
         player.getCooldowns().addCooldown(item, COOLDOWN_TICKS);
         ACTIVE.put(player.getUUID(), new State(level.getGameTime(), player.getY(), ring, false));
+        com.soulless.Achievements.grant(player, "first_crush");
 
         item.triggerAnim(player, GeoItem.getOrAssignId(stack, level), SoulForgedItem.CONTROLLER, SoulForgedItem.SLAM_ANIM);
         ModNetwork.sendTrackingAndSelf(player, new SlamStartPacket(player.getId()));

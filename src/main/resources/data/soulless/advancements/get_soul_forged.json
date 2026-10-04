@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "soulless:soul_forged"
+    },
+    "title": {
+      "translate": "advancement.soulless.get_soul_forged"
+    },
+    "description": {
+      "translate": "advancement.soulless.get_soul_forged.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "got": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "soulless:soul_forged"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "soulless:root"
+}

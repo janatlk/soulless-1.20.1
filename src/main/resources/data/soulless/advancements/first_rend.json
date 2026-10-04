@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:echo_shard"
+    },
+    "title": {
+      "translate": "advancement.soulless.first_rend"
+    },
+    "description": {
+      "translate": "advancement.soulless.first_rend.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "soulless:get_soul_forged"
+}

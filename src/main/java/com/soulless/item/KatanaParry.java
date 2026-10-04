@@ -74,6 +74,8 @@ public final class KatanaParry {
     private static final Map<UUID, Long> STARTED = new HashMap<>();
     /** Players whose current window has parried something (every blow in the window is parried; no whiff cooldown). */
     private static final java.util.Set<UUID> CAUGHT = new java.util.HashSet<>();
+    /** How many blows the current window has caught (three at once earns an advancement). */
+    private static final Map<UUID, Integer> CAUGHT_COUNT = new HashMap<>();
     private static final Map<UUID, Long> BONUS_UNTIL = new HashMap<>();
 
     public static void tryStart(ServerPlayer player) {
@@ -89,6 +91,7 @@ public final class KatanaParry {
         if (last != null && now - last < WINDOW_FROM + WINDOW) return;   // the window is still open
         STARTED.put(player.getUUID(), now);
         CAUGHT.remove(player.getUUID());
+        CAUGHT_COUNT.remove(player.getUUID());
         send(player, PARRY);
     }
 
@@ -165,6 +168,9 @@ public final class KatanaParry {
      */
     private static void success(ServerPlayer player, Vec3 at, Entity attacker) {
         boolean first = CAUGHT.add(player.getUUID());
+        int count = CAUGHT_COUNT.merge(player.getUUID(), 1, Integer::sum);
+        com.soulless.Achievements.grant(player, "first_parry");
+        if (count >= 3) com.soulless.Achievements.grant(player, "triple_parry");
         com.soulless.CombatTrial.onParry(player);
         BONUS_UNTIL.put(player.getUUID(), player.level().getGameTime() + BONUS_TICKS);
         if (first) send(player, PARRIED);

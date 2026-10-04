@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "item": "soulless:soul_forged"
+    },
+    "title": {
+      "translate": "advancement.soulless.root"
+    },
+    "description": {
+      "translate": "advancement.soulless.root.desc"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "minecraft:textures/block/blackstone.png"
+  },
+  "criteria": {
+    "tick": {
+      "trigger": "minecraft:tick"
+    }
+  }
+}

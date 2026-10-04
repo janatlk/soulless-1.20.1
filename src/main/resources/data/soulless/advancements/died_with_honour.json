@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:wither_rose"
+    },
+    "title": {
+      "translate": "advancement.soulless.died_with_honour"
+    },
+    "description": {
+      "translate": "advancement.soulless.died_with_honour.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "soulless:kitsune_ritual"
+}

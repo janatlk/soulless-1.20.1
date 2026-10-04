@@ -1,0 +1,26 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:iron_sword"
+    },
+    "title": {
+      "translate": "advancement.soulless.triple_parry"
+    },
+    "description": {
+      "translate": "advancement.soulless.triple_parry.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "soulless:first_parry",
+  "rewards": {
+    "experience": 100
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "soulless:soul_katana"
+    },
+    "title": {
+      "translate": "advancement.soulless.get_katana"
+    },
+    "description": {
+      "translate": "advancement.soulless.get_katana.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "got": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "soulless:soul_katana"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "soulless:root"
+}

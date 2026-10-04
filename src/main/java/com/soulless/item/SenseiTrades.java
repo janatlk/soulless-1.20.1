@@ -77,6 +77,7 @@ public final class SenseiTrades {
             // the scroll is handed over only once: it stays in the list (the open trading screen may have it selected -
             // removing it crashed the screen), crossed out for good - a max of 0 uses stays sold out after restocks
             d.putBoolean("scroll_sold", true);
+            com.soulless.Achievements.grant(player, "buy_scroll");
             int i = v.getOffers().indexOf(offer);
             if (i >= 0) {
                 v.getOffers().set(i, new MerchantOffer(offer.getBaseCostA(), offer.getCostB(), offer.getResult(), 0, 0, 0, 0));

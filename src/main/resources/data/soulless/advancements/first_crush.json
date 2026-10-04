@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:anvil"
+    },
+    "title": {
+      "translate": "advancement.soulless.first_crush"
+    },
+    "description": {
+      "translate": "advancement.soulless.first_crush.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "soulless:get_soul_forged"
+}

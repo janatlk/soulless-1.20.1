@@ -188,6 +188,7 @@ public final class RendManager {
         slash.setup(player, sight, (power - RendTimeline.MIN_POWER) / (1 - RendTimeline.MIN_POWER));
         slash.setGold(com.soulless.item.SoulRing.worn(player));
         level.addFreshEntity(slash);
+        com.soulless.Achievements.grant(player, "first_rend");
 
         player.getCooldowns().addCooldown(player.getMainHandItem().getItem(), SlamManager.COOLDOWN_TICKS);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.4F, 0.55F);

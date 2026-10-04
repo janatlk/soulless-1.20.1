@@ -115,11 +115,15 @@ public final class KitsuneRitual {
     private static void stab(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         com.soulless.CombatTrial.onRitual(player);
+        com.soulless.Achievements.grant(player, "kitsune_ritual");
         stabbing = player;
         player.invulnerableTime = 0;
         player.hurt(com.soulless.registry.ModDamageTypes.seppuku(level), SELF_DAMAGE);
         stabbing = null;
-        if (!player.isAlive()) return;   // died with honour
+        if (!player.isAlive()) {   // died with honour
+            com.soulless.Achievements.grant(player, "died_with_honour");
+            return;
+        }
         player.addEffect(new MobEffectInstance(ModEffects.KITSUNE_BLESSING.get(), BLESSING_SECONDS * 20, 0, false, true, true));
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_HIT.get(), SoundSource.PLAYERS, 0.5F, 0.6F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KITSUNE_BLESSING.get(), SoundSource.PLAYERS, 0.6F, 1.0F);
