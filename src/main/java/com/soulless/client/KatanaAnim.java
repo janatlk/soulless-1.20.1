@@ -162,7 +162,9 @@ public final class KatanaAnim implements IAnimation {
 
     /** True when an attack now would be the thrust: during gyaku or right after it, and not already queued. */
     public boolean thrustNext() {
-        return step == GYAKU && !thrustQueued && cutTime(0) < KatanaPoses.length(CUTS[GYAKU]) + COMBO_GRACE;
+        float t = cutTime(0);
+        return step == GYAKU && !thrustQueued && t >= KatanaPoses.number("tsuki.queueAfter")
+                && t < KatanaPoses.length(CUTS[GYAKU]) + COMBO_GRACE;
     }
 
     public void queueThrust() {

@@ -32,7 +32,7 @@ public class IceShardEntity extends Entity {
     public static final int FALL = 7;
     public static final int STUCK = 22;
     public static final double DROP = 24;
-    public static final float DAMAGE = 20.0F;
+    public static final float DAMAGE = 14.0F;
 
     private static final EntityDataAccessor<Integer> DROP_A = SynchedEntityData.defineId(IceShardEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DROP_B = SynchedEntityData.defineId(IceShardEntity.class, EntityDataSerializers.INT);
@@ -89,8 +89,8 @@ public class IceShardEntity extends Entity {
             if (dx * dx + dz * dz > reach * reach) continue;
             e.invulnerableTime = 0;
             e.hurt(s.damageSources().mobProjectile(this, owner instanceof LivingEntity l ? l : null), DAMAGE);
-            e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 50, 2));
-            e.setTicksFrozen(Math.max(e.getTicksFrozen(), 120));
+            // a short, light slow: being hit should hurt, not pin the player under the next spikes
+            e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 25, 0));
         }
         s.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.PACKED_ICE.defaultBlockState()),
                 getX(), getY() + 0.3, getZ(), 40, RADIUS * 0.35, 0.3, RADIUS * 0.35, 0.25);

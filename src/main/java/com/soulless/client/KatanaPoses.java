@@ -257,6 +257,8 @@ public final class KatanaPoses {
         def("tsuki.chain", "18");
         // the thrust takes over once gyaku has followed through; the lunge (dash) and its hit, in thrust ticks
         def("tsuki.from", "14");
+        // gyaku must have run this long before a press queues the thrust (the press that started gyaku must not)
+        def("tsuki.queueAfter", "5");
         def("tsuki.dash", "8");
         def("tsuki.hit", "9");
         // cross-fade into each cut (ticks): long for the thrust, which starts from wherever gyaku left the blade
@@ -267,14 +269,14 @@ public final class KatanaPoses {
         // camera) and the blade turned flat to the view so its edge leads the swing; after each cut the blade drops
         // out of view and rises back into the guard. fp = tx ty tz (camera space) rx ry rz (degrees):
         // rz leans the blade (0 up, + to the left), rx tips it back toward the camera, ry spins it about itself
-        def("fk_wind.fp", "0.78 -0.85 -1.1 8 90 -35");
-        def("fk_end.fp", "0.0 -0.8 -1.2 0 90 118");
-        def("fk_follow.fp", "-0.15 -0.9 -1.2 0 90 130");
-        def("fk_low.fp", "0.5 -1.6 -1.1 0 90 60");
-        def("fg_wind.fp", "0.1 -0.85 -1.1 8 90 35");
-        def("fg_end.fp", "0.8 -0.8 -1.2 0 90 -118");
-        def("fg_follow.fp", "0.92 -0.9 -1.2 0 90 -130");
-        def("fg_low.fp", "0.62 -1.6 -1.1 0 90 -60");
+        def("fk_wind.fp", "0.75 -0.45 -1.1 20 90 -30");
+        def("fk_end.fp", "-0.2 -0.95 -1.2 -5 90 45");
+        def("fk_follow.fp", "-0.42 -1.1 -1.2 -8 90 58");
+        def("fk_low.fp", "0.5 -1.6 -1.1 0 90 25");
+        def("fg_wind.fp", "-0.05 -0.45 -1.1 20 90 30");
+        def("fg_end.fp", "0.9 -0.95 -1.2 -5 90 -45");
+        def("fg_follow.fp", "1.08 -1.1 -1.2 -8 90 -58");
+        def("fg_low.fp", "0.62 -1.6 -1.1 0 90 -25");
         def("ft_chamber.fp", "0.42 -0.62 -0.9 -82 90 14");
         def("ft_load.fp", "0.48 -0.7 -0.62 -80 90 16");
         def("ft_end.fp", "0.22 -0.48 -1.4 -88 90 6");

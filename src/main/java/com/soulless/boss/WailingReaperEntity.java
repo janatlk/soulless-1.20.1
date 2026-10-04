@@ -260,9 +260,9 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     }
 
     /** The first spikes start falling this long after the runes appear. */
-    private static final int RAIN_WARN = 20;
+    private static final int RAIN_WARN = 30;
     /** Spikes fall four at a time, a group every this many ticks. */
-    private static final int RAIN_GROUP = 4, RAIN_EVERY = 3;
+    private static final int RAIN_GROUP = 3, RAIN_EVERY = 5;
 
     /**
      * The ultimate: a frost rune on every cell of a hexagonal grid over the whole arena; then ice spikes fall four
