@@ -181,6 +181,11 @@ public final class KatanaAnim implements IAnimation {
         return step < 0 || cutTime(0) >= KatanaPoses.number(CUTS[step] + ".chain");
     }
 
+    /** The parry caught something (the recoil is playing). */
+    public boolean parried() {
+        return step == PARRIED;
+    }
+
     /** The parry stance is held (deep knees: no jumping). */
     public boolean inParry() {
         return (step == PARRY || step == PARRIED) && currentCut(0) != null;

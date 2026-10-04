@@ -75,9 +75,37 @@ public final class KatanaRitualFx {
         event.setPitch(Mth.lerp(k, event.getPitch(), Math.max(event.getPitch(), BOW)));
     }
 
+    /** While parrying: a soft white glow around the edges of the screen, strongest while the window is open. */
+    private static void parryGlow(RenderGuiEvent.Post event) {
+        LocalPlayer p = Minecraft.getInstance().player;
+        KatanaAnim anim = p != null ? KatanaAnim.of(p) : null;
+        if (anim == null || !anim.inParry()) return;
+        float t = anim.cutTime(event.getPartialTick());
+        float total = KatanaPoses.length(anim.parried() ? KatanaPoses.PARRIED : KatanaPoses.PARRY);
+        float k = anim.parried() ? 1 - t / total : Mth.clamp(t / 2, 0, 1) * Mth.clamp((total - t) / 6, 0, 1);
+        if (k <= 0) return;
+        var g = event.getGuiGraphics();
+        int w = event.getWindow().getGuiScaledWidth(), h = event.getWindow().getGuiScaledHeight();
+        int depth = Math.max(12, Math.min(w, h) / 7);
+        int steps = 12;
+        for (int i = 0; i < steps; i++) {
+            // nested bands: opaque-ish at the very edge, fading toward the middle
+            float f = 1 - i / (float) steps;
+            int a = (int) (k * 110 * f * f);
+            if (a <= 0) continue;
+            int c = a << 24 | 0xF4F8FF;
+            int d0 = depth * i / steps, d1 = depth * (i + 1) / steps;
+            g.fill(d0, d0, w - d0, d1, c);
+            g.fill(d0, h - d1, w - d0, h - d0, c);
+            g.fill(d0, d1, d1, h - d1, c);
+            g.fill(w - d1, d1, w - d0, h - d1, c);
+        }
+    }
+
     /** The red flash as the blade goes in, fading out. */
     @SubscribeEvent
     public static void onGui(RenderGuiEvent.Post event) {
+        parryGlow(event);
         float age = ClientState.gameTime() + event.getPartialTick() - stabTime;
         if (age < 0 || age > FLASH_TICKS) return;
         float a = (1 - age / FLASH_TICKS);
