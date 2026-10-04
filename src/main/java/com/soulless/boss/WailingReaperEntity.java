@@ -527,7 +527,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         }
     }
 
-    /** Soul embers shed along both wings and a ring of souls blown outward across the ground beneath. */
+    /** Soul embers shed along both wings with each beat. */
     private void wingGust(ServerLevel level) {
         float yaw = yBodyRot * Mth.DEG_TO_RAD;
         Vec3 fwd = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
@@ -541,12 +541,6 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
                             p.z + random.nextGaussian() * 0.3, 0, side * right.x * 0.05, -0.12 - random.nextDouble() * 0.08, side * right.z * 0.05, 1);
                 }
             }
-        }
-        double gy = groundY() + 0.1;
-        for (int i = 0; i < 14; i++) {
-            double a = Math.PI * 2 * i / 14 + random.nextDouble() * 0.3;
-            level.sendParticles(ParticleTypes.SOUL, getX() + Math.cos(a) * 1.2, gy, getZ() + Math.sin(a) * 1.2, 0,
-                    Math.cos(a) * 0.18, 0.01, Math.sin(a) * 0.18, 1);
         }
     }
 

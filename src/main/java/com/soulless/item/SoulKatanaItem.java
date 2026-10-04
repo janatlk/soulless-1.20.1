@@ -34,23 +34,59 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         super(SoulForgedTier.INSTANCE, DAMAGE_MODIFIER, ATTACK_SPEED_MODIFIER, properties);
     }
 
+    /**
+     * Compact by default (a line per feature), the full breakdown while Shift is held - in the same style as Soul
+     * Forged's: a stat line, then passive and active sections. Numbers come from the code.
+     */
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         String k = "tooltip.soulless.soul_katana.";
-        tooltip.add(Component.translatable(k + "subtitle").withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC));
-        tooltip.add(Component.translatable(k + "stats", v(fmt(1 + getDamage())), v(fmt(4 + ATTACK_SPEED_MODIFIER)))
-                .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "combo").withStyle(ChatFormatting.DARK_AQUA));
-        tooltip.add(Component.translatable(k + "thrust", v(fmt(KatanaCombat.THRUST_DAMAGE_MULT))).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "parry", Component.translatable("hud.soulless.rmb")).withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable(k + "parry_1", v(KatanaParry.STUN_TICKS / 20), v(Math.round((KatanaParry.BONUS - 1) * 100)))
-                .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "parry_2", v(KatanaParry.BLESSING_TICKS / 20)).withStyle(ChatFormatting.GRAY));
+        boolean details = net.minecraftforge.fml.DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.detailsHeld(), () -> () -> true);
+        Component lmb = Component.translatable("hud.soulless.lmb"), rmb = Component.translatable("hud.soulless.rmb");
         String key = net.minecraftforge.fml.DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.slamKeyName(), () -> () -> "R");
-        tooltip.add(Component.translatable(k + "ritual", key).withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable(k + "blessing", v(KitsuneRitual.BLESSING_SECONDS),
-                v(Math.round(KitsuneRitual.LIFESTEAL * 100)), v(Math.round(KitsuneRitual.MISS_CHANCE * 100))).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(k + "ritual_cd", v(KitsuneRitual.COOLDOWN_TICKS / 20)).withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable(k + "subtitle").withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC));
+        tooltip.add(Component.translatable(k + "stats", v(fmt(1 + getDamage())), v(fmt(4 + ATTACK_SPEED_MODIFIER))).withStyle(ChatFormatting.GRAY));
+
+        tooltip.add(section("passive"));
+        if (!details) {
+            tooltip.add(line(k + "c.cuts", ChatFormatting.AQUA));
+            tooltip.add(section("active"));
+            tooltip.add(line(k + "c.combo", ChatFormatting.WHITE, lmb));
+            tooltip.add(line(k + "c.parry", ChatFormatting.AQUA, rmb));
+            tooltip.add(line(k + "c.ritual", ChatFormatting.LIGHT_PURPLE, key));
+            tooltip.add(Component.empty());
+            tooltip.add(Component.translatable(k + "c.more").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+            return;
+        }
+        tooltip.add(line(k + "d.cuts.title", ChatFormatting.AQUA));
+        tooltip.add(line(k + "d.cuts.1", ChatFormatting.GRAY, v(fmt(KatanaCombat.CUT_REACH))));
+        tooltip.add(line(k + "d.cuts.2", ChatFormatting.GRAY, v(Math.round(KatanaCombat.CUT_SIDE_DAMAGE * 100)),
+                v(Math.round(KatanaCombat.CUT_SIDE_DAMAGE_BLESSED * 100))));
+
+        tooltip.add(section("active"));
+        tooltip.add(line(k + "d.combo.title", ChatFormatting.WHITE, lmb));
+        tooltip.add(line(k + "d.combo.1", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.combo.2", ChatFormatting.GRAY, v(fmt(KatanaCombat.THRUST_DAMAGE_MULT))));
+        tooltip.add(line(k + "d.parry.title", ChatFormatting.AQUA, rmb));
+        tooltip.add(line(k + "d.parry.1", ChatFormatting.GRAY));
+        tooltip.add(line(k + "d.parry.2", ChatFormatting.GRAY, v(KatanaParry.STUN_TICKS / 20), v(Math.round((KatanaParry.BONUS - 1) * 100)),
+                v(KatanaParry.BLESSING_TICKS / 20)));
+        tooltip.add(line(k + "d.parry.3", ChatFormatting.DARK_AQUA));
+        tooltip.add(line(k + "d.ritual.title", ChatFormatting.LIGHT_PURPLE, key));
+        tooltip.add(line(k + "d.ritual.1", ChatFormatting.GRAY, v(fmt(KitsuneRitual.SELF_DAMAGE / 2))));
+        tooltip.add(line(k + "d.ritual.2", ChatFormatting.GRAY, v(KitsuneRitual.BLESSING_SECONDS), v(Math.round(KitsuneRitual.LIFESTEAL * 100)),
+                v(Math.round(KitsuneRitual.MISS_CHANCE * 100))));
+        tooltip.add(line(k + "d.ritual.cd", ChatFormatting.DARK_GRAY, v(KitsuneRitual.COOLDOWN_TICKS / 20)));
+        tooltip.add(Component.empty());
+        tooltip.add(Component.translatable(k + "lore").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+    }
+
+    private static Component section(String name) {
+        return Component.literal(SoulForgedItem.SECTION_MARK).append(Component.translatable("tooltip.soulless.section." + name));
+    }
+
+    private static Component line(String key, ChatFormatting style, Object... args) {
+        return Component.translatable(key, args).withStyle(style);
     }
 
     private static Component v(Object value) {

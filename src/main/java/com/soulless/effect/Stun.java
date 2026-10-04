@@ -38,11 +38,37 @@ public final class Stun {
         }
     }
 
+    private static final String HELD = "soulless_stun_held";
+
+    /**
+     * Stunned mobs: their goals can't move, look, jump or pick targets, and brain-driven mobs (piglins, wardens,
+     * hoglins...) are kept "cooling down" - so nothing even starts an attack (a golem used to swing its arms, the hit
+     * then cancelled). Everything is given back the tick the stun ends.
+     */
     @SubscribeEvent
     public static void onTick(LivingEvent.LivingTickEvent event) {
-        if (event.getEntity() instanceof Mob mob && !mob.level().isClientSide && isStunned(mob)) {
+        if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide) return;
+        boolean held = mob.getPersistentData().getBoolean(HELD);
+        if (isStunned(mob)) {
+            if (!held) {
+                for (var flag : net.minecraft.world.entity.ai.goal.Goal.Flag.values()) {
+                    mob.goalSelector.disableControlFlag(flag);
+                    mob.targetSelector.disableControlFlag(flag);
+                }
+                mob.getPersistentData().putBoolean(HELD, true);
+            }
             mob.getNavigation().stop();
             mob.setTarget(null);
+            mob.setAggressive(false);
+            var brain = mob.getBrain();
+            brain.eraseMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET);
+            brain.setMemoryWithExpiry(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_COOLING_DOWN, true, 5);
+        } else if (held) {
+            for (var flag : net.minecraft.world.entity.ai.goal.Goal.Flag.values()) {
+                mob.goalSelector.enableControlFlag(flag);
+                mob.targetSelector.enableControlFlag(flag);
+            }
+            mob.getPersistentData().remove(HELD);
         }
     }
 

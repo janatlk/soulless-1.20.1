@@ -35,7 +35,8 @@ public final class SoulTooltip {
 
     @SubscribeEvent
     public static void onTooltipLines(ItemTooltipEvent event) {
-        if (!(event.getItemStack().getItem() instanceof SoulForgedItem)) return;
+        // the vanilla "When in Main Hand" block is replaced by each weapon's own stat line
+        if (!(event.getItemStack().getItem() instanceof SoulForgedItem || event.getItemStack().getItem() instanceof com.soulless.item.SoulKatanaItem)) return;
         List<Component> lines = event.getToolTip();
         for (int i = 0; i < lines.size(); i++) {
             if (lines.get(i).getContents() instanceof TranslatableContents t && t.getKey().startsWith("item.modifiers.")) {

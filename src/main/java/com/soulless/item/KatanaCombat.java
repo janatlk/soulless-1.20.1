@@ -49,7 +49,7 @@ public final class KatanaCombat {
     public static final double CUT_REACH = 3.6;
     private static final double CUT_HALF_ANGLE = Math.toRadians(75);
     /** A cut hits its main target (closest to where the player faces) fully, the others in the arc for this share. */
-    public static final float CUT_SIDE_DAMAGE = 0.70F;
+    public static final float CUT_SIDE_DAMAGE = 0.45F, CUT_SIDE_DAMAGE_BLESSED = 0.85F;
     /** The thrust's line: length from the chest and how fat it is. */
     public static final double THRUST_REACH = 4.0;
     private static final double THRUST_RADIUS = 0.45;
@@ -187,7 +187,8 @@ public final class KatanaCombat {
                 main = t;
             }
         }
-        for (LivingEntity t : hit) strike(player, t, charge, bonus * (t == main ? 1 : CUT_SIDE_DAMAGE), facing, 0.4F);
+        float side = player.hasEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get()) ? CUT_SIDE_DAMAGE_BLESSED : CUT_SIDE_DAMAGE;
+        for (LivingEntity t : hit) strike(player, t, charge, bonus * (t == main ? 1 : side), facing, 0.4F);
         if (!hit.isEmpty()) wear(player);
     }
 

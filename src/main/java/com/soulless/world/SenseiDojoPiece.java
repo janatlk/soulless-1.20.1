@@ -416,7 +416,8 @@ public class SenseiDojoPiece extends StructurePiece {
         tree(2, 15, 4);
         tree(8, 23, 4);
         tree(23, 1, 4);
-        for (int[] b : new int[][]{{0, 0}, {1, 0}, {0, 1}, {0, 26}, {0, 27}, {1, 27}, {24, 13}, {24, 14}, {3, 12}}) {
+        // bamboo clumps in the open (it grows: never under the roof's overhang, x 2..24 z 4..20)
+        for (int[] b : new int[][]{{0, 0}, {1, 0}, {0, 1}, {0, 26}, {0, 27}, {1, 27}, {0, 9}, {0, 10}, {1, 10}, {24, 26}, {24, 27}}) {
             int h = 4 + random.nextInt(4);
             for (int y = 0; y < h; y++) set(b[0], y, b[1], Blocks.BAMBOO);
         }

@@ -60,9 +60,9 @@ public final class KatanaParry {
     public static final int WINDOW_FROM = 1, WINDOW = 8;
     /** After a parry that caught nothing, the next one has to wait this long (from the press). */
     public static final int WHIFF_COOLDOWN = 30;
-    public static final int STUN_TICKS = 5 * 20;
+    public static final int STUN_TICKS = 2 * 20;
     /** Players are stunned for less: 5 s without moving or striking back would decide any duel. */
-    public static final int PLAYER_STUN_TICKS = 2 * 20;
+    public static final int PLAYER_STUN_TICKS = STUN_TICKS;
     public static final float BONUS = 1.2F;
     /** A parry grants this much of the Kitsune's blessing. */
     public static final int BLESSING_TICKS = 2 * 20;
@@ -90,8 +90,6 @@ public final class KatanaParry {
         STARTED.put(player.getUUID(), now);
         CAUGHT.remove(player.getUUID());
         send(player, PARRY);
-        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_SWING.get(),
-                SoundSource.PLAYERS, 0.2F, 1.5F);
     }
 
     private static void send(ServerPlayer player, int step) {
