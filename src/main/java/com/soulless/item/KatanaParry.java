@@ -61,6 +61,8 @@ public final class KatanaParry {
     /** After a parry that caught nothing, the next one has to wait this long (from the press). */
     public static final int WHIFF_COOLDOWN = 30;
     public static final int STUN_TICKS = 5 * 20;
+    /** Players are stunned for less: 5 s without moving or striking back would decide any duel. */
+    public static final int PLAYER_STUN_TICKS = 2 * 20;
     public static final float BONUS = 1.2F;
     /** A parry grants this much of the Kitsune's blessing. */
     public static final int BLESSING_TICKS = 2 * 20;
@@ -172,7 +174,7 @@ public final class KatanaParry {
             player.addEffect(new MobEffectInstance(ModEffects.KITSUNE_BLESSING.get(), BLESSING_TICKS, 0, false, true, true));
         }
         if (attacker instanceof LivingEntity l && !isBoss(l)) {
-            l.addEffect(new MobEffectInstance(ModEffects.STUN.get(), STUN_TICKS, 0));
+            l.addEffect(new MobEffectInstance(ModEffects.STUN.get(), l instanceof Player ? PLAYER_STUN_TICKS : STUN_TICKS, 0));
         }
         if (first) player.displayClientMessage(Component.translatable("message.soulless.parry"), true);
     }

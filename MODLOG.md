@@ -122,3 +122,10 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
 - RMB parry (KatanaParry): window ticks 1-9. Parries swung melee (attacker.swinging at hit time - mobs with an attack animation swing right before; contact damage doesn't) and knock-aside projectiles (ProjectileImpactEvent; not dragon fireball / wither skull / shulker bullet / throwables / fireworks). Melee attacker stunned 5 s unless a boss (forge:bosses tag + Reaper); next katana strike x1.2. Whiff: 1.5 s before the next parry.
 - /soulless ult [radius]: the Reaper's ice rain without the Reaper (WailingReaperEntity.iceRain). Ult softened: 1.5 s warning, 3 spikes / 5 ticks, 14 dmg, slowness I 1.2 s.
 - /soulless zones shows the katana's cut wedge, thrust line and would-be targets.
+
+## 2026-10-04 — Balance pass (katana)
+- Cuts: full damage to the main target (smallest angle off the facing, then nearest), 55% to the others in the arc.
+- Parry stun: 5 s for mobs, 2 s for players; bosses never.
+- Kitsune ritual: always 6 HP (3 hearts) via soulless:seppuku (bypasses armor/enchantments/effects) and it can kill: "%1$s умер с честью".
+- Parry: catches every blow in its window from any direction; a clean parry grants 2 s of the blessing and a white screen-edge glow; learned from the Scroll of Parrying (persisted NBT, survives death).
+- Open: balance needs a real fight test; katana / scroll acquisition in survival undecided; Reaper ult difficulty after softening unchecked.

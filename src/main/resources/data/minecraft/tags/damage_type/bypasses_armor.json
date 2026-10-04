@@ -1,4 +1,7 @@
 {
   "replace": false,
-  "values": ["soulless:soul_curse"]
+  "values": [
+    "soulless:soul_curse",
+    "soulless:seppuku"
+  ]
 }

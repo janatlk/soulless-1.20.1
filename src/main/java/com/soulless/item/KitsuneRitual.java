@@ -34,7 +34,7 @@ import java.util.UUID;
 
 /**
  * The katana's ability (R): the player kneels, turns the blade on themselves and drives it through their own
- * belly - losing half their current health - to receive the Kitsune's blessing (ModEffects.KITSUNE_BLESSING):
+ * belly - losing three hearts, which can kill them ("died with honour") - to receive the Kitsune's blessing (ModEffects.KITSUNE_BLESSING):
  * <ul>
  *   <li>the katana moves 25% faster, and its thrust dashes further;</li>
  *   <li>its hits heal 5% of the damage dealt;</li>
@@ -51,7 +51,9 @@ public final class KitsuneRitual {
     public static final int TOTAL = 46, STAB_AT = 19;
     public static final int BLESSING_SECONDS = 20;
     public static final int COOLDOWN_TICKS = 60 * 20, INTERRUPTED_COOLDOWN = 3 * 20;
-    public static final float SELF_DAMAGE = 0.5F, LIFESTEAL = 0.05F, MISS_CHANCE = 0.25F;
+    /** The blade costs three hearts, always - and it can kill. */
+    public static final float SELF_DAMAGE = 6.0F;
+    public static final float LIFESTEAL = 0.05F, MISS_CHANCE = 0.25F;
 
     private static final Map<UUID, Long> ACTIVE = new HashMap<>();
     /** The player whose own blade is being driven in right now (its damage must not break the ritual). */
@@ -109,14 +111,14 @@ public final class KitsuneRitual {
         }
     }
 
-    /** The blade goes in: half the current health, then the blessing bursts out in blue fox fire. */
+    /** The blade goes in: three hearts (armor, enchantments and resistance don't help), then the blessing. */
     private static void stab(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        float cost = player.getHealth() * SELF_DAMAGE;
         stabbing = player;
         player.invulnerableTime = 0;
-        player.hurt(player.damageSources().magic(), cost);
+        player.hurt(com.soulless.registry.ModDamageTypes.seppuku(level), SELF_DAMAGE);
         stabbing = null;
+        if (!player.isAlive()) return;   // died with honour
         player.addEffect(new MobEffectInstance(ModEffects.KITSUNE_BLESSING.get(), BLESSING_SECONDS * 20, 0, false, true, true));
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_HIT.get(), SoundSource.PLAYERS, 0.5F, 0.6F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KITSUNE_BLESSING.get(), SoundSource.PLAYERS, 0.6F, 1.0F);

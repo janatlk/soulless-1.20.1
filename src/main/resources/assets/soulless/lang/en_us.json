@@ -97,7 +97,7 @@
   "message.soulless.ritual_ground": "Kneel on solid ground for the ritual",
   "message.soulless.ritual_broken": "The ritual was broken",
   "message.soulless.kitsune_miss": "Miss",
-  "tooltip.soulless.soul_katana.ritual": "%s - Kitsune ritual: lose half your health for the blessing",
+  "tooltip.soulless.soul_katana.ritual": "%s - Kitsune ritual: three hearts of your own blood for the blessing (it can kill)",
   "tooltip.soulless.soul_katana.blessing": "%s s: katana 25%% faster, %s%% lifesteal, %s%% of blows miss you",
   "tooltip.soulless.soul_katana.ritual_cd": "Cooldown %s s",
   "command.soulless.ult": "The Reaper's ice rain falls around you",
@@ -110,5 +110,7 @@
   "message.soulless.parry_learned": "You have learned to parry",
   "message.soulless.parry_known": "You already know how to parry",
   "message.soulless.parry_unknown": "Read the Scroll of Parrying to learn the parry",
-  "tooltip.soulless.soul_katana.parry_2": "A clean parry grants %s s of the Kitsune's blessing"
+  "tooltip.soulless.soul_katana.parry_2": "A clean parry grants %s s of the Kitsune's blessing",
+  "death.attack.soulless.seppuku": "%1$s died with honour",
+  "death.attack.soulless.seppuku.player": "%1$s died with honour"
 }

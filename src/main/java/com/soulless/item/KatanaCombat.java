@@ -48,6 +48,8 @@ public final class KatanaCombat {
     /** The cut's arc: reach from the player's centre and half-angle around the facing. */
     public static final double CUT_REACH = 3.6;
     private static final double CUT_HALF_ANGLE = Math.toRadians(75);
+    /** A cut hits its main target (closest to where the player faces) fully, the others in the arc for this share. */
+    public static final float CUT_SIDE_DAMAGE = 0.55F;
     /** The thrust's line: length from the chest and how fat it is. */
     public static final double THRUST_REACH = 4.0;
     private static final double THRUST_RADIUS = 0.45;
@@ -173,7 +175,19 @@ public final class KatanaCombat {
                     SoundSource.PLAYERS, HIT_VOLUME, 0.95F + player.getRandom().nextFloat() * 0.15F);
         }
         float bonus = hit.isEmpty() ? 1 : KatanaParry.consumeBonus(player);
-        for (LivingEntity t : hit) strike(player, t, charge, bonus, facing, 0.4F);
+        // the main target: the one most squarely in front (smallest angle off the facing, then nearest)
+        LivingEntity main = null;
+        double best = Double.MAX_VALUE;
+        for (LivingEntity t : hit) {
+            Vec3 to = new Vec3(t.getX() - c.x, 0, t.getZ() - c.z);
+            double d = to.length();
+            double score = (d < 1e-3 ? 0 : Math.acos(Mth.clamp(to.normalize().dot(facing), -1, 1))) * 4 + d;
+            if (score < best) {
+                best = score;
+                main = t;
+            }
+        }
+        for (LivingEntity t : hit) strike(player, t, charge, bonus * (t == main ? 1 : CUT_SIDE_DAMAGE), facing, 0.4F);
         if (!hit.isEmpty()) wear(player);
     }
 

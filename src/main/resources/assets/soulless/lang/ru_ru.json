@@ -97,7 +97,7 @@
   "message.soulless.ritual_ground": "Для ритуала нужна твёрдая земля",
   "message.soulless.ritual_broken": "Ритуал прерван",
   "message.soulless.kitsune_miss": "Промах",
-  "tooltip.soulless.soul_katana.ritual": "%s - ритуал Кицунэ: половина здоровья за благословение",
+  "tooltip.soulless.soul_katana.ritual": "%s - ритуал Кицунэ: три сердца своей крови за благословение (может убить)",
   "tooltip.soulless.soul_katana.blessing": "%s с: катана на 25%% быстрее, вампиризм %s%%, %s%% ударов по вам мимо",
   "tooltip.soulless.soul_katana.ritual_cd": "Перезарядка %s с",
   "command.soulless.ult": "Вокруг вас падает ледяной дождь Жнеца",
@@ -110,5 +110,7 @@
   "message.soulless.parry_learned": "Вы научились парировать",
   "message.soulless.parry_known": "Вы уже умеете парировать",
   "message.soulless.parry_unknown": "Прочитайте Свиток парирования, чтобы научиться парировать",
-  "tooltip.soulless.soul_katana.parry_2": "Удачное парирование даёт %s с благословения Кицунэ"
+  "tooltip.soulless.soul_katana.parry_2": "Удачное парирование даёт %s с благословения Кицунэ",
+  "death.attack.soulless.seppuku": "%1$s умер с честью",
+  "death.attack.soulless.seppuku.player": "%1$s умер с честью"
 }
