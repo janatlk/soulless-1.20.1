@@ -63,7 +63,7 @@ public final class KatanaParry {
     public static final int STUN_TICKS = 5 * 20;
     public static final float BONUS = 1.2F;
     /** A parry grants this much of the Kitsune's blessing. */
-    public static final int BLESSING_TICKS = 5 * 20;
+    public static final int BLESSING_TICKS = 2 * 20;
     /** The riposte (the first cut after a parry) plays this much faster. */
     public static final float RIPOSTE_RATE = 1.8F;
     /** The bonus waits this long for the next strike. */

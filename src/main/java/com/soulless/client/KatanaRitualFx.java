@@ -75,14 +75,13 @@ public final class KatanaRitualFx {
         event.setPitch(Mth.lerp(k, event.getPitch(), Math.max(event.getPitch(), BOW)));
     }
 
-    /** While parrying: a soft white glow around the edges of the screen, strongest while the window is open. */
+    /** After a successful parry: a soft white glow around the edges of the screen, fading out. */
     private static void parryGlow(RenderGuiEvent.Post event) {
         LocalPlayer p = Minecraft.getInstance().player;
         KatanaAnim anim = p != null ? KatanaAnim.of(p) : null;
-        if (anim == null || !anim.inParry()) return;
+        if (anim == null || !anim.inParry() || !anim.parried()) return;
         float t = anim.cutTime(event.getPartialTick());
-        float total = KatanaPoses.length(anim.parried() ? KatanaPoses.PARRIED : KatanaPoses.PARRY);
-        float k = anim.parried() ? 1 - t / total : Mth.clamp(t / 2, 0, 1) * Mth.clamp((total - t) / 6, 0, 1);
+        float k = 1 - t / KatanaPoses.length(KatanaPoses.PARRIED);
         if (k <= 0) return;
         var g = event.getGuiGraphics();
         int w = event.getWindow().getGuiScaledWidth(), h = event.getWindow().getGuiScaledHeight();
