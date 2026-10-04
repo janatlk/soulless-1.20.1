@@ -23,7 +23,12 @@ public final class AbilityHud implements IGuiOverlay {
     public void render(ForgeGui gui, GuiGraphics g, float partialTick, int width, int height) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
-        if (player == null || mc.options.hideGui || !(player.getMainHandItem().getItem() instanceof SoulForgedItem item)) return;
+        if (player == null || mc.options.hideGui) return;
+        if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem katana) {
+            katana(g, mc.font, player, katana, partialTick, width, height);
+            return;
+        }
+        if (!(player.getMainHandItem().getItem() instanceof SoulForgedItem item)) return;
         Font font = mc.font;
 
         int x = width / 2 + 91 + 8, y = height - SLOT - 2;
@@ -41,6 +46,40 @@ public final class AbilityHud implements IGuiOverlay {
             g.fill(bx, by, bx + (int) (w * t / RendTimeline.WINDUP), by + 3, t > RendTimeline.WINDUP - 20 ? 0xFFF1D2FF : 0xFFB54CFF);
             String pct = Math.round(Math.max(RendTimeline.MIN_POWER, t / RendTimeline.WINDUP) * 100) + "%";
             g.drawString(font, pct, width / 2 - font.width(pct) / 2, by + 6, 0xFFE8C8FF, true);
+        }
+    }
+
+    /**
+     * The katana: R - the Kitsune ritual (its cooldown), RMB - the parry (locked until learned, lit while the window is
+     * open, shaded after a parry that caught nothing), and while the blessing lasts a third, blue slot with its seconds.
+     */
+    private static void katana(GuiGraphics g, Font font, Player player, com.soulless.item.SoulKatanaItem item, float partial, int width, int height) {
+        int x = width / 2 + 91 + 8, y = height - SLOT - 2;
+        float ritual = player.getCooldowns().getCooldownPercent(item, partial);
+        slot(g, font, x, y, Component.literal(ClientKeys.slamKeyName()), ritual, Mth.ceil(ritual * ClientState.ritualCooldownTotal / 20F), 0xFF4FB6FF);
+
+        int px = x + SLOT + 4;
+        if (!ClientState.parryKnown) {
+            g.fill(px, y, px + SLOT, y + SLOT, 0x99000000);
+            g.fill(px, y + SLOT - 2, px + SLOT, y + SLOT, 0xFF555555);
+            g.drawString(font, "?", px + (SLOT - font.width("?")) / 2, y + 6, 0xFF888888, true);
+        } else {
+            float since = ClientState.gameTime() + partial - ClientState.parryStart;
+            int window = com.soulless.item.KatanaParry.WINDOW_FROM + com.soulless.item.KatanaParry.WINDOW;
+            float cd = !ClientState.parryCaught && since < com.soulless.item.KatanaParry.WHIFF_COOLDOWN
+                    ? 1 - since / com.soulless.item.KatanaParry.WHIFF_COOLDOWN : 0;
+            slot(g, font, px, y, Component.translatable("hud.soulless.rmb"), since < window ? 0 : cd,
+                    Mth.ceil((1 - since / com.soulless.item.KatanaParry.WHIFF_COOLDOWN) * com.soulless.item.KatanaParry.WHIFF_COOLDOWN / 20F), 0xFFF4F8FF);
+            if (since >= 0 && since < window) g.fill(px, y, px + SLOT, y + SLOT, 0x66FFFFFF);   // the window is open
+        }
+
+        var blessing = player.getEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get());
+        if (blessing != null) {
+            int bx = px + SLOT + 4;
+            g.fill(bx, y, bx + SLOT, y + SLOT, 0x99001A33);
+            g.fill(bx, y + SLOT - 2, bx + SLOT, y + SLOT, 0xFF4FB6FF);
+            String s = String.valueOf(Mth.ceil(blessing.getDuration() / 20F));
+            g.drawString(font, s, bx + (SLOT - font.width(s)) / 2, y + 6, 0xFF9FD8FF, true);
         }
     }
 

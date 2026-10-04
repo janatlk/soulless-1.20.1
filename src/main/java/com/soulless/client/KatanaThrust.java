@@ -22,8 +22,32 @@ public final class KatanaThrust {
         float yaw = player.getYRot() * Mth.DEG_TO_RAD;
         Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
         double speed = DASH_SPEED * (rate > 1 ? BLESSED_DASH : 1) * (player.onGround() ? 1 : AIR_FACTOR);
+        // stop short of the first creature in the way: the point reaches it, the body stays out of its reach
+        double room = roomAhead(player, forward);
+        speed = Math.min(speed, Math.max(0, room / SLIDE));
         Vec3 v = player.getDeltaMovement();
         player.setDeltaMovement(forward.x * speed, v.y, forward.z * speed);   // along the ground, no hop
+    }
+
+    /** A dash of speed v slides about v * SLIDE blocks on the ground (friction 0.546 per tick). */
+    private static final double SLIDE = 2.2;
+    /** The lunge ends this far (blade's reach) from the nearest creature ahead. */
+    private static final double STOP_SHORT = 1.6;
+
+    /** How far the player can lunge before coming within STOP_SHORT of something alive in front. */
+    private static double roomAhead(AbstractClientPlayer player, Vec3 forward) {
+        double max = DASH_SPEED * BLESSED_DASH * SLIDE;
+        double room = max;
+        for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+                player.getBoundingBox().expandTowards(forward.scale(max + STOP_SHORT)).inflate(1.0),
+                x -> x != player && x.isAlive() && !x.isSpectator())) {
+            Vec3 to = e.position().subtract(player.position());
+            double along = to.x * forward.x + to.z * forward.z;
+            double side = Math.abs(to.x * forward.z - to.z * forward.x);
+            if (along <= 0 || side > 1.0 + e.getBbWidth() / 2) continue;
+            room = Math.min(room, along - e.getBbWidth() / 2 - STOP_SHORT);
+        }
+        return room;
     }
 
     private KatanaThrust() {}

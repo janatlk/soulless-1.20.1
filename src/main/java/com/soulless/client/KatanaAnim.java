@@ -132,6 +132,15 @@ public final class KatanaAnim implements IAnimation {
         if (mc.level == null || !(mc.level.getEntity(entityId) instanceof AbstractClientPlayer p)) return;
         KatanaAnim anim = of(p);
         if (anim == null) return;
+        if (p == mc.player) {
+            if (move == RITUAL) ClientState.ritualCooldownTotal = com.soulless.item.KitsuneRitual.COOLDOWN_TICKS;
+            if (move == -1) ClientState.ritualCooldownTotal = com.soulless.item.KitsuneRitual.INTERRUPTED_COOLDOWN;
+            if (move == PARRY) {
+                ClientState.parryStart = ClientState.gameTime();
+                ClientState.parryCaught = false;
+            }
+            if (move == PARRIED) ClientState.parryCaught = true;
+        }
         if (move == -1) {
             if (anim.step == RITUAL) anim.stop();
         } else if (move >= RITUAL || (move >= KESA && move <= TSUKI && p != mc.player)) {

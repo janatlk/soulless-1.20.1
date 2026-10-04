@@ -31,6 +31,12 @@ public final class ClientState {
 
     /** {@code /soulless zones}: draw ability hit zones around the local player. */
     public static boolean showZones;
+    /** Katana HUD: the ritual's current cooldown length (ticks), the local parry's start and whether it caught something. */
+    public static int ritualCooldownTotal = com.soulless.item.KitsuneRitual.COOLDOWN_TICKS;
+    public static long parryStart = -1000;
+    public static boolean parryCaught;
+    /** The local player has read the Scroll of Parrying (synced by the server). */
+    public static boolean parryKnown;
 
     public static float shake;
     /** Game time the local player's current slash started, or MIN_VALUE. */

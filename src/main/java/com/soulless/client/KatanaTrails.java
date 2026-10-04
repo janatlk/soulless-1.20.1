@@ -41,8 +41,8 @@ public final class KatanaTrails {
     private static final List<Trail> TRAILS = new ArrayList<>();
     private static final List<Gust> GUSTS = new ArrayList<>();
     /** Ticks into each cut when the traced part starts, and how long the blade takes over it (KatanaPoses timelines). */
-    private static final int[] DELAY = {3, 4, 8};
-    private static final float[] SWEEP = {5, 5, 1.5F};
+    private static final int[] DELAY = {2, 3, 8};
+    private static final float[] SWEEP = {4, 4, 1.5F};
     private static final float LIFE_AFTER = 6, GUST_LIFE = 10;
     private static final float A_START = -75, A_END = 105;
     /** The arc's outer edge (the tip's path) and the inner edge of its widest part. */

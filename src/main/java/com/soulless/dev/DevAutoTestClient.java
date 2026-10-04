@@ -106,6 +106,24 @@ public final class DevAutoTestClient {
             katanaTick(mc);
             return;
         }
+        if (DevAutoTest.DOJO) {
+            opts.setCameraType(CameraType.FIRST_PERSON);
+            opts.hideGui = tick < 240;
+            for (int[] s : new int[][]{{70, 0}, {120, 1}, {170, 2}, {220, 3}}) {
+                if (tick == s[0]) shot(mc, "dojo_" + s[1]);
+            }
+            if (tick == 245 || tick == 315) {
+                var v = mc.level.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, mc.player.getBoundingBox().inflate(6))
+                        .stream().findFirst().orElse(null);
+                if (v != null) mc.gameMode.interact(mc.player, v, net.minecraft.world.InteractionHand.MAIN_HAND);
+            }
+            if (tick == 238) shot(mc, "dojo_4");
+            if (tick == 270) shot(mc, "dojo_trade1");
+            if (tick == 280 || tick == 350) mc.player.closeContainer();
+            if (tick == 340) shot(mc, "dojo_trade2");
+            if (tick == 380) mc.stop();
+            return;
+        }
         if (DevAutoTest.BOSS) {
             if (tick == 15) opts.setCameraType(CameraType.FIRST_PERSON);
             if (tick > 60 && tick % 30 == 0 && tick < 1800) shot(mc, String.format("boss_%04d", tick));

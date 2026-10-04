@@ -284,17 +284,17 @@ public final class KatanaPoses {
         def("parry.fade", "1.5");
         def("parried.fade", "0.5");
 
-        def("kesa.keys", "guard@0 kesa_wind@3:out kesa_mid@5:in kesa_end@8:lin kesa_follow@11:out kesa_follow@13 guard@20:inout");
-        def("gyaku.keys", "guard@0 gyaku_wind@4:out gyaku_mid@6:in gyaku_end@9:lin gyaku_follow@12:out gyaku_follow@14 guard@21:inout");
+        def("kesa.keys", "guard@0 kesa_wind@2.25:out kesa_mid@3.75:in kesa_end@6:lin kesa_follow@8.25:out kesa_follow@9.75 guard@15:inout");
+        def("gyaku.keys", "guard@0 gyaku_wind@3:out gyaku_mid@4.5:in gyaku_end@6.75:lin gyaku_follow@9:out gyaku_follow@10.5 guard@15.75:inout");
         def("tsuki.keys", "tsuki_wind@0 tsuki_load@6:inout tsuki_load@8 tsuki_end@9.5:out tsuki_end@13 guard@22:inout");
         // the next attack is only allowed (and starts the next cut) once this much of the current one has played
-        def("kesa.chain", "12");
-        def("gyaku.chain", "13");
+        def("kesa.chain", "9");
+        def("gyaku.chain", "10");
         def("tsuki.chain", "18");
         // the thrust takes over once gyaku has followed through; the lunge (dash) and its hit, in thrust ticks
-        def("tsuki.from", "14");
+        def("tsuki.from", "10.5");
         // gyaku must have run this long before a press queues the thrust (the press that started gyaku must not)
-        def("tsuki.queueAfter", "5");
+        def("tsuki.queueAfter", "4");
         def("tsuki.dash", "8");
         def("tsuki.hit", "9");
         // cross-fade into each cut (ticks): long for the thrust, which starts from wherever gyaku left the blade
@@ -317,8 +317,8 @@ public final class KatanaPoses {
         def("ft_load.fp", "0.48 -0.7 -0.62 -80 90 16");
         def("ft_end.fp", "0.22 -0.48 -1.4 -88 90 6");
         def("ft_low.fp", "0.5 -1.5 -1.1 -30 90 0");
-        def("kesa.fpkeys", "guard@0 fk_wind@3:out fk_end@8:inout fk_follow@12:out fk_low@16:in guard@20:out");
-        def("gyaku.fpkeys", "guard@0 fg_wind@4:out fg_end@9:inout fg_follow@13:out fg_low@17:in guard@21:out");
+        def("kesa.fpkeys", "guard@0 fk_wind@2.25:out fk_end@6:inout fk_follow@9:out fk_low@12:in guard@15:out");
+        def("gyaku.fpkeys", "guard@0 fg_wind@3:out fg_end@6.75:inout fg_follow@9.75:out fg_low@12.75:in guard@15.75:out");
         def("tsuki.fpkeys", "ft_chamber@0 ft_chamber@6 ft_load@8:inout ft_end@9.5:out ft_end@13 ft_low@17:in guard@22:out");
         def("fp.scale", "0.45");
         validate();

@@ -44,6 +44,9 @@ public final class DevAutoTest {
     public static final boolean PREVIEW = ENABLED && System.getenv("SOULLESS_PREVIEW") != null;
     /** SOULLESS_KATANA=1: the katana in hand, two cuts every cycle, filmed from four views (live pose tuning). */
     public static final boolean KATANA = ENABLED && System.getenv("SOULLESS_KATANA") != null;
+    /** SOULLESS_DOJO=1: build the sensei's dojo, photograph it from outside and in, trade with the sensei. */
+    public static final boolean DOJO = ENABLED && System.getenv("SOULLESS_DOJO") != null;
+    private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
     private static final double ARENA_X = 300.5, ARENA_Z = 0.5;
@@ -94,7 +97,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !DOJO) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -222,6 +225,10 @@ public final class DevAutoTest {
             if (tick == 520) Soulless.LOGGER.info("[autotest] check done");
             return;
         }
+        if (DOJO) {
+            dojoTick(p);
+            return;
+        }
         if (KATANA) {
             // the ritual every cycle: no cooldown, and the health it costs comes back between cycles
             p.getCooldowns().removeCooldown(ModItems.SOUL_KATANA.get());
@@ -301,6 +308,54 @@ public final class DevAutoTest {
                     Soulless.LOGGER.info("[autotest] zombie {} hp={} cursed={} speed={}", z.getId(), z.getHealth(),
                             SoulCurse.isCursed(z), z.getAttributeValue(Attributes.MOVEMENT_SPEED)));
         }
+    }
+
+    private static void tp(ServerPlayer p, double x, double y, double z, float yaw, float pitch) {
+        p.teleportTo(p.serverLevel(), dojo.getX() + x, dojo.getY() + y, dojo.getZ() + z, yaw, pitch);
+    }
+
+    private static void dojoTick(ServerPlayer p) {
+        ServerLevel level = p.serverLevel();
+        if (tick == 20) {
+            p.getInventory().clearContent();
+            p.setGameMode(GameType.CREATIVE);
+            dojo = net.minecraft.core.BlockPos.containing(ARENA_X - 6, p.getY(), ARENA_Z + 6);
+            com.soulless.world.SenseiDojoPiece.buildAt(level, dojo);
+            level.setDayTime(5000);
+            Soulless.LOGGER.info("[autotest] dojo built at {}", dojo);
+        }
+        if (tick == 30) tp(p, 6.5, 9, 31, 180, 18);      // the front, high
+        if (tick == 80) tp(p, 30, 9, 7.5, 90, 18);       // the yard side
+        if (tick == 130) tp(p, -12, 7, 20, 225, 16);     // three-quarter from the south-west
+        if (tick == 180) tp(p, 9.2, 1, 9.2, 135, 12);    // inside, toward the sensei
+        if (tick == 230) {
+            var sensei = sensei(p);
+            if (sensei != null) {
+                net.minecraft.world.phys.Vec3 s = sensei.position();
+                p.teleportTo(level, s.x, s.y, s.z + 1.8, 180, 10);
+                sensei.setYRot(0);
+                sensei.setYHeadRot(0);
+                sensei.setNoAi(true);
+            }
+        }
+        if (tick == 300) {
+            // the four lessons, each once: the scroll unlocks
+            var sensei = sensei(p);
+            if (sensei != null) {
+                for (var offer : new java.util.ArrayList<>(sensei.getOffers())) {
+                    net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+                            new net.minecraftforge.event.entity.player.TradeWithVillagerEvent(p, offer, sensei));
+                }
+                Soulless.LOGGER.info("[autotest] sensei offers now: {}", sensei.getOffers().stream()
+                        .map(o -> o.getCostA().getCount() + " " + o.getCostA().getItem() + " -> " + o.getResult().getItem()).toList());
+            }
+        }
+    }
+
+    @org.jetbrains.annotations.Nullable
+    private static net.minecraft.world.entity.npc.Villager sensei(ServerPlayer p) {
+        return p.serverLevel().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, p.getBoundingBox().inflate(40),
+                com.soulless.item.SenseiTrades::isSensei).stream().findFirst().orElse(null);
     }
 
     private static final java.util.List<LivingEntity> rendTargets = new java.util.ArrayList<>();

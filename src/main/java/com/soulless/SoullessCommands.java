@@ -41,6 +41,15 @@ public final class SoullessCommands {
                                 .executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), null))
                                 .then(Commands.literal("on").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), true)))
                                 .then(Commands.literal("off").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), false)))))
+                .then(Commands.literal("dojo")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> {
+                            var p = ctx.getSource().getPlayerOrException();
+                            net.minecraft.core.BlockPos o = p.blockPosition().offset(-6, 0, 4);
+                            com.soulless.world.SenseiDojoPiece.buildAt(p.serverLevel(), o);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Dojo built at " + o.toShortString()), true);
+                            return 1;
+                        }))
                 .then(Commands.literal("arena")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> CombatTrial.start(ctx.getSource().getPlayerOrException(), 1))
@@ -112,6 +121,9 @@ public final class SoullessCommands {
     public static void onLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer p && p.getPersistentData().getBoolean("soulless_zones")) {
             ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.SHOW_ZONES, true));
+        }
+        if (event.getEntity() instanceof ServerPlayer p) {
+            ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.PARRY_KNOWN, com.soulless.item.ParryScrollItem.knows(p)));
         }
     }
 

@@ -65,6 +65,13 @@ public class SenseiDojoPiece extends StructurePiece {
         this.origin = new BlockPos(tag.getInt("OX"), tag.getInt("OY"), tag.getInt("OZ"));
     }
 
+    /** Build the whole dojo at once with its north-west corner (floor level) at {@code origin} ({@code /soulless dojo}). */
+    public static void buildAt(net.minecraft.server.level.ServerLevel level, BlockPos origin) {
+        SenseiDojoPiece piece = new SenseiDojoPiece(origin);
+        piece.postProcess(level, level.structureManager(), level.getChunkSource().getGenerator(), level.random,
+                piece.getBoundingBox(), new ChunkPos(origin), origin);
+    }
+
     @Override
     protected void addAdditionalSaveData(StructurePieceSerializationContext ctx, CompoundTag tag) {
         tag.putInt("OX", origin.getX());

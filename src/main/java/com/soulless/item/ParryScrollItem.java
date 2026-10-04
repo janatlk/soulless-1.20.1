@@ -50,6 +50,10 @@ public class ParryScrollItem extends Item {
             return InteractionResultHolder.fail(stack);
         }
         learn(player);
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            com.soulless.network.ModNetwork.sendToPlayer(sp, new com.soulless.network.ClientControlPacket(
+                    com.soulless.network.ClientControlPacket.PARRY_KNOWN, true));
+        }
         if (!player.getAbilities().instabuild) stack.shrink(1);
         ServerLevel s = (ServerLevel) level;
         s.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F, 0.8F);

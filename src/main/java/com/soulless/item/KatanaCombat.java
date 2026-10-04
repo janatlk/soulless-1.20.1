@@ -42,21 +42,21 @@ public final class KatanaCombat {
     /** The thrust deals this much more than a cut. */
     public static final float THRUST_DAMAGE_MULT = 1.6F;
     /** Ticks from a cut's start to the blade sweeping past / the thrust's lunge (client.KatanaPoses timelines). */
-    private static final int[] HIT_DELAY = {7, 8, 9};
+    private static final int[] HIT_DELAY = {6, 7, 9};
     /** Under the Kitsune's blessing the katana moves this much faster (animations, hits and attack recharge). */
     public static final float BLESSED_RATE = 1.25F;
     /** The cut's arc: reach from the player's centre and half-angle around the facing. */
     public static final double CUT_REACH = 3.6;
     private static final double CUT_HALF_ANGLE = Math.toRadians(75);
     /** A cut hits its main target (closest to where the player faces) fully, the others in the arc for this share. */
-    public static final float CUT_SIDE_DAMAGE = 0.55F;
+    public static final float CUT_SIDE_DAMAGE = 0.70F;
     /** The thrust's line: length from the chest and how fat it is. */
     public static final double THRUST_REACH = 4.0;
     private static final double THRUST_RADIUS = 0.45;
     /** The katana's sounds are soft: the cut, not the noise, should carry the hit. */
     private static final float HIT_VOLUME = 0.4F;
     /** A new cut is refused while the last one is younger than this (clients can't spam faster than the animation). */
-    private static final int MIN_GAP = 10;
+    private static final int MIN_GAP = 8;
 
     private record Pending(int step, long due, float charge) {}
 
