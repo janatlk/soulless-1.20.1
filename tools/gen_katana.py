@@ -49,14 +49,15 @@ def hash2(x, y, seed=0):
 # ------------------------------------------------------------------ the blade's shape
 BLADE_Y0, BLADE_Y1 = 2.6, 46.0          # from the collar to the point
 KISSAKI = 4.6                            # length of the point section
-SORI = 2.4                               # how far the back bows (toward -x) over the blade
+SORI = 4.1                               # how far the back bows (toward -x) over the blade
 W_BASE, W_TIP = 2.5, 1.95                # blade width (mune to edge)
+AXIS_X = 0.1                             # the centre line of the collar, guard and grip: the blade sits on it
 
 
 def mune_x(y):
     """x of the blade's back (mune) at height y: a gentle curve bowing toward -x, strongest near the tip."""
     t = max(0.0, (y - BLADE_Y0) / (BLADE_Y1 - BLADE_Y0))
-    return -0.55 - SORI * t ** 1.7
+    return AXIS_X - W_BASE / 2 - SORI * t ** 1.7
 
 
 def width(y):
@@ -113,7 +114,7 @@ def build():
         CUBES.append(Cube(f"mune{i}", "katana", "mune", (x0, y0 - 0.05, -th / 2), (x0 + 0.42, y1 + 0.05, th / 2),
                           rot=[0, 0, ang], pivot=[x0, y0, 0]))
     # habaki: the gold collar
-    box("habaki", "gold", 0.65 - 0.55, 1.0, 0, W_BASE + 0.6, 2.2, 1.15)
+    box("habaki", "gold", AXIS_X, 1.0, 0, W_BASE + 0.6, 2.2, 1.15)
     # seppa washers and the tsuba (a rounded guard made of three overlapping plates)
     box("seppa_top", "gold", 0.1, 0.75, 0, 3.6, 0.25, 1.6)
     box("tsuba_a", "tsuba", 0.1, 0.0, 0, 7.2, 0.75, 5.2)
