@@ -49,6 +49,7 @@ import java.util.UUID;
  *       deflected or broken (no stun for whoever shot it). Dragon breath, wither skulls, shulker bullets, potions,
  *       fireworks, evoker fangs, guardian beams and explosions are not physical and cannot be parried.</li>
  * </ul>
+ * The parry guards all around (any direction) and catches every blow that lands in the window, not just the first.
  * A parry makes the next katana strike 20% stronger. A parry that catches nothing can't be repeated for a moment.
  * Animation: client.KatanaAnim "parry" (KatanaAnimPacket step 4) and "parry_hit" (step 5).
  */
@@ -69,6 +70,8 @@ public final class KatanaParry {
     private static final int BONUS_TICKS = 60;
 
     private static final Map<UUID, Long> STARTED = new HashMap<>();
+    /** Players whose current window has parried something (every blow in the window is parried; no whiff cooldown). */
+    private static final java.util.Set<UUID> CAUGHT = new java.util.HashSet<>();
     private static final Map<UUID, Long> BONUS_UNTIL = new HashMap<>();
 
     public static void tryStart(ServerPlayer player) {
@@ -80,8 +83,10 @@ public final class KatanaParry {
         }
         long now = player.level().getGameTime();
         Long last = STARTED.get(player.getUUID());
-        if (last != null && now - last < WHIFF_COOLDOWN) return;
+        if (last != null && now - last < WHIFF_COOLDOWN && !CAUGHT.contains(player.getUUID())) return;
+        if (last != null && now - last < WINDOW_FROM + WINDOW) return;   // the window is still open
         STARTED.put(player.getUUID(), now);
+        CAUGHT.remove(player.getUUID());
         send(player, PARRY);
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_SWING.get(),
                 SoundSource.PLAYERS, 0.2F, 1.5F);
@@ -148,10 +153,14 @@ public final class KatanaParry {
         success(player, attacker.position().add(0, attacker.getBbHeight() * 0.6, 0).lerp(player.getEyePosition(), 0.5), attacker);
     }
 
+    /**
+     * A blow or projectile parried. The window stays open: everything that reaches the player in it, from any side,
+     * is parried too. The recoil animation plays for the first one.
+     */
     private static void success(ServerPlayer player, Vec3 at, Entity attacker) {
-        STARTED.remove(player.getUUID());   // parrying again is allowed right away
+        boolean first = CAUGHT.add(player.getUUID());
         BONUS_UNTIL.put(player.getUUID(), player.level().getGameTime() + BONUS_TICKS);
-        send(player, PARRIED);
+        if (first) send(player, PARRIED);
         ServerLevel level = player.serverLevel();
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y, at.z, 14, 0.15, 0.15, 0.15, 0.4);
         level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 10, 0.1, 0.1, 0.1, 0.5);
@@ -165,7 +174,7 @@ public final class KatanaParry {
         if (attacker instanceof LivingEntity l && !isBoss(l)) {
             l.addEffect(new MobEffectInstance(ModEffects.STUN.get(), STUN_TICKS, 0));
         }
-        player.displayClientMessage(Component.translatable("message.soulless.parry"), true);
+        if (first) player.displayClientMessage(Component.translatable("message.soulless.parry"), true);
     }
 
     private static boolean isBoss(LivingEntity e) {
@@ -175,6 +184,7 @@ public final class KatanaParry {
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         STARTED.remove(event.getEntity().getUUID());
+        CAUGHT.remove(event.getEntity().getUUID());
         BONUS_UNTIL.remove(event.getEntity().getUUID());
     }
 
