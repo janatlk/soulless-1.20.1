@@ -90,6 +90,12 @@ public final class KatanaParry {
         return t >= WINDOW_FROM && t < WINDOW_FROM + WINDOW;
     }
 
+    /** A parry just landed: the riposte is ready (full strength, no weapon cooldown). */
+    public static boolean riposteReady(Player player) {
+        Long until = BONUS_UNTIL.get(player.getUUID());
+        return until != null && player.level().getGameTime() <= until;
+    }
+
     /** The next katana strike's multiplier: the parry bonus, used up by that strike. */
     public static float consumeBonus(Player player) {
         Long until = BONUS_UNTIL.remove(player.getUUID());

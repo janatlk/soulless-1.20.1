@@ -68,9 +68,11 @@ public final class KatanaCombat {
         long now = player.level().getGameTime();
         float rate = rate(player);
         Long last = LAST.get(player.getUUID());
-        if (PENDING.containsKey(player.getUUID()) || (last != null && now - last < MIN_GAP / rate)) return;
+        // right after a parry the riposte comes at once and at full strength, whatever the weapon's cooldown
+        boolean riposte = KatanaParry.riposteReady(player);
+        if (PENDING.containsKey(player.getUUID()) || (!riposte && last != null && now - last < MIN_GAP / rate)) return;
         LAST.put(player.getUUID(), now);
-        float charge = player.getAttackStrengthScale(0.5F);
+        float charge = riposte ? 1 : player.getAttackStrengthScale(0.5F);
         player.resetAttackStrengthTicker();
         PENDING.put(player.getUUID(), new Pending(step, now + Math.round(HIT_DELAY[step] / rate), charge));
         // everyone else watching plays the cut on this player's model
