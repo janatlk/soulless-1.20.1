@@ -343,6 +343,20 @@ public final class ClientForgeEvents {
     @SubscribeEvent
     public static void onAttackKey(InputEvent.InteractionKeyMappingTriggered event) {
         Minecraft mc = Minecraft.getInstance();
+        if (event.isAttack() && mc.player != null && mc.player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem) {
+            // the katana: clicks during a cut are ignored instead of cutting it short
+            KatanaAnim anim = KatanaAnim.of(mc.player);
+            if (anim != null && !anim.canAttack()) {
+                event.setCanceled(true);
+                event.setSwingHand(false);
+            } else if (anim != null) {
+                // tell the server which combo step this attack is before the attack itself reaches it
+                int step = anim.nextStep();
+                anim.announce(step);
+                com.soulless.network.ModNetwork.sendToServer(new com.soulless.network.KatanaCutPacket(step));
+            }
+            return;
+        }
         if (!event.isAttack() || mc.player == null || !(mc.player.getMainHandItem().getItem() instanceof SoulForgedItem)) return;
         if (ClientState.rendTicks(mc.player) >= 0) {
             // no attacks from the Soul Rend wind-up until its recovery ends

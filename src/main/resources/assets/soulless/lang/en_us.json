@@ -84,5 +84,7 @@
   "tooltip.soulless.soul_ring.gold": "  ✦ The sword glows with gold",
   "item.soulless.soul_katana": "Soul Katana",
   "tooltip.soulless.soul_katana.subtitle": "Two-handed katana",
-  "tooltip.soulless.soul_katana.stats": "⚔ %s damage · %s hits/s"
+  "tooltip.soulless.soul_katana.stats": "⚔ %s damage · %s hits/s",
+  "tooltip.soulless.soul_katana.combo": "Combo: diagonal cut, reverse cut, thrust",
+  "tooltip.soulless.soul_katana.thrust": "The thrust hits one target for ×%s damage"
 }

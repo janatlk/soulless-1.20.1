@@ -183,7 +183,7 @@ public final class DevAutoTestClient {
     }
 
     /** Katana cycle length, and the ticks into it of the two attacks (kesa, then gyaku as the combo). */
-    private static final int KATANA_CYCLE = 50, KATANA_KESA = 4, KATANA_GYAKU = 13;
+    private static final int KATANA_CYCLE = 66, KATANA_KESA = 4, KATANA_GYAKU = 18, KATANA_TSUKI = 32;
     private static final String[] KATANA_VIEWS = {"front", "side", "back", "fp"};
 
     /**
@@ -225,8 +225,13 @@ public final class DevAutoTestClient {
             sideCam.xRotO = 6;
             if (mc.getCameraEntity() != sideCam) mc.setCameraEntity(sideCam);
         }
-        if (c == KATANA_KESA || c == KATANA_GYAKU) p.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-        if (c <= 32 && cycle >= 1) shot(mc, String.format("katana_%s_%02d", view, c));
+        if (c == KATANA_KESA || c == KATANA_GYAKU || c == KATANA_TSUKI) {
+            // first person: a real attack-key press (announces the combo step, hits the dummy in front);
+            // with a stand as the camera the crosshair would pick the player itself, so just swing there
+            if (view.equals("fp") && mc.getCameraEntity() == p) net.minecraft.client.KeyMapping.click(mc.options.keyAttack.getKey());
+            else p.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+        }
+        if (c <= 58 && cycle >= 1) shot(mc, String.format("katana_%s_%02d", view, c));
     }
 
     /**

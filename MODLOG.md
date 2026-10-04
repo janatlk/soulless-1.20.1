@@ -95,3 +95,10 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
   - Held item frame: +X item rotation tilts the blade toward the shoulder, -X forward.
 - `KatanaPoses`: key poses + timelines (`guard@0 kesa_mid@1.5:in kesa_end@3 ...`), shared by third person and the first-person renderer (`KatanaFirstPerson`). Live tuning in dev via run/katana_tune.properties.
 - Autotest `SOULLESS_KATANA=1`: two cuts per 50-tick cycle, filmed front/side/back/fp; `tools/katana_sheet.py <view> out.png` makes contact sheets.
+
+## 2026-10-04 — Katana: bigger, slower, three-hit combo with a thrust
+- Katana 1.5x in hand (third person scale 0.75); first person rests upright on the right like Soul Forged.
+- Cuts rebuilt after a sword-animation guide: short wind-up, fastest at ~60-70% of the arc, follow-through past the target, then back to jodan (kesa 20 ticks, gyaku 21, tsuki 20). Jodan hands moved out of the head (a fist above and in front of the forehead, blade 45 degrees back).
+- No attack spam: clicks during a cut are cancelled until `<cut>.chain` ticks; attack speed 1.6/s to match.
+- Combo kesa -> gyaku -> tsuki. The client announces the step at click time (KatanaCutPacket, sent before the attack packet); `KatanaCombat` makes the thrust single-target (canPerformAction(SWORD_SWEEP) false) and x1.6 damage. Verified in autotest: cuts 9.84 to the target + 0.94 sweep to its neighbour, thrust 15.74 to the target only.
+- Autotest gotcha: with an armor-stand camera the crosshair picks the player itself, so real attack clicks only in the first-person view.

@@ -25,8 +25,8 @@ import java.util.function.Consumer;
 public class SoulKatanaItem extends SwordItem implements GeoItem {
     /** 1 (base) + 5 (tier) + 4 = 10 attack damage. */
     private static final int DAMAGE_MODIFIER = 4;
-    /** 4 - 2.2 = 1.8 attacks per second: quick cuts. */
-    private static final float ATTACK_SPEED_MODIFIER = -2.2F;
+    /** 4 - 2.4 = 1.6 attacks per second: the cooldown matches the cut animation. */
+    private static final float ATTACK_SPEED_MODIFIER = -2.4F;
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
@@ -40,6 +40,8 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         tooltip.add(Component.translatable(k + "subtitle").withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC));
         tooltip.add(Component.translatable(k + "stats", v(fmt(1 + getDamage())), v(fmt(4 + ATTACK_SPEED_MODIFIER)))
                 .withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "combo").withStyle(ChatFormatting.DARK_AQUA));
+        tooltip.add(Component.translatable(k + "thrust", v(fmt(KatanaCombat.THRUST_DAMAGE_MULT))).withStyle(ChatFormatting.GRAY));
     }
 
     private static Component v(Object value) {
@@ -48,6 +50,13 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
 
     private static String fmt(double v) {
         return v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(Math.round(v * 10) / 10.0);
+    }
+
+    /** The third step of the combo, the thrust, hits only its target. */
+    @Override
+    public boolean canPerformAction(ItemStack stack, net.minecraftforge.common.ToolAction action) {
+        if (action == net.minecraftforge.common.ToolActions.SWORD_SWEEP && KatanaCombat.noSweep(stack)) return false;
+        return super.canPerformAction(stack, action);
     }
 
     /** As a dropped item it survives fire, lava and explosions. */

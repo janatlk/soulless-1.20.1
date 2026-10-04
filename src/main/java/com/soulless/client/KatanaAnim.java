@@ -25,14 +25,19 @@ public final class KatanaAnim implements IAnimation {
     public static final ResourceLocation ID = Soulless.id("katana");
     /** Ticks to blend into / out of the stance when the katana is drawn or put away. */
     private static final float BLEND_TICKS = 4;
-    /** An attack within this many ticks after a cut ends continues the combo with the opposite diagonal. */
+    /** An attack within this many ticks after a cut ends continues the combo (kesa, gyaku, tsuki, then over). */
     private static final float COMBO_GRACE = 10;
+    /** The combo in order; the third step, the thrust, is {@link com.soulless.item.KatanaCombat#THRUST_STEP}. */
+    public static final String[] COMBO = {KatanaPoses.KESA, KatanaPoses.GYAKU, KatanaPoses.TSUKI};
 
     private final AbstractClientPlayer player;
     private float weight, weightO;
     private int age;
-    /** The cut playing (or last played): KESA / GYAKU, null before the first. */
+    /** The cut playing (or last played), null before the first; its index in {@link #COMBO}. */
     @Nullable private String cut;
+    private int step;
+    /** The step the local player's click already announced to the server (-1: none). */
+    private int announced = -1;
     private int cutStart;
     private boolean wasSwinging;
     private int lastSwingTime;
@@ -80,17 +85,27 @@ public final class KatanaAnim implements IAnimation {
     }
 
     private void startCut() {
-        if (cut != null) {
-            int since = age - cutStart;
-            if (since < KatanaPoses.number(cut + ".chain")) return;   // still in the strike
-            if (since < KatanaPoses.length(cut) + COMBO_GRACE) {
-                cut = cut.equals(KatanaPoses.KESA) ? KatanaPoses.GYAKU : KatanaPoses.KESA;
-                cutStart = age;
-                return;
-            }
-        }
-        cut = KatanaPoses.KESA;
+        if (!canAttack()) return;   // still in the strike
+        step = announced >= 0 ? announced : nextStep();
+        announced = -1;
+        cut = COMBO[step];
         cutStart = age;
+    }
+
+    /** Which combo step an attack made now would play: the next one if it follows the last cut closely, else the first. */
+    public int nextStep() {
+        if (cut != null && age - cutStart < KatanaPoses.length(cut) + COMBO_GRACE) return (step + 1) % COMBO.length;
+        return 0;
+    }
+
+    /** The local player clicked: this step was sent to the server and must be the one that plays. */
+    public void announce(int step) {
+        announced = step;
+    }
+
+    /** False while a cut is still being struck: the next attack has to wait for it (no spamming through cuts). */
+    public boolean canAttack() {
+        return cut == null || age - cutStart >= KatanaPoses.number(cut + ".chain");
     }
 
     /** The cut playing right now (null at rest) and its time in ticks. */

@@ -84,5 +84,7 @@
   "tooltip.soulless.soul_ring.gold": "  ✦ Меч сияет золотом",
   "item.soulless.soul_katana": "Катана душ",
   "tooltip.soulless.soul_katana.subtitle": "Двуручная катана",
-  "tooltip.soulless.soul_katana.stats": "⚔ %s урона · %s уд/с"
+  "tooltip.soulless.soul_katana.stats": "⚔ %s урона · %s уд/с",
+  "tooltip.soulless.soul_katana.combo": "Комбо: диагональный удар, обратный, укол",
+  "tooltip.soulless.soul_katana.thrust": "Укол бьёт одну цель с уроном ×%s"
 }

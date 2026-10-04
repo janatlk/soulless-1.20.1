@@ -53,6 +53,13 @@ public final class DevAutoTest {
     private static boolean chestLogged;
 
     @SubscribeEvent
+    public static void onDummyHurt(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+        if (KATANA && event.getEntity() instanceof Zombie z) {
+            Soulless.LOGGER.info("[autotest] katana t={} dummy x={} took {}", tick, String.format("%.1f", z.getX() - ARENA_X), event.getAmount());
+        }
+    }
+
+    @SubscribeEvent
     public static void onPlayerHurt(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
         if (BOSS && event.getEntity() instanceof ServerPlayer) {
             Soulless.LOGGER.info("[autotest] player hit by {} via {} for {}", event.getSource().getMsgId(),
@@ -221,6 +228,17 @@ public final class DevAutoTest {
                 p.setGameMode(GameType.SURVIVAL);
                 p.teleportTo(p.serverLevel(), ARENA_X, p.getY(), ARENA_Z, 0, 0);
                 p.getInventory().setItem(p.getInventory().selected, new ItemStack(ModItems.SOUL_KATANA.get()));
+                // a dummy right in front and one beside it: cuts sweep both, the thrust hits only the first
+                for (double dx : new double[]{0, 1.3}) {
+                    Zombie z = EntityType.ZOMBIE.create(p.serverLevel());
+                    z.moveTo(ARENA_X + dx, p.getY(), ARENA_Z + 2.2, 180, 0);
+                    z.setNoAi(true);
+                    z.setSilent(true);
+                    z.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE, 1_000_000, 0, false, false));
+                    z.getAttribute(Attributes.MAX_HEALTH).setBaseValue(1000);
+                    z.setHealth(1000);
+                    p.serverLevel().addFreshEntity(z);
+                }
             }
             return;
         }
