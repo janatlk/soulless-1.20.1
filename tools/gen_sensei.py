@@ -97,38 +97,33 @@ def sensei(rng):
         for x in range(6, 14):
             if abs(x - 9.5) < 2.4 - d * 0.6:
                 img[y, x] = noise(rng, WHITE, 5)
-    # ---- head (0,0): grey eyebrows, moustache and a long beard on the front face (8..15, rows 8..17)
+    # ---- head (0,0): an open face - grey eyebrows, a thin moustache at the corners of the mouth and a short grey
+    # goatee on the chin; grey at the temples
     for x in (9, 10, 13, 14):
         img[11, x] = noise(rng, GREY_L, 6)
-    for x in range(9, 15):
-        img[15, x] = noise(rng, GREY, 8)            # moustache (where the nose was)
-    for y in range(16, 18):
-        for x in range(8, 16):
-            img[y, x] = noise(rng, GREY if (x + y) % 3 else GREY_D, 8)
-    img[15, 8] = noise(rng, GREY_D, 4)
-    img[15, 15] = noise(rng, GREY_D, 4)
-    # sideburns down the sides (right 0..7, left 16..23)
-    for y in range(12, 18):
-        for x in (6, 7, 16, 17):
-            img[y, x] = noise(rng, GREY_D if y < 14 else GREY, 8)
-    # ---- hat layer (32,0): grey hair at the back and sides, a dark topknot line on top; the hachimaki around
+    for x in (9, 10, 13, 14):
+        img[15, x] = noise(rng, GREY, 6)            # moustache
+    for x in (11, 12):
+        img[16, x] = noise(rng, GREY, 6)
+    for x in (10, 11, 12, 13):
+        img[17, x] = noise(rng, GREY_D if x in (10, 13) else GREY, 6)   # goatee
+    for y in range(9, 13):
+        for x in (7, 16):
+            img[y, x] = noise(rng, GREY, 8)         # temples
+    # ---- hat layer (32,0): grey hair round the back and sides, a dark topknot line on top, a thin white
+    # hachimaki high on the brow, its knot and tails at the back (the face itself is left open)
     for y in range(8, 14):
-        for x in range(32, 64):
-            front = 40 <= x <= 47
-            if not front:
-                img[y, x] = noise(rng, GREY, 10)
+        for x in list(range(32, 40)) + list(range(48, 64)):
+            img[y, x] = noise(rng, GREY, 10)
     fill(40, 0, 47, 7, GREY)
     for y in range(1, 7):
         img[y, 43] = noise(rng, GREY_D, 4)
         img[y, 44] = noise(rng, OBI_L, 4)
     for x in range(32, 64):
-        img[9, x] = noise(rng, WHITE, 6)
-        img[10, x] = noise(rng, WHITE_D, 6)
-    # the red sun on the brow, and the knot's tails at the back
-    for x, y in ((43, 9), (44, 9), (43, 10), (44, 10)):
-        img[y, x] = RED
-    for x, y in ((59, 11), (60, 12), (58, 12), (59, 13)):
+        img[8, x] = noise(rng, WHITE, 5)
+    for x, y in ((59, 9), (60, 10), (58, 10), (59, 11), (61, 11)):
         img[y, x] = noise(rng, WHITE_D, 4)
+    img[8, 59] = RED
     return img
 
 

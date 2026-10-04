@@ -311,6 +311,8 @@ public final class DevAutoTest {
     }
 
     private static void tp(ServerPlayer p, double x, double y, double z, float yaw, float pitch) {
+        p.getAbilities().flying = true;   // hold the camera where it is put
+        p.onUpdateAbilities();
         p.teleportTo(p.serverLevel(), dojo.getX() + x, dojo.getY() + y, dojo.getZ() + z, yaw, pitch);
     }
 
@@ -319,15 +321,15 @@ public final class DevAutoTest {
         if (tick == 20) {
             p.getInventory().clearContent();
             p.setGameMode(GameType.CREATIVE);
-            dojo = net.minecraft.core.BlockPos.containing(ARENA_X - 6, p.getY(), ARENA_Z + 6);
+            dojo = net.minecraft.core.BlockPos.containing(ARENA_X - 18, p.getY(), ARENA_Z + 6);
             com.soulless.world.SenseiDojoPiece.buildAt(level, dojo);
             level.setDayTime(5000);
             Soulless.LOGGER.info("[autotest] dojo built at {}", dojo);
         }
-        if (tick == 30) tp(p, 6.5, 9, 31, 180, 18);      // the front, high
-        if (tick == 80) tp(p, 30, 9, 7.5, 90, 18);       // the yard side
-        if (tick == 130) tp(p, -12, 7, 20, 225, 16);     // three-quarter from the south-west
-        if (tick == 180) tp(p, 9.2, 1, 9.2, 135, 12);    // inside, toward the sensei
+        if (tick == 30) tp(p, 13.5, 7, 37, 180, 8);      // the front
+        if (tick == 80) tp(p, 16, 34, 48, 180, 42);      // from above, the whole layout
+        if (tick == 130) tp(p, -7, 8, 35, 220, 10);      // three-quarter from the south-west
+        if (tick == 180) tp(p, 18.5, 2, 15.5, 135, 8);   // inside, toward the tokonoma
         if (tick == 230) {
             var sensei = sensei(p);
             if (sensei != null) {

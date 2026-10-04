@@ -129,3 +129,9 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
 - Kitsune ritual: always 6 HP (3 hearts) via soulless:seppuku (bypasses armor/enchantments/effects) and it can kill: "%1$s умер с честью".
 - Parry: catches every blow in its window from any direction; a clean parry grants 2 s of the blessing and a white screen-edge glow; learned from the Scroll of Parrying (persisted NBT, survives death).
 - Open: balance needs a real fight test; katana / scroll acquisition in survival undecided; Reaper ult difficulty after softening unchecked.
+
+## 2026-10-05 — Sensei and his dojo
+- Sensei: villager profession soulless:sensei with no job site (heldJobSite/acquirable false -> no villager can take it up; villagerXp 1 so it is never reset); trades set on first join (SenseiTrades): 16 flesh/16 bones -> 1 emerald, 12 gunpowder/16 string -> 2; once each lesson was traded, the Scroll of Parrying for 16 emeralds, sold once. Nose hidden in render (SenseiRender); texture tools/gen_sensei.py.
+- Dojo structure (world/SenseiDojoStructure + SenseiDojoPiece, code-built 36x28): cherry_grove only, lowest corner >= y100, slope <= 9; structure_set spacing 24 / separation 8. Two-tier irimoya roof (5 hip steps then a low gable), shoji = open birch trapdoors, tokonoma with an item-frame sword, pond, torii, stone lanterns, training yard. `/soulless dojo` builds one by the player; autotest SOULLESS_DOJO photographs it and runs the trades.
+- Katana: cuts 25% quicker (kesa 15 / gyaku 15.75 ticks), side targets 70%, the thrust's dash stops 1.6 blocks short of the creature ahead; HUD slots (ritual R, parry RMB, blessing timer).
+- /soulless arena reports the weapon that dealt the most damage. Trial results (user, 10/22 mobs): netherite 13.9s/1.7 hearts, 29.1s/8; katana 13.6-18.3s/6-10, 36s/12; Soul Forged 12.6-15.2s/5-7, 23s/7.6.
