@@ -128,6 +128,11 @@ repositories {
             includeGroup("com.eliotlash.mclib")
         }
     maven {
+        // playerAnimator + bendy-lib (KosmX, MIT): katana stance and slashes with bending elbows and knees
+        name = 'KosmX'
+        url = 'https://maven.kosmx.dev/'
+    }
+    maven {
         // Curios API (ring / necklace / belt slots)
         name = 'Illusive Soars'
         url = 'https://maven.theillusivec4.top/'
@@ -153,6 +158,9 @@ dependencies {
     // Curios: the Soulsmith's Ring is worn in its ring slot (optional at runtime: without Curios the ring works from the inventory)
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
+    // playerAnimator: animates the player model while the katana is held; bendy-lib (optional at runtime) bends elbows/knees
+    implementation fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:${player_anim_version}")
+    runtimeOnly fg.deobf("io.github.kosmx.bendy-lib:bendy-lib-forge:${bendy_lib_version}")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

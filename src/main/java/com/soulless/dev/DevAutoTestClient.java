@@ -102,6 +102,10 @@ public final class DevAutoTestClient {
             if (tick == 240) mc.stop();
             return;
         }
+        if (DevAutoTest.KATANA) {
+            katanaTick(mc);
+            return;
+        }
         if (DevAutoTest.BOSS) {
             if (tick == 15) opts.setCameraType(CameraType.FIRST_PERSON);
             if (tick > 60 && tick % 30 == 0 && tick < 1800) shot(mc, String.format("boss_%04d", tick));
@@ -176,6 +180,53 @@ public final class DevAutoTestClient {
             if (tick == 260 + offsets[i]) shot(mc, String.format("2%d_front_t%02d", i, offsets[i]));
             if (tick == 420 + offsets[i]) shot(mc, String.format("3%d_fp_t%02d", i, offsets[i]));
         }
+    }
+
+    /** Katana cycle length, and the ticks into it of the two attacks (kesa, then gyaku as the combo). */
+    private static final int KATANA_CYCLE = 50, KATANA_KESA = 4, KATANA_GYAKU = 13;
+    private static final String[] KATANA_VIEWS = {"front", "side", "back", "fp"};
+
+    /**
+     * SOULLESS_KATANA: the player stands still facing south; every cycle it attacks twice (kesa-giri, gyaku-kesa).
+     * Each cycle is filmed from the next view (front-left three-quarter, left side, back-right, first person),
+     * a frame every tick, overwriting the last loop: edit run/katana_tune.properties and wait for the next pass.
+     */
+    private static void katanaTick(Minecraft mc) {
+        if (tick < 40) return;
+        int k = tick - 40;
+        int cycle = k / KATANA_CYCLE, c = k % KATANA_CYCLE;
+        String view = KATANA_VIEWS[cycle % KATANA_VIEWS.length];
+        var p = mc.player;
+        p.setYRot(0);
+        p.setXRot(0);
+        p.yBodyRot = p.yBodyRotO = p.yHeadRot = p.yHeadRotO = 0;
+        mc.options.hideGui = !view.equals("fp");   // F1 also hides the first-person hand
+        if (view.equals("fp")) {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            if (mc.getCameraEntity() != p) mc.setCameraEntity(p);
+        } else {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);   // the camera entity is the stand: no third-person offset
+            double[] off = switch (view) {
+                case "front" -> new double[]{2.2, 3.4};
+                case "side" -> new double[]{4.2, 0.3};
+                default -> new double[]{-1.8, -3.6};
+            };
+            if (sideCam == null || sideCam.level() != mc.level) {
+                sideCam = new ArmorStand(EntityType.ARMOR_STAND, mc.level);
+                sideCam.setInvisible(true);
+                mc.level.putNonPlayerEntity(-777_777, sideCam);
+            }
+            double cx = p.getX() + off[0], cz = p.getZ() + off[1];
+            float yaw = (float) Math.toDegrees(Math.atan2(-(p.getX() - cx), p.getZ() - cz));
+            sideCam.moveTo(cx, p.getY() + 1.1 - sideCam.getEyeHeight(), cz, yaw, 6);
+            sideCam.setYHeadRot(yaw);
+            sideCam.yHeadRotO = yaw;
+            sideCam.yRotO = yaw;
+            sideCam.xRotO = 6;
+            if (mc.getCameraEntity() != sideCam) mc.setCameraEntity(sideCam);
+        }
+        if (c == KATANA_KESA || c == KATANA_GYAKU) p.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+        if (c <= 32 && cycle >= 1) shot(mc, String.format("katana_%s_%02d", view, c));
     }
 
     /**

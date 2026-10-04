@@ -56,6 +56,12 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onModels(ModelEvent.RegisterAdditional event) {
         event.register(SoulForgedRenderer.ICON_MODEL);
+        event.register(KatanaRenderer.ICON_MODEL);
+    }
+
+    @SubscribeEvent
+    public static void onClientSetup(net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
+        KatanaAnim.register();
     }
 
     private ClientModEvents() {}

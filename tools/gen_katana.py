@@ -393,6 +393,88 @@ def render(base, views, scale=14, sub=3):
     return Image.fromarray(np.clip(np.concatenate(out, axis=1), 0, 255).astype(np.uint8))
 
 
+def icon(base=None, size=32):
+    """Inventory icon, pixel art in Soul Forged's icon palette (lavender steel, violet glow, bone guard, dark
+    violet grip, a soul gem in the pommel, near-black outline): the katana on the diagonal, point to the top
+    right, the blade bowed so its edge is the convex side."""
+    OUT = (18, 10, 24)
+    BACK, BODY, LIGHT, SHINE = (94, 86, 130), (133, 125, 176), (163, 155, 202), (200, 193, 232)
+    GLOW, GLOW2, GLOW3 = (94, 20, 148), (150, 44, 222), (196, 108, 255)
+    BONE, BONE_D, GOLD = (201, 188, 156), (168, 154, 125), (227, 217, 191)
+    GRIP, GRIP_L, GRIP_D = (40, 30, 54), (57, 30, 47), (28, 14, 23)
+    GEM, GEM_L = (164, 60, 240), (234, 184, 255)
+
+    p0, p1 = np.array([3.6, 28.4]), np.array([28.6, 3.4])    # pommel, tip (y down)
+    L = np.linalg.norm(p1 - p0)
+    u = (p1 - p0) / L
+    n = np.array([u[1], -u[0]])                                 # perpendicular toward the bottom right: the edge
+    if n[0] < 0:
+        n = -n
+    T_GUARD, T_BLADE = 0.25, 0.30
+    samples = np.linspace(0, 1, 600)
+
+    def centre(t):
+        s = np.clip((t - T_BLADE) / (1 - T_BLADE), 0, 1)
+        return p0 + u * (t * L) - n * (2.6 * s ** 1.6)          # the blade bows away from the edge
+
+    pts = np.array([centre(t) for t in samples])
+    img = np.zeros((size, size, 4), np.uint8)
+    for y in range(size):
+        for x in range(size):
+            c = np.array([x + 0.5, y + 0.5])
+            i = int(np.argmin(((pts - c) ** 2).sum(axis=1)))
+            t = samples[i]
+            tang = pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]
+            tang /= np.linalg.norm(tang)
+            nn = np.array([tang[1], -tang[0]])
+            if nn[0] < 0:
+                nn = -nn
+            d = float(np.dot(c - pts[i], nn))                   # + toward the edge
+            along = float(np.dot(c - pts[i], tang))
+            col = None
+            if t <= 0.0 and along < -0.9:
+                col = None
+            elif t < 0.035:                                     # pommel cap with its soul gem
+                if abs(d) < 1.6:
+                    col = GEM_L if d < -0.3 and along < 0 else GEM
+            elif t < T_GUARD - 0.02:                            # wrapped grip: diamond windows
+                if abs(d) < 1.45:
+                    k = int(t * L * 1.1)
+                    if abs(d) < 0.55:
+                        col = GLOW if k % 2 == 0 else GRIP_L
+                    else:
+                        col = GRIP if (k + (d > 0)) % 2 == 0 else GRIP_D
+            elif t < T_GUARD + 0.035:                           # tsuba: a bar across the blade line
+                if abs(d) < 3.4 and abs(along) < 1.25 and not (abs(d) > 2.6 and abs(along) > 0.7):
+                    col = BONE if d < 0 else BONE_D
+            elif t < T_BLADE:                                   # habaki collar
+                if abs(d) < 1.5:
+                    col = GOLD
+            elif t <= 1.0:
+                s = (t - T_BLADE) / (1 - T_BLADE)
+                half = 1.55 - 0.75 * max(0.0, (s - 0.82) / 0.18)     # the point narrows over the last part
+                tip = s > 0.985
+                if abs(d) < half and not (tip and along > 0.2):
+                    k = int(t * L)
+                    if d < -0.55:
+                        col = BACK                                   # the back (mune)
+                    elif d > 0.55:
+                        col = SHINE if (k % 5) else LIGHT            # the polished edge
+                    else:                                            # the hamon: a violet glow along the temper line
+                        col = (GLOW3 if k % 4 == 0 else GLOW2) if 0.15 < s < 0.92 else BODY
+                    if s > 0.93:
+                        col = SHINE
+            if col is not None:
+                img[y, x] = (*col, 255)
+    mask = img[:, :, 3] > 0
+    edge = np.zeros_like(mask)
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        edge |= np.roll(np.roll(mask, dx, 1), dy, 0)
+    edge &= ~mask
+    img[edge] = (*OUT, 255)
+    return Image.fromarray(img, "RGBA")
+
+
 def main():
     build()
     base, tex_h = pack_and_paint()
@@ -401,6 +483,10 @@ def main():
     (t / f"{NAME}.png").write_bytes(tex_png)
     write_geo(tex_h)
     write_bbmodel(tex_png, tex_h)
+    ic = icon(base)
+    ic.save(t / f"{NAME}_icon.png")
+    if "--icon-preview" in sys.argv:
+        ic.resize((256, 256), Image.NEAREST).save(sys.argv[sys.argv.index("--icon-preview") + 1])
     if "--preview" in sys.argv:
         render(base, [(0, 0), (40, 15), (90, 0), (180, 0)]).save(sys.argv[sys.argv.index("--preview") + 1])
     print(f"{NAME}: cubes={len(CUBES)} texture={TEX_W}x{tex_h}")

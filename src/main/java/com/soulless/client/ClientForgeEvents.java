@@ -311,7 +311,7 @@ public final class ClientForgeEvents {
         ClientState.renderingPlayer = p;
         // both hands are on the greatsword: whatever is in the off hand is put away while it renders
         hiddenOffhand = ItemStack.EMPTY;
-        if (p.getMainHandItem().getItem() instanceof SoulForgedItem && !p.getOffhandItem().isEmpty()) {
+        if (com.soulless.item.TwoHanded.twoHanded(p.getMainHandItem().getItem()) && !p.getOffhandItem().isEmpty()) {
             hiddenOffhand = p.getOffhandItem();
             p.getInventory().offhand.set(0, ItemStack.EMPTY);
         }
@@ -363,8 +363,14 @@ public final class ClientForgeEvents {
     public static void onRenderHand(RenderHandEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (event.getHand() == InteractionHand.OFF_HAND && mc.player != null
-                && mc.player.getMainHandItem().getItem() instanceof SoulForgedItem) {
-            event.setCanceled(true);   // the off hand is on the greatsword's grip
+                && com.soulless.item.TwoHanded.twoHanded(mc.player.getMainHandItem().getItem())) {
+            event.setCanceled(true);   // the off hand is on the grip
+            return;
+        }
+        if (event.getHand() == InteractionHand.MAIN_HAND && mc.player != null
+                && event.getItemStack().getItem() instanceof com.soulless.item.SoulKatanaItem) {
+            event.setCanceled(true);
+            if (mc.getCameraEntity() == mc.player) KatanaFirstPerson.render(event, mc.player, event.getItemStack());
             return;
         }
         if (event.getHand() != InteractionHand.MAIN_HAND || mc.player == null

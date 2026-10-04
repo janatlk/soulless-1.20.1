@@ -42,6 +42,8 @@ public final class DevAutoTest {
     public static final boolean BOSS = ENABLED && System.getenv("SOULLESS_BOSS") != null;
     /** SOULLESS_PREVIEW=1: a preview statue of the Reaper photographed from four sides. */
     public static final boolean PREVIEW = ENABLED && System.getenv("SOULLESS_PREVIEW") != null;
+    /** SOULLESS_KATANA=1: the katana in hand, two cuts every cycle, filmed from four views (live pose tuning). */
+    public static final boolean KATANA = ENABLED && System.getenv("SOULLESS_KATANA") != null;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
     private static final double ARENA_X = 300.5, ARENA_Z = 0.5;
@@ -81,10 +83,10 @@ public final class DevAutoTest {
         level.setDayTime(6000);
         p.setGameMode(GameType.CREATIVE);
         p.getInventory().clearContent();
-        p.getInventory().setItem(0, new ItemStack(ModItems.SOUL_FORGED.get()));
+        p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -210,6 +212,16 @@ public final class DevAutoTest {
                 RendManager.tryStart(p);
             }
             if (tick == 520) Soulless.LOGGER.info("[autotest] check done");
+            return;
+        }
+        if (KATANA) {
+            if (tick == 20) {
+                p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(60), e -> !(e instanceof ServerPlayer))
+                        .forEach(LivingEntity::discard);
+                p.setGameMode(GameType.SURVIVAL);
+                p.teleportTo(p.serverLevel(), ARENA_X, p.getY(), ARENA_Z, 0, 0);
+                p.getInventory().setItem(p.getInventory().selected, new ItemStack(ModItems.SOUL_KATANA.get()));
+            }
             return;
         }
         if (TUNE_REND) {

@@ -84,3 +84,14 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
   no curse/knockback/height scaling. Soul Rend = hold to charge (3 s), the cut only releases the beam: 30-60 dmg by
   charge, stopped by blocks, 5% lifesteal (0.5-1 heart per beam), no knockback/stun/cleanse, no recovery.
   Both share the sword's 12 s item cooldown. Soulsmith's Ring (Curios) is cosmetic + 1 s longer sword stuns.
+
+## 2026-10-04 — Katana as an item: jodan stance + kesa/gyaku cuts (playerAnimator)
+- Item `soul_katana` (SoulKatanaItem: 10 dmg, 1.8 hits/s, two-handed, no abilities yet), GeckoLib renderer, pixel icon in the Soul Forged icon palette (tools/gen_katana.py `icon()`).
+- Player animation: playerAnimator 1.0.2-rc1+1.20 (MIT, maven.kosmx.dev, mandatory client dep) + bendy-lib-forge 4.0.0 (MIT, optional; elbows/knees/waist bend only when present).
+  - `KatanaAnim` is a procedural IAnimation registered with `PlayerAnimationFactory.ANIMATION_DATA_FACTORY` in FMLClientSetupEvent.
+  - Gotcha: AnimationStack only ticks *active* layers, so isActive() must turn true by itself when the katana is drawn.
+  - Part names: head, torso (body ModelPart), rightArm/leftArm/rightLeg/leftLeg, body (whole-body matrix, and its BEND bends at the waist carrying arms+head), rightItem/leftItem (extra item transform in the hand). Values are absolute (value0 = vanilla), radians, positions in pixels.
+  - Elbow bend: negative angle bends the natural way; knees positive.
+  - Held item frame: +X item rotation tilts the blade toward the shoulder, -X forward.
+- `KatanaPoses`: key poses + timelines (`guard@0 kesa_mid@1.5:in kesa_end@3 ...`), shared by third person and the first-person renderer (`KatanaFirstPerson`). Live tuning in dev via run/katana_tune.properties.
+- Autotest `SOULLESS_KATANA=1`: two cuts per 50-tick cycle, filmed front/side/back/fp; `tools/katana_sheet.py <view> out.png` makes contact sheets.

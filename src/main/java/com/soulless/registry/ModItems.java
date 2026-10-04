@@ -15,6 +15,10 @@ public final class ModItems {
     public static final RegistryObject<Item> SOUL_FORGED = ITEMS.register("soul_forged",
             () -> new SoulForgedItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));
 
+    /** A fast two-handed katana: jodan stance and alternating diagonal cuts (abilities still to come). */
+    public static final RegistryObject<Item> SOUL_KATANA = ITEMS.register("soul_katana",
+            () -> new com.soulless.item.SoulKatanaItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));
+
     /** Worn with Soul Forged (Curios ring slot): a higher, harder Soul Crush usable in mid-air, a faster Soul Rend with no recovery. */
     public static final RegistryObject<Item> SOUL_RING = ITEMS.register("soul_ring",
             () -> new com.soulless.item.SoulRingItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));

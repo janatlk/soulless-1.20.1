@@ -81,5 +81,8 @@
   "tooltip.soulless.soul_forged.d.rend.9": "  Вампиризм: %s%% нанесённого урона (½–1 ❤)",
   "tooltip.soulless.soul_forged.d.cd": "  Общая перезарядка Сокрушения и Разреза: %s с",
   "tooltip.soulless.soul_ring.stun": "  ✦ Оглушения от меча длятся на %s с дольше",
-  "tooltip.soulless.soul_ring.gold": "  ✦ Меч сияет золотом"
+  "tooltip.soulless.soul_ring.gold": "  ✦ Меч сияет золотом",
+  "item.soulless.soul_katana": "Катана душ",
+  "tooltip.soulless.soul_katana.subtitle": "Двуручная катана",
+  "tooltip.soulless.soul_katana.stats": "⚔ %s урона · %s уд/с"
 }
