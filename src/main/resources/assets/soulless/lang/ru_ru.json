@@ -86,5 +86,9 @@
   "tooltip.soulless.soul_katana.subtitle": "Двуручная катана",
   "tooltip.soulless.soul_katana.stats": "⚔ %s урона · %s уд/с",
   "tooltip.soulless.soul_katana.combo": "Комбо: диагональный удар, обратный, укол",
-  "tooltip.soulless.soul_katana.thrust": "Укол бьёт одну цель с уроном ×%s"
+  "tooltip.soulless.soul_katana.thrust": "Укол бьёт одну цель с уроном ×%s",
+  "subtitles.soulless.katana_swing": "Свист катаны",
+  "subtitles.soulless.katana_thrust": "Укол катаной",
+  "subtitles.soulless.katana_hit": "Катана рассекает",
+  "subtitles.soulless.katana_dash": "Резкий выпад"
 }

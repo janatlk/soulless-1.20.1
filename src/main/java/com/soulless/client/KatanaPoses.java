@@ -59,7 +59,6 @@ public final class KatanaPoses {
         def("kesa_mid.torso", "0 -15 0");
         def("kesa_mid.waist", "0 8");
         def("kesa_mid.item", "-30 0 0");
-        def("kesa_mid.fp", "0.55 -0.55 -1.2 10 90 -45");
         def("kesa_end.rArm", "-45 -30 0");
         def("kesa_end.lArm", "-40 -20 0");
         def("kesa_end.rBend", "0 -8");
@@ -71,7 +70,6 @@ public final class KatanaPoses {
         def("kesa_end.rLegBend", "0 34");
         def("kesa_end.lLegBend", "0 48");
         def("kesa_end.item", "-60 0 0");
-        def("kesa_end.fp", "-0.05 -0.75 -1.3 -10 90 120");
 
         // gyaku-kesa: the blade swings over to the left shoulder, then cuts down across to the right hip
         def("gyaku_wind.rArm", "-160 35 -20");
@@ -84,7 +82,6 @@ public final class KatanaPoses {
         def("gyaku_wind.rLegBend", "0 30");
         def("gyaku_wind.lLegBend", "0 38");
         def("gyaku_wind.item", "-35 0 0");
-        def("gyaku_wind.fp", "-0.25 -0.85 -1.1 15 90 30");
         def("gyaku_end.rArm", "-35 30 0");
         def("gyaku_end.lArm", "-40 38 0");
         def("gyaku_end.rBend", "0 -15");
@@ -96,7 +93,43 @@ public final class KatanaPoses {
         def("gyaku_end.rLegBend", "0 34");
         def("gyaku_end.lLegBend", "0 48");
         def("gyaku_end.item", "-80 0 0");
-        def("gyaku_end.fp", "0.45 -0.75 -1.3 -10 90 -120");
+
+        // the wind-ups and follow-throughs of the two cuts
+        def("kesa_wind.rArm", "-153 5 16");
+        def("kesa_wind.lArm", "-150 5 -12");
+        def("kesa_wind.rBend", "0 -25");
+        def("kesa_wind.lBend", "0 -30");
+        def("kesa_wind.torso", "0 6 0");
+        def("kesa_wind.item", "-32 0 0");
+        def("kesa_follow.rArm", "-25 -45 0");
+        def("kesa_follow.lArm", "-20 -35 0");
+        def("kesa_follow.rBend", "0 -5");
+        def("kesa_follow.lBend", "0 -10");
+        def("kesa_follow.torso", "0 -40 0");
+        def("kesa_follow.waist", "0 20");
+        def("kesa_follow.rLeg", "14 0 5");
+        def("kesa_follow.lLeg", "-40 0 -5");
+        def("kesa_follow.rLegBend", "0 34");
+        def("kesa_follow.lLegBend", "0 52");
+        def("kesa_follow.item", "-30 0 0");
+        def("gyaku_mid.rArm", "-118 22 -8");
+        def("gyaku_mid.lArm", "-110 28 -14");
+        def("gyaku_mid.rBend", "0 -18");
+        def("gyaku_mid.lBend", "0 -18");
+        def("gyaku_mid.torso", "0 12 0");
+        def("gyaku_mid.waist", "0 8");
+        def("gyaku_mid.item", "-30 0 0");
+        def("gyaku_follow.rArm", "-25 45 0");
+        def("gyaku_follow.lArm", "-30 52 0");
+        def("gyaku_follow.rBend", "0 -10");
+        def("gyaku_follow.lBend", "0 -5");
+        def("gyaku_follow.torso", "0 35 0");
+        def("gyaku_follow.waist", "0 20");
+        def("gyaku_follow.rLeg", "14 0 5");
+        def("gyaku_follow.lLeg", "-40 0 -5");
+        def("gyaku_follow.rLegBend", "0 34");
+        def("gyaku_follow.lLegBend", "0 52");
+        def("gyaku_follow.item", "-40 0 0");
 
         // tsuki (queued during gyaku): instead of jodan the blade is drawn in to the right hip, both hands on the
         // grip at the belt, the point aimed at the opponent (wind); the body coils - knees deep, hips low and back
@@ -114,11 +147,6 @@ public final class KatanaPoses {
         def("tsuki_load.lLegBend", "0 75");
         def("tsuki_load.bodyPos", "0 -3.5 -1.5");
         def("tsuki_load.item", "-60 0 0");
-        def("tsuki_load.fp", "0.5 -0.75 -0.95 -72 90 14");
-        def("kesa_wind.fp", "0.7 -0.85 -1.1 15 90 -18");
-        def("kesa_follow.fp", "-0.35 -0.9 -1.3 -10 90 140");
-        def("gyaku_mid.fp", "-0.15 -0.55 -1.2 10 90 45");
-        def("gyaku_follow.fp", "0.7 -0.9 -1.3 -10 90 -140");
         def("tsuki_wind.rArm", "-20 -15 0");
         def("tsuki_wind.lArm", "-35 30 0");
         def("tsuki_wind.rBend", "0 -60");
@@ -130,7 +158,6 @@ public final class KatanaPoses {
         def("tsuki_wind.rLegBend", "0 40");
         def("tsuki_wind.lLegBend", "0 50");
         def("tsuki_wind.item", "-62 0 0");
-        def("tsuki_wind.fp", "0.45 -0.7 -1.1 -75 90 12");
         def("tsuki_wind.bodyPos", "0 -1.5 0");
         def("tsuki_end.rArm", "-50 -8 0");
         def("tsuki_end.lArm", "-58 22 0");
@@ -144,7 +171,6 @@ public final class KatanaPoses {
         def("tsuki_end.lLegBend", "0 80");
         def("tsuki_end.bodyPos", "0 -4 4");
         def("tsuki_end.item", "-55 0 0");
-        def("tsuki_end.fp", "0.3 -0.55 -1.4 -80 90 10");
 
         def("kesa.keys", "guard@0 kesa_wind@3:out kesa_mid@5:in kesa_end@8:lin kesa_follow@11:out kesa_follow@13 guard@20:inout");
         def("gyaku.keys", "guard@0 gyaku_wind@4:out gyaku_mid@6:in gyaku_end@9:lin gyaku_follow@12:out gyaku_follow@14 guard@21:inout");
@@ -161,7 +187,27 @@ public final class KatanaPoses {
         def("kesa.fade", "2");
         def("gyaku.fade", "2");
         def("tsuki.fade", "5");
+        // first person: its own simpler timelines, one clean arc per cut with the grip low (out of the way of the
+        // camera) and the blade turned flat to the view so its edge leads the swing; after each cut the blade drops
+        // out of view and rises back into the guard. fp = tx ty tz (camera space) rx ry rz (degrees):
+        // rz leans the blade (0 up, + to the left), rx tips it back toward the camera, ry spins it about itself
+        def("fk_wind.fp", "0.78 -0.85 -1.1 8 90 -35");
+        def("fk_end.fp", "0.0 -0.8 -1.2 0 90 118");
+        def("fk_follow.fp", "-0.15 -0.9 -1.2 0 90 130");
+        def("fk_low.fp", "0.5 -1.6 -1.1 0 90 60");
+        def("fg_wind.fp", "0.1 -0.85 -1.1 8 90 35");
+        def("fg_end.fp", "0.8 -0.8 -1.2 0 90 -118");
+        def("fg_follow.fp", "0.92 -0.9 -1.2 0 90 -130");
+        def("fg_low.fp", "0.62 -1.6 -1.1 0 90 -60");
+        def("ft_chamber.fp", "0.42 -0.62 -0.9 -82 90 14");
+        def("ft_load.fp", "0.48 -0.7 -0.62 -80 90 16");
+        def("ft_end.fp", "0.22 -0.48 -1.4 -88 90 6");
+        def("ft_low.fp", "0.5 -1.5 -1.1 -30 90 0");
+        def("kesa.fpkeys", "guard@0 fk_wind@3:out fk_end@8:inout fk_follow@12:out fk_low@16:in guard@20:out");
+        def("gyaku.fpkeys", "guard@0 fg_wind@4:out fg_end@9:inout fg_follow@13:out fg_low@17:in guard@21:out");
+        def("tsuki.fpkeys", "ft_chamber@0 ft_chamber@6 ft_load@8:inout ft_end@9.5:out ft_end@13 ft_low@17:in guard@22:out");
         def("fp.scale", "0.45");
+        validate();
     }
 
     private static void def(String k, String v) {
@@ -180,6 +226,7 @@ public final class KatanaPoses {
             P.putAll(loaded);
             CACHE.clear();
             TIMELINES.clear();
+            validate();
         } catch (Exception e) {
             Soulless.LOGGER.warn("katana_tune.properties: {}", e.toString());
         }
@@ -208,10 +255,27 @@ public final class KatanaPoses {
 
     private record Key(String pose, float time, String ease) {}
 
+    /**
+     * Every pose a third-person timeline names must exist (at least its arms): a missing pose would silently
+     * sample as all zeros - arms hanging down mid-cut, which reads as a jerk.
+     */
+    private static void validate() {
+        for (String cut : new String[]{KESA, GYAKU, TSUKI}) {
+            for (Key k : timeline(cut)) {
+                if (!P.containsKey(k.pose + ".rArm")) Soulless.LOGGER.error("katana pose '{}' (in {}) is not defined", k.pose, cut);
+            }
+            for (Key k : timeline(cut + "#fp")) {
+                if (!P.containsKey(k.pose + ".fp")) Soulless.LOGGER.error("katana first-person pose '{}' (in {}) is not defined", k.pose, cut);
+            }
+        }
+    }
+
+    /** A timeline by name; "name#fp" is its first-person version (name.fpkeys), when it has one. */
     private static List<Key> timeline(String name) {
         return TIMELINES.computeIfAbsent(name, n -> {
             List<Key> keys = new ArrayList<>();
-            for (String tok : P.getProperty(n + ".keys", GUARD + "@0").trim().split("\\s+")) {
+            String prop = n.endsWith("#fp") ? n.substring(0, n.length() - 3) + ".fpkeys" : n + ".keys";
+            for (String tok : P.getProperty(prop, GUARD + "@0").trim().split("\\s+")) {
                 String[] at = tok.split("@");
                 String[] te = at[1].split(":");
                 keys.add(new Key(at[0], Float.parseFloat(te[0]), te.length > 1 ? te[1] : "smooth"));
@@ -234,7 +298,7 @@ public final class KatanaPoses {
             System.arraycopy(field(GUARD, field, out.length), 0, out, 0, out.length);
             return out;
         }
-        List<Key> keys = timeline(name);
+        List<Key> keys = timeline(field.equals("fp") && P.containsKey(name + ".fpkeys") ? name + "#fp" : name);
         Key a = keys.get(0), b = a;
         for (int i = 1; i < keys.size(); i++) {
             b = keys.get(i);

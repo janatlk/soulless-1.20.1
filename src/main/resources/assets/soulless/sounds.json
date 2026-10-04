@@ -1,8 +1,12 @@
 {
-  "slam_windup": { "subtitle": "subtitles.soulless.slam_windup", "sounds": ["soulless:slam_windup"] },
-  "slam_impact": { "subtitle": "subtitles.soulless.slam_impact", "sounds": [{ "name": "soulless:slam_impact", "attenuation_distance": 32 }] },
-  "curse_ignite": { "subtitle": "subtitles.soulless.curse_ignite", "sounds": ["soulless:curse_ignite"] },
-  "reaper_scream": { "subtitle": "subtitles.soulless.reaper_scream", "sounds": [{ "name": "soulless:reaper_scream", "attenuation_distance": 64 }] },
-  "bolt_fly": { "subtitle": "subtitles.soulless.bolt_fly", "sounds": [{ "name": "soulless:bolt_fly", "attenuation_distance": 32 }] },
-  "eruption": { "subtitle": "subtitles.soulless.eruption", "sounds": [{ "name": "soulless:eruption", "attenuation_distance": 32 }] }
+  "slam_windup": {"subtitle": "subtitles.soulless.slam_windup", "sounds": ["soulless:slam_windup"]},
+  "slam_impact": {"subtitle": "subtitles.soulless.slam_impact", "sounds": [{"name": "soulless:slam_impact", "attenuation_distance": 32}]},
+  "curse_ignite": {"subtitle": "subtitles.soulless.curse_ignite", "sounds": ["soulless:curse_ignite"]},
+  "reaper_scream": {"subtitle": "subtitles.soulless.reaper_scream", "sounds": [{"name": "soulless:reaper_scream", "attenuation_distance": 64}]},
+  "bolt_fly": {"subtitle": "subtitles.soulless.bolt_fly", "sounds": [{"name": "soulless:bolt_fly", "attenuation_distance": 32}]},
+  "eruption": {"subtitle": "subtitles.soulless.eruption", "sounds": [{"name": "soulless:eruption", "attenuation_distance": 32}]},
+  "katana_swing": {"subtitle": "subtitles.soulless.katana_swing", "sounds": ["soulless:katana_swing1", "soulless:katana_swing2", "soulless:katana_swing3"]},
+  "katana_thrust": {"subtitle": "subtitles.soulless.katana_thrust", "sounds": ["soulless:katana_thrust"]},
+  "katana_hit": {"subtitle": "subtitles.soulless.katana_hit", "sounds": ["soulless:katana_hit"]},
+  "katana_dash": {"subtitle": "subtitles.soulless.katana_dash", "sounds": ["soulless:katana_dash"]}
 }

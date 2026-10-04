@@ -86,5 +86,9 @@
   "tooltip.soulless.soul_katana.subtitle": "Two-handed katana",
   "tooltip.soulless.soul_katana.stats": "⚔ %s damage · %s hits/s",
   "tooltip.soulless.soul_katana.combo": "Combo: diagonal cut, reverse cut, thrust",
-  "tooltip.soulless.soul_katana.thrust": "The thrust hits one target for ×%s damage"
+  "tooltip.soulless.soul_katana.thrust": "The thrust hits one target for ×%s damage",
+  "subtitles.soulless.katana_swing": "Katana swishes",
+  "subtitles.soulless.katana_thrust": "Katana thrusts",
+  "subtitles.soulless.katana_hit": "Katana cuts",
+  "subtitles.soulless.katana_dash": "Someone lunges"
 }

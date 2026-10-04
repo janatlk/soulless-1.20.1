@@ -199,13 +199,22 @@ public final class DevAutoTestClient {
         String view = KATANA_VIEWS[cycle % KATANA_VIEWS.length];
         var p = mc.player;
         if (katanaHome == null) katanaHome = p.position();
-        if (c == 0) {   // back to the start after the thrust's dash
+        if (c == 0) {   // back to the start after the thrust's dash - on the server too, where the hits are resolved
             p.setPos(katanaHome.x, katanaHome.y, katanaHome.z);
             p.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+            var server = mc.getSingleplayerServer();
+            var home = katanaHome;
+            if (server != null) server.execute(() -> {
+                var sp = server.getPlayerList().getPlayer(p.getUUID());
+                if (sp != null) sp.teleportTo(sp.serverLevel(), home.x, home.y, home.z, 0, 0);
+            });
         }
         p.setYRot(0);
         p.setXRot(0);
-        p.yBodyRot = p.yBodyRotO = p.yHeadRot = p.yHeadRotO = 0;
+        p.yHeadRot = p.yHeadRotO = 0;
+        // the body is left to the game (and to KatanaAnim) except at the start of a cycle, where it is turned 30
+        // degrees off the look so a cut that snapped it around would show
+        if (c == 0) p.yBodyRot = p.yBodyRotO = 30;
         mc.options.hideGui = !view.equals("fp");   // F1 also hides the first-person hand
         if (view.equals("fp")) {
             mc.options.setCameraType(CameraType.FIRST_PERSON);
@@ -233,7 +242,9 @@ public final class DevAutoTestClient {
         }
         // real attack-key presses: kesa, gyaku, then a press during gyaku that queues the thrust
         // (the katana ignores the crosshair, so a stand camera picking the player is harmless)
-        if (c == KATANA_KESA || c == KATANA_GYAKU || c == KATANA_TSUKI) net.minecraft.client.KeyMapping.click(mc.options.keyAttack.getKey());
+        if (c == KATANA_KESA || c == KATANA_GYAKU || c == KATANA_TSUKI) {
+            net.minecraft.client.KeyMapping.click(mc.options.keyAttack.getKey());
+        }
         if (c <= 58 && cycle >= 1) shot(mc, String.format("katana_%s_%02d", view, c));
     }
 

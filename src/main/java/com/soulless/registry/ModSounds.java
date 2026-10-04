@@ -15,6 +15,11 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> REAPER_SCREAM = sound("reaper_scream");
     public static final RegistryObject<SoundEvent> BOLT_FLY = sound("bolt_fly");
     public static final RegistryObject<SoundEvent> ERUPTION = sound("eruption");
+    /** Katana: the blade cutting air (three variants), the thrust, a hit, the lunge's dash. */
+    public static final RegistryObject<SoundEvent> KATANA_SWING = sound("katana_swing");
+    public static final RegistryObject<SoundEvent> KATANA_THRUST = sound("katana_thrust");
+    public static final RegistryObject<SoundEvent> KATANA_HIT = sound("katana_hit");
+    public static final RegistryObject<SoundEvent> KATANA_DASH = sound("katana_dash");
 
     private static RegistryObject<SoundEvent> sound(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(Soulless.id(name)));

@@ -41,6 +41,9 @@ public final class ModNetwork {
         CHANNEL.messageBuilder(KatanaCutPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(KatanaCutPacket::encode).decoder(KatanaCutPacket::decode)
                 .consumerMainThread(KatanaCutPacket::handle).add();
+        CHANNEL.messageBuilder(KatanaAnimPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(KatanaAnimPacket::encode).decoder(KatanaAnimPacket::decode)
+                .consumerMainThread(KatanaAnimPacket::handle).add();
         CHANNEL.messageBuilder(ClientControlPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ClientControlPacket::encode).decoder(ClientControlPacket::decode)
                 .consumerMainThread(ClientControlPacket::handle).add();

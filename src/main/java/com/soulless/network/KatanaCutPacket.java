@@ -7,7 +7,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Client -> server: a katana cut started (0 kesa, 1 gyaku) or the thrust (2) lands now; the server resolves the hit. */
+/** Client -> server: a katana cut started (0 kesa, 1 gyaku, 2 tsuki); the server resolves its hit and tells the others. */
 public record KatanaCutPacket(int step) {
     public void encode(FriendlyByteBuf buf) {
         buf.writeVarInt(step);

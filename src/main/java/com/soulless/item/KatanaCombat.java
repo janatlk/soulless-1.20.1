@@ -4,7 +4,6 @@ import com.soulless.Soulless;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -42,14 +41,16 @@ public final class KatanaCombat {
     public static final int KESA = 0, GYAKU = 1, THRUST_STEP = 2;
     /** The thrust deals this much more than a cut. */
     public static final float THRUST_DAMAGE_MULT = 1.6F;
-    /** Ticks from the click to the blade sweeping past (client.KatanaPoses: mid -> end of each cut, +1 tick). */
-    private static final int[] HIT_DELAY = {7, 8};
+    /** Ticks from a cut's start to the blade sweeping past / the thrust's lunge (client.KatanaPoses timelines). */
+    private static final int[] HIT_DELAY = {7, 8, 9};
     /** The cut's arc: reach from the player's centre and half-angle around the facing. */
     public static final double CUT_REACH = 3.6;
     private static final double CUT_HALF_ANGLE = Math.toRadians(75);
     /** The thrust's line: length from the chest and how fat it is. */
     public static final double THRUST_REACH = 4.0;
     private static final double THRUST_RADIUS = 0.45;
+    /** The katana's sounds are soft: the cut, not the noise, should carry the hit. */
+    private static final float HIT_VOLUME = 0.4F;
     /** A new cut is refused while the last one is younger than this (clients can't spam faster than the animation). */
     private static final int MIN_GAP = 10;
 
@@ -58,7 +59,7 @@ public final class KatanaCombat {
     private static final Map<UUID, Pending> PENDING = new HashMap<>();
     private static final Map<UUID, Long> LAST = new HashMap<>();
 
-    /** The client says a cut (0 kesa, 1 gyaku) was just started, or the thrust (2) is landing now. */
+    /** The client says a cut started (0 kesa, 1 gyaku, 2 tsuki); its hit is resolved when the blade gets there. */
     public static void announce(ServerPlayer player, int step) {
         if (step < KESA || step > THRUST_STEP || !(player.getMainHandItem().getItem() instanceof SoulKatanaItem)) return;
         long now = player.level().getGameTime();
@@ -67,11 +68,10 @@ public final class KatanaCombat {
         LAST.put(player.getUUID(), now);
         float charge = player.getAttackStrengthScale(0.5F);
         player.resetAttackStrengthTicker();
-        if (step == THRUST_STEP) {
-            thrust(player, charge);
-        } else {
-            PENDING.put(player.getUUID(), new Pending(step, now + HIT_DELAY[step], charge));
-        }
+        PENDING.put(player.getUUID(), new Pending(step, now + HIT_DELAY[step], charge));
+        // everyone else watching plays the cut on this player's model
+        com.soulless.network.ModNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.TRACKING_ENTITY.with(() -> player),
+                new com.soulless.network.KatanaAnimPacket(player.getId(), step));
     }
 
     @SubscribeEvent
@@ -86,7 +86,8 @@ public final class KatanaCombat {
             }
             if (player.level().getGameTime() >= e.getValue().due) {
                 it.remove();
-                cut(player, e.getValue().charge);
+                if (e.getValue().step == THRUST_STEP) thrust(player, e.getValue().charge);
+                else cut(player, e.getValue().charge);
             }
         }
     }
@@ -111,9 +112,11 @@ public final class KatanaCombat {
         }
         ServerLevel level = player.serverLevel();
         Vec3 front = c.add(facing.scale(1.6)).add(0, player.getBbHeight() * 0.55, 0);
-        level.sendParticles(ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z, 1, 0, 0, 0, 0);
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                hit.isEmpty() ? SoundEvents.PLAYER_ATTACK_NODAMAGE : SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 1.1F);
+        if (!hit.isEmpty()) {
+            level.sendParticles(ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z, 1, 0, 0, 0, 0);
+            level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(),
+                    SoundSource.PLAYERS, HIT_VOLUME, 0.95F + player.getRandom().nextFloat() * 0.15F);
+        }
         for (LivingEntity t : hit) strike(player, t, charge, 1, facing, 0.4F);
         if (!hit.isEmpty()) wear(player);
     }
@@ -136,11 +139,9 @@ public final class KatanaCombat {
             }
         }
         ServerLevel level = player.serverLevel();
-        if (best == null) {
-            level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_NODAMAGE, SoundSource.PLAYERS, 1.0F, 1.3F);
-            return;
-        }
-        level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_STRONG, SoundSource.PLAYERS, 1.0F, 1.2F);
+        if (best == null) return;
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(),
+                SoundSource.PLAYERS, HIT_VOLUME, 1.15F);
         level.sendParticles(ParticleTypes.CRIT, best.getX(), best.getY(0.6), best.getZ(), 12, 0.2, 0.2, 0.2, 0.3);
         strike(player, best, charge, THRUST_DAMAGE_MULT, new Vec3(dir.x, 0, dir.z).normalize(), 0.7F);
         wear(player);

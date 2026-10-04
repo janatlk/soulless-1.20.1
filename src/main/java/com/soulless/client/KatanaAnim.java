@@ -10,7 +10,6 @@ import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Pose;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
  *       the hip, pointing at the opponent, and the thrust (tsuki) is made with a lunge - the step does the work,
  *       the hands stay at the hip - with a short dash ({@link KatanaThrust}). Its hit lands at the lunge.</li>
  * </ol>
+ * The katana never uses the vanilla arm swing (it would also snap the body around): the local player's clicks
+ * start cuts directly, other players' cuts arrive from the server (KatanaAnimPacket). The server resolves the
+ * hits from where the blade goes (item.KatanaCombat).
  * The poses live in {@link KatanaPoses}; switching from one cut to the next cross-fades. Elbows, knees and the
  * waist bend when bendy-lib is installed.
  */
@@ -43,16 +45,12 @@ public final class KatanaAnim implements IAnimation {
     /** The cut playing (or last played), -1 before the first. */
     private int step = -1;
     private int cutStart;
-    /** The step the local player's click already announced to the server (-1: none). */
-    private int announced = -1;
     /** The local player asked for the thrust during gyaku: it starts as soon as gyaku has followed through. */
     private boolean thrustQueued;
     /** Cross-fade from the pose the previous cut was in (frozen) into the new cut. */
     @Nullable private String fadeFrom;
     private float fadeFromTime;
     private int fadeStart = -100;
-    private boolean wasSwinging;
-    private int lastSwingTime;
 
     private KatanaAnim(AbstractClientPlayer player) {
         this.player = player;
@@ -81,44 +79,44 @@ public final class KatanaAnim implements IAnimation {
         weightO = weight;
         boolean allowed = stanceAllowed();
         weight = Mth.approach(weight, allowed ? 1 : 0, 1 / BLEND_TICKS);
-
-        // a new attack swing: the vanilla swing restarts (swingTime drops) or begins
-        boolean swing = player.swinging && player.swingingArm == InteractionHand.MAIN_HAND
-                && (!wasSwinging || player.swingTime < lastSwingTime);
-        wasSwinging = player.swinging;
-        lastSwingTime = player.swingTime;
         if (!allowed) {
             step = -1;
             thrustQueued = false;
-            announced = -1;
             return;
         }
-        if (swing) onSwing();
 
         int t = age - cutStart;
         if (thrustQueued && (step != GYAKU || t >= KatanaPoses.number("tsuki.from") || currentCut(0) == null)) {
             thrustQueued = false;
             start(TSUKI, 0);
+            if (player.isLocalPlayer()) {
+                com.soulless.network.ModNetwork.sendToServer(new com.soulless.network.KatanaCutPacket(TSUKI));
+            }
+            t = 0;
         }
-        if (step == TSUKI && player.isLocalPlayer()) {
-            if (t == (int) KatanaPoses.number("tsuki.dash")) KatanaThrust.dash(player);
-            if (t == (int) KatanaPoses.number("tsuki.hit")) KatanaThrust.strike(player);
+        if (step == TSUKI && t == (int) KatanaPoses.number("tsuki.dash")) {
+            if (player.isLocalPlayer()) KatanaThrust.dash(player);
+            KatanaTrails.dash(player);   // every client draws the gust behind whoever lunges
+        }
+        if (step >= 0 && t == KatanaTrails.sweepDelay(step)) KatanaTrails.whoosh(player, step);
+        if (currentCut(0) != null) {
+            // the body turns into the cut smoothly (vanilla would snap it on an arm swing)
+            player.yBodyRot += Mth.wrapDegrees(player.getYHeadRot() - player.yBodyRot) * 0.25F;
         }
     }
 
-    private void onSwing() {
-        if (!canAttack()) return;   // still in a cut (the thrust's own swing lands here too)
-        if (player.isLocalPlayer()) {
-            if (announced < 0) return;   // not one of our katana attacks (e.g. punching a block)
-            start(announced, 0);
-            announced = -1;
-            return;
-        }
-        // another player: a swing right after gyaku is their thrust landing - join it at the lunge
-        if (step == GYAKU && age - cutStart < KatanaPoses.length(CUTS[GYAKU]) + COMBO_GRACE) {
-            start(TSUKI, (int) KatanaPoses.number("tsuki.hit"));
-        } else {
-            start(nextStep(), 0);
+    /** The local player's click started a cut (the server was told, KatanaCutPacket). */
+    public void localCut(int next) {
+        start(next, 0);
+    }
+
+    /** Another player's cut, sent by the server. */
+    public static void remoteCut(int entityId, int step) {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.level == null || step < KESA || step > TSUKI) return;
+        if (mc.level.getEntity(entityId) instanceof AbstractClientPlayer p && p != mc.player) {
+            KatanaAnim anim = of(p);
+            if (anim != null) anim.start(step, 0);
         }
     }
 
@@ -128,6 +126,7 @@ public final class KatanaAnim implements IAnimation {
         fadeStart = age;
         step = next;
         cutStart = age - skip;
+        if (skip == 0) KatanaTrails.add(player, next);
     }
 
     /** The cut a normal attack made now plays: gyaku right after kesa, otherwise kesa. */
@@ -142,11 +141,6 @@ public final class KatanaAnim implements IAnimation {
 
     public void queueThrust() {
         thrustQueued = true;
-    }
-
-    /** The local player clicked a normal attack: this step was sent to the server and is the one that plays. */
-    public void announce(int step) {
-        announced = step;
     }
 
     /** False while a cut (or a queued thrust) is under way: clicks then do nothing. */
