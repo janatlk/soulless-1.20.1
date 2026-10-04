@@ -268,6 +268,19 @@ public class SenseiDojoPiece extends StructurePiece {
                 }
             }
         }
+        // close the eaves: a dark frieze on the wall line from the top beam up to the roof step above it, so the attic
+        // can't be seen from outside under the overhang (the hipped rings step in two blocks outside the walls)
+        int frieze = y0 + (WX0 - x0) - 1;
+        for (int x = WX0; x <= WX1; x++) {
+            fill(x, WALL_TOP + 1, WZ0, x, frieze, WZ0, Blocks.DARK_OAK_PLANKS);
+            fill(x, WALL_TOP + 1, WZ1, x, frieze, WZ1, Blocks.DARK_OAK_PLANKS);
+        }
+        for (int z = WZ0; z <= WZ1; z++) {
+            fill(WX0, WALL_TOP + 1, z, WX0, frieze, z, Blocks.DARK_OAK_PLANKS);
+            fill(WX1, WALL_TOP + 1, z, WX1, frieze, z, Blocks.DARK_OAK_PLANKS);
+        }
+        // the closed attic: invisible light so nothing spawns up there
+        for (int x = WX0 + 3; x < WX1; x += 5) for (int z = WZ0 + 3; z < WZ1; z += 5) set(x, WALL_TOP + 2, z, Blocks.LIGHT);
         // the corners of the lowest eave turned up
         for (int[] c : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
             set(c[0], y0 + 1, c[1], slab(Blocks.DEEPSLATE_TILE_SLAB, false));
@@ -302,12 +315,12 @@ public class SenseiDojoPiece extends StructurePiece {
         // the ridge's ends rise (oni-ita)
         set(gx0 - 1, ridgeY + 1, ridgeZ, Blocks.POLISHED_BLACKSTONE_WALL);
         set(gx1 + 1, ridgeY + 1, ridgeZ, Blocks.POLISHED_BLACKSTONE_WALL);
-        // lanterns hanging under the front and back eaves
-        for (int x = HX0 + 3; x <= HX1 - 3; x += 6) {
+        // lanterns all along the eaves, every three blocks, hung from the roof's underside
+        for (int x = HX0; x <= HX1; x += 3) {
             set(x, WALL_TOP, HZ1 + 1, HANGING);
             set(x, WALL_TOP, HZ0 - 1, HANGING);
         }
-        for (int z = HZ0 + 3; z <= HZ1 - 3; z += 6) {
+        for (int z = HZ0; z <= HZ1; z += 3) {
             set(HX0 - 1, WALL_TOP, z, HANGING);
             set(HX1 + 1, WALL_TOP, z, HANGING);
         }
