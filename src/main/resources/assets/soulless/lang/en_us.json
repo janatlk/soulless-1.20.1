@@ -103,5 +103,12 @@
   "command.soulless.ult": "The Reaper's ice rain falls around you",
   "message.soulless.parry": "Parried!",
   "tooltip.soulless.soul_katana.parry": "%s - parry: blows and arrows that reach you in the window",
-  "tooltip.soulless.soul_katana.parry_1": "The attacker is stunned for %s s, your next strike +%s%%"
+  "tooltip.soulless.soul_katana.parry_1": "The attacker is stunned for %s s, your next strike +%s%%",
+  "item.soulless.parry_scroll": "Scroll of Parrying",
+  "tooltip.soulless.parry_scroll": "Teaches the katana's parry (right click with the katana)",
+  "tooltip.soulless.parry_scroll.use": "Read it: right click. The knowledge stays with you, even past death",
+  "message.soulless.parry_learned": "You have learned to parry",
+  "message.soulless.parry_known": "You already know how to parry",
+  "message.soulless.parry_unknown": "Read the Scroll of Parrying to learn the parry",
+  "tooltip.soulless.soul_katana.parry_2": "A clean parry grants %s s of the Kitsune's blessing"
 }

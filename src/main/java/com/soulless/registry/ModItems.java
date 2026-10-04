@@ -23,6 +23,10 @@ public final class ModItems {
     public static final RegistryObject<Item> SOUL_RING = ITEMS.register("soul_ring",
             () -> new com.soulless.item.SoulRingItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));
 
+    /** Read it to learn the katana's parry. */
+    public static final RegistryObject<Item> PARRY_SCROLL = ITEMS.register("parry_scroll",
+            () -> new com.soulless.item.ParryScrollItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
+
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

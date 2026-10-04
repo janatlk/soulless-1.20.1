@@ -46,9 +46,12 @@ public final class KatanaRitualFx {
         return anim != null && anim.inRitual() ? anim : null;
     }
 
-    /** Kneeling: no walking, no jumping. */
+    /** Kneeling: no walking, no jumping. Parrying: no jumping. */
     @SubscribeEvent
     public static void onMovement(MovementInputUpdateEvent event) {
+        LocalPlayer p = Minecraft.getInstance().player;
+        KatanaAnim a = p != null ? KatanaAnim.of(p) : null;
+        if (a != null && a.inParry()) event.getInput().jumping = false;
         if (ritual() == null) return;
         var in = event.getInput();
         in.forwardImpulse = 0;

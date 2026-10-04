@@ -103,5 +103,12 @@
   "command.soulless.ult": "Вокруг вас падает ледяной дождь Жнеца",
   "message.soulless.parry": "Парирование!",
   "tooltip.soulless.soul_katana.parry": "%s - парирование: удары и стрелы в момент блока",
-  "tooltip.soulless.soul_katana.parry_1": "Атакующий оглушён на %s с, следующий удар +%s%%"
+  "tooltip.soulless.soul_katana.parry_1": "Атакующий оглушён на %s с, следующий удар +%s%%",
+  "item.soulless.parry_scroll": "Свиток парирования",
+  "tooltip.soulless.parry_scroll": "Учит парированию катаной (ПКМ с катаной)",
+  "tooltip.soulless.parry_scroll.use": "Прочитать: ПКМ. Знание остаётся с вами даже после смерти",
+  "message.soulless.parry_learned": "Вы научились парировать",
+  "message.soulless.parry_known": "Вы уже умеете парировать",
+  "message.soulless.parry_unknown": "Прочитайте Свиток парирования, чтобы научиться парировать",
+  "tooltip.soulless.soul_katana.parry_2": "Удачное парирование даёт %s с благословения Кицунэ"
 }

@@ -61,6 +61,8 @@ public final class KatanaParry {
     public static final int WHIFF_COOLDOWN = 30;
     public static final int STUN_TICKS = 5 * 20;
     public static final float BONUS = 1.2F;
+    /** A parry grants this much of the Kitsune's blessing. */
+    public static final int BLESSING_TICKS = 5 * 20;
     /** The riposte (the first cut after a parry) plays this much faster. */
     public static final float RIPOSTE_RATE = 1.8F;
     /** The bonus waits this long for the next strike. */
@@ -72,6 +74,10 @@ public final class KatanaParry {
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem) || !player.isAlive() || player.isSpectator()) return;
         if (KitsuneRitual.isActive(player) || KatanaCombat.isCutting(player)) return;
+        if (!ParryScrollItem.knows(player)) {
+            player.displayClientMessage(Component.translatable("message.soulless.parry_unknown"), true);
+            return;
+        }
         long now = player.level().getGameTime();
         Long last = STARTED.get(player.getUUID());
         if (last != null && now - last < WHIFF_COOLDOWN) return;
@@ -151,6 +157,11 @@ public final class KatanaParry {
         level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 10, 0.1, 0.1, 0.1, 0.5);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.25F, 1.9F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(), SoundSource.PLAYERS, 0.5F, 1.3F);
+        // the Kitsune smiles on a clean parry: a few seconds of her blessing (a longer one already running is kept)
+        MobEffectInstance blessing = player.getEffect(ModEffects.KITSUNE_BLESSING.get());
+        if (blessing == null || blessing.getDuration() < BLESSING_TICKS) {
+            player.addEffect(new MobEffectInstance(ModEffects.KITSUNE_BLESSING.get(), BLESSING_TICKS, 0, false, true, true));
+        }
         if (attacker instanceof LivingEntity l && !isBoss(l)) {
             l.addEffect(new MobEffectInstance(ModEffects.STUN.get(), STUN_TICKS, 0));
         }

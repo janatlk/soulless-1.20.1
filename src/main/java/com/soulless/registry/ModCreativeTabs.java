@@ -17,6 +17,7 @@ public final class ModCreativeTabs {
             .displayItems((params, out) -> {
                 out.accept(ModItems.SOUL_FORGED.get());
                 out.accept(ModItems.SOUL_KATANA.get());
+                out.accept(ModItems.PARRY_SCROLL.get());
                 out.accept(ModItems.ABYSSAL_HEART.get());
                 out.accept(ModItems.SOUL_RING.get());
                 out.accept(ModBlocks.SOUL_ALTAR_ITEM.get());

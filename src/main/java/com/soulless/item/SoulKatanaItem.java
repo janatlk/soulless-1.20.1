@@ -45,6 +45,7 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         tooltip.add(Component.translatable(k + "parry", Component.translatable("hud.soulless.rmb")).withStyle(ChatFormatting.AQUA));
         tooltip.add(Component.translatable(k + "parry_1", v(KatanaParry.STUN_TICKS / 20), v(Math.round((KatanaParry.BONUS - 1) * 100)))
                 .withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(k + "parry_2", v(KatanaParry.BLESSING_TICKS / 20)).withStyle(ChatFormatting.GRAY));
         String key = net.minecraftforge.fml.DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.slamKeyName(), () -> () -> "R");
         tooltip.add(Component.translatable(k + "ritual", key).withStyle(ChatFormatting.AQUA));
         tooltip.add(Component.translatable(k + "blessing", v(KitsuneRitual.BLESSING_SECONDS),
