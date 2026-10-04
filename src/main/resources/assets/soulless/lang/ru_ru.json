@@ -112,5 +112,12 @@
   "message.soulless.parry_unknown": "Прочитайте Свиток парирования, чтобы научиться парировать",
   "tooltip.soulless.soul_katana.parry_2": "Удачное парирование даёт %s с благословения Кицунэ",
   "death.attack.soulless.seppuku": "%1$s умер с честью",
-  "death.attack.soulless.seppuku.player": "%1$s умер с честью"
+  "death.attack.soulless.seppuku.player": "%1$s умер с честью",
+  "trial.soulless.start": "Испытание: %s врагов. Зачисти их!",
+  "trial.soulless.cleared": "Испытание пройдено с оружием: %s",
+  "trial.soulless.died": "Вы пали в испытании (%s)",
+  "trial.soulless.stopped": "Испытание остановлено (%s)",
+  "trial.soulless.report1": "Время %s с, убито %s из %s",
+  "trial.soulless.report2": "Нанесено урона %s (сильнейший удар %s, %s в секунду)",
+  "trial.soulless.report3": "Получено урона %s сердец за %s ударов, парирований %s, ритуалов %s"
 }

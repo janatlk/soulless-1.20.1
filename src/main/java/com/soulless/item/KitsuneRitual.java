@@ -114,6 +114,7 @@ public final class KitsuneRitual {
     /** The blade goes in: three hearts (armor, enchantments and resistance don't help), then the blessing. */
     private static void stab(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
+        com.soulless.CombatTrial.onRitual(player);
         stabbing = player;
         player.invulnerableTime = 0;
         player.hurt(com.soulless.registry.ModDamageTypes.seppuku(level), SELF_DAMAGE);

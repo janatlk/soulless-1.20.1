@@ -161,6 +161,7 @@ public final class KatanaParry {
      */
     private static void success(ServerPlayer player, Vec3 at, Entity attacker) {
         boolean first = CAUGHT.add(player.getUUID());
+        com.soulless.CombatTrial.onParry(player);
         BONUS_UNTIL.put(player.getUUID(), player.level().getGameTime() + BONUS_TICKS);
         if (first) send(player, PARRIED);
         ServerLevel level = player.serverLevel();

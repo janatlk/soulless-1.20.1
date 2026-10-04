@@ -22,6 +22,7 @@ import java.util.List;
  * {@code /soulless zones [targets] [on|off]} - show where Soul Crush and Soul Rend would hit (no argument
  * toggles; anyone for themselves, operators for other players).
  * {@code /soulless resetcd [targets]} - clear both ability cooldowns (operators / cheats).
+ * {@code /soulless arena [size|stop]} - a wave of mixed mobs around you, then a combat report (balance check).
  * {@code /soulless ult [radius]} - the Wailing Reaper's ice rain around you (no Reaper), to practise dodging it.
  * {@code /soulless dummy [clear]} - place / remove immortal training dummies that report damage in chat.
  */
@@ -40,6 +41,16 @@ public final class SoullessCommands {
                                 .executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), null))
                                 .then(Commands.literal("on").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), true)))
                                 .then(Commands.literal("off").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), false)))))
+                .then(Commands.literal("arena")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> CombatTrial.start(ctx.getSource().getPlayerOrException(), 1))
+                        .then(Commands.literal("stop").executes(ctx -> {
+                            CombatTrial.stop(ctx.getSource().getPlayerOrException(), true);
+                            return 1;
+                        }))
+                        .then(Commands.argument("size", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
+                                .executes(ctx -> CombatTrial.start(ctx.getSource().getPlayerOrException(),
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "size")))))
                 .then(Commands.literal("ult")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> ult(ctx.getSource(), com.soulless.boss.SoulAltarBlockEntity.ARENA_RADIUS - 0.8))

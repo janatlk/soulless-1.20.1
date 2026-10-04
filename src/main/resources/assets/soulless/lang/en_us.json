@@ -112,5 +112,12 @@
   "message.soulless.parry_unknown": "Read the Scroll of Parrying to learn the parry",
   "tooltip.soulless.soul_katana.parry_2": "A clean parry grants %s s of the Kitsune's blessing",
   "death.attack.soulless.seppuku": "%1$s died with honour",
-  "death.attack.soulless.seppuku.player": "%1$s died with honour"
+  "death.attack.soulless.seppuku.player": "%1$s died with honour",
+  "trial.soulless.start": "Combat trial: %s enemies. Clear them!",
+  "trial.soulless.cleared": "Trial cleared with %s",
+  "trial.soulless.died": "You fell in the trial (%s)",
+  "trial.soulless.stopped": "Trial stopped (%s)",
+  "trial.soulless.report1": "Time %s s, killed %s of %s",
+  "trial.soulless.report2": "Damage dealt %s (biggest hit %s, %s per second)",
+  "trial.soulless.report3": "Damage taken %s hearts in %s hits, parries %s, rituals %s"
 }
