@@ -59,7 +59,7 @@ public final class KatanaPoses {
         def("kesa_mid.torso", "0 -15 0");
         def("kesa_mid.waist", "0 8");
         def("kesa_mid.item", "-30 0 0");
-        def("kesa_mid.fp", "0.45 -0.4 -1.0 -10 90 -15");
+        def("kesa_mid.fp", "0.55 -0.55 -1.2 10 90 -45");
         def("kesa_end.rArm", "-45 -30 0");
         def("kesa_end.lArm", "-40 -20 0");
         def("kesa_end.rBend", "0 -8");
@@ -71,7 +71,7 @@ public final class KatanaPoses {
         def("kesa_end.rLegBend", "0 34");
         def("kesa_end.lLegBend", "0 48");
         def("kesa_end.item", "-60 0 0");
-        def("kesa_end.fp", "-0.05 -0.15 -1.0 30 90 125");
+        def("kesa_end.fp", "-0.05 -0.75 -1.3 -10 90 120");
 
         // gyaku-kesa: the blade swings over to the left shoulder, then cuts down across to the right hip
         def("gyaku_wind.rArm", "-160 35 -20");
@@ -84,7 +84,7 @@ public final class KatanaPoses {
         def("gyaku_wind.rLegBend", "0 30");
         def("gyaku_wind.lLegBend", "0 38");
         def("gyaku_wind.item", "-35 0 0");
-        def("gyaku_wind.fp", "-0.05 -0.6 -1.0 25 90 22");
+        def("gyaku_wind.fp", "-0.25 -0.85 -1.1 15 90 30");
         def("gyaku_end.rArm", "-35 30 0");
         def("gyaku_end.lArm", "-40 38 0");
         def("gyaku_end.rBend", "0 -15");
@@ -96,76 +96,71 @@ public final class KatanaPoses {
         def("gyaku_end.rLegBend", "0 34");
         def("gyaku_end.lLegBend", "0 48");
         def("gyaku_end.item", "-80 0 0");
-        def("gyaku_end.fp", "0.25 -0.15 -1.0 30 90 -125");
+        def("gyaku_end.fp", "0.45 -0.75 -1.3 -10 90 -120");
 
-        // tsuki: the blade comes down to the chest with the elbows drawn in, then a straight thrust at chest
-        // height with a lunge onto the front foot
-        def("kesa_wind.rArm", "-153 5 16");
-        def("kesa_wind.lArm", "-150 5 -12");
-        def("kesa_wind.rBend", "0 -25");
-        def("kesa_wind.lBend", "0 -30");
-        def("kesa_wind.torso", "0 6 0");
-        def("kesa_wind.item", "-32 0 0");
-        def("kesa_wind.fp", "0.58 -0.85 -1.0 25 90 -8");
-        def("kesa_follow.rArm", "-25 -45 0");
-        def("kesa_follow.lArm", "-20 -35 0");
-        def("kesa_follow.rBend", "0 -5");
-        def("kesa_follow.lBend", "0 -10");
-        def("kesa_follow.torso", "0 -40 0");
-        def("kesa_follow.waist", "0 20");
-        def("kesa_follow.rLeg", "14 0 5");
-        def("kesa_follow.lLeg", "-40 0 -5");
-        def("kesa_follow.rLegBend", "0 34");
-        def("kesa_follow.lLegBend", "0 52");
-        def("kesa_follow.item", "-60 0 0");
-        def("kesa_follow.fp", "-0.35 -0.3 -1.0 35 90 140");
-        def("gyaku_mid.rArm", "-118 22 -8");
-        def("gyaku_mid.lArm", "-110 28 -14");
-        def("gyaku_mid.rBend", "0 -18");
-        def("gyaku_mid.lBend", "0 -18");
-        def("gyaku_mid.torso", "0 12 0");
-        def("gyaku_mid.waist", "0 8");
-        def("gyaku_mid.item", "-30 0 0");
-        def("gyaku_mid.fp", "0.0 -0.4 -1.0 -10 90 10");
-        def("gyaku_follow.rArm", "-25 45 0");
-        def("gyaku_follow.lArm", "-30 52 0");
-        def("gyaku_follow.rBend", "0 -10");
-        def("gyaku_follow.lBend", "0 -5");
-        def("gyaku_follow.torso", "0 35 0");
-        def("gyaku_follow.waist", "0 20");
-        def("gyaku_follow.rLeg", "14 0 5");
-        def("gyaku_follow.lLeg", "-40 0 -5");
-        def("gyaku_follow.rLegBend", "0 34");
-        def("gyaku_follow.lLegBend", "0 52");
-        def("gyaku_follow.item", "-70 0 0");
-        def("gyaku_follow.fp", "0.55 -0.3 -1.0 35 90 -140");
-        def("tsuki_wind.rArm", "-75 -5 8");
-        def("tsuki_wind.lArm", "-70 5 -8");
-        def("tsuki_wind.rBend", "0 -55");
+        // tsuki (queued during gyaku): instead of jodan the blade is drawn in to the right hip, both hands on the
+        // grip at the belt, the point aimed at the opponent (wind); the body coils - knees deep, hips low and back
+        // (load); then the lunge explodes out with the dash - the front foot steps far out, the back leg straightens,
+        // the hips drop and drive forward while the hands stay at the hip (end)
+        def("tsuki_load.rArm", "-15 -15 0");
+        def("tsuki_load.lArm", "-30 30 0");
+        def("tsuki_load.rBend", "0 -70");
+        def("tsuki_load.lBend", "0 -70");
+        def("tsuki_load.torso", "0 -28 0");
+        def("tsuki_load.waist", "0 10");
+        def("tsuki_load.rLeg", "18 0 8");
+        def("tsuki_load.lLeg", "-42 0 -8");
+        def("tsuki_load.rLegBend", "0 60");
+        def("tsuki_load.lLegBend", "0 75");
+        def("tsuki_load.bodyPos", "0 -3.5 -1.5");
+        def("tsuki_load.item", "-60 0 0");
+        def("tsuki_load.fp", "0.5 -0.75 -0.95 -72 90 14");
+        def("kesa_wind.fp", "0.7 -0.85 -1.1 15 90 -18");
+        def("kesa_follow.fp", "-0.35 -0.9 -1.3 -10 90 140");
+        def("gyaku_mid.fp", "-0.15 -0.55 -1.2 10 90 45");
+        def("gyaku_follow.fp", "0.7 -0.9 -1.3 -10 90 -140");
+        def("tsuki_wind.rArm", "-20 -15 0");
+        def("tsuki_wind.lArm", "-35 30 0");
+        def("tsuki_wind.rBend", "0 -60");
         def("tsuki_wind.lBend", "0 -60");
-        def("tsuki_wind.torso", "0 -10 0");
-        def("tsuki_wind.item", "-90 0 0");
-        def("tsuki_wind.fp", "0.5 -0.6 -0.7 -65 90 18");
-        def("tsuki_end.rArm", "-88 -4 6");
-        def("tsuki_end.lArm", "-84 6 -6");
-        def("tsuki_end.rBend", "0 -5");
-        def("tsuki_end.lBend", "0 -10");
-        def("tsuki_end.torso", "0 -12 0");
-        def("tsuki_end.waist", "0 14");
-        def("tsuki_end.rLeg", "22 0 5");
-        def("tsuki_end.lLeg", "-45 0 -5");
-        def("tsuki_end.rLegBend", "0 20");
-        def("tsuki_end.lLegBend", "0 55");
-        def("tsuki_end.item", "-88 0 0");
-        def("tsuki_end.fp", "0.3 -0.42 -1.15 -72 90 14");
+        def("tsuki_wind.torso", "0 -20 0");
+        def("tsuki_wind.waist", "0 5");
+        def("tsuki_wind.rLeg", "10 0 6");
+        def("tsuki_wind.lLeg", "-30 0 -6");
+        def("tsuki_wind.rLegBend", "0 40");
+        def("tsuki_wind.lLegBend", "0 50");
+        def("tsuki_wind.item", "-62 0 0");
+        def("tsuki_wind.fp", "0.45 -0.7 -1.1 -75 90 12");
+        def("tsuki_wind.bodyPos", "0 -1.5 0");
+        def("tsuki_end.rArm", "-50 -8 0");
+        def("tsuki_end.lArm", "-58 22 0");
+        def("tsuki_end.rBend", "0 -30");
+        def("tsuki_end.lBend", "0 -30");
+        def("tsuki_end.torso", "0 -10 0");
+        def("tsuki_end.waist", "0 28");
+        def("tsuki_end.rLeg", "55 0 6");
+        def("tsuki_end.lLeg", "-75 0 -6");
+        def("tsuki_end.rLegBend", "0 0");
+        def("tsuki_end.lLegBend", "0 80");
+        def("tsuki_end.bodyPos", "0 -4 4");
+        def("tsuki_end.item", "-55 0 0");
+        def("tsuki_end.fp", "0.3 -0.55 -1.4 -80 90 10");
 
         def("kesa.keys", "guard@0 kesa_wind@3:out kesa_mid@5:in kesa_end@8:lin kesa_follow@11:out kesa_follow@13 guard@20:inout");
         def("gyaku.keys", "guard@0 gyaku_wind@4:out gyaku_mid@6:in gyaku_end@9:lin gyaku_follow@12:out gyaku_follow@14 guard@21:inout");
-        def("tsuki.keys", "guard@0 tsuki_wind@5:inout tsuki_end@7:in tsuki_end@11 guard@20:inout");
+        def("tsuki.keys", "tsuki_wind@0 tsuki_load@6:inout tsuki_load@8 tsuki_end@9.5:out tsuki_end@13 guard@22:inout");
         // the next attack is only allowed (and starts the next cut) once this much of the current one has played
         def("kesa.chain", "12");
         def("gyaku.chain", "13");
-        def("tsuki.chain", "13");
+        def("tsuki.chain", "18");
+        // the thrust takes over once gyaku has followed through; the lunge (dash) and its hit, in thrust ticks
+        def("tsuki.from", "14");
+        def("tsuki.dash", "8");
+        def("tsuki.hit", "9");
+        // cross-fade into each cut (ticks): long for the thrust, which starts from wherever gyaku left the blade
+        def("kesa.fade", "2");
+        def("gyaku.fade", "2");
+        def("tsuki.fade", "5");
         def("fp.scale", "0.45");
     }
 

@@ -52,11 +52,10 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         return v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(Math.round(v * 10) / 10.0);
     }
 
-    /** The third step of the combo, the thrust, hits only its target. */
+    /** The katana's hits come from where the blade goes (KatanaCombat), never from vanilla's sweep. */
     @Override
     public boolean canPerformAction(ItemStack stack, net.minecraftforge.common.ToolAction action) {
-        if (action == net.minecraftforge.common.ToolActions.SWORD_SWEEP && KatanaCombat.noSweep(stack)) return false;
-        return super.canPerformAction(stack, action);
+        return action != net.minecraftforge.common.ToolActions.SWORD_SWEEP && super.canPerformAction(stack, action);
     }
 
     /** As a dropped item it survives fire, lava and explosions. */

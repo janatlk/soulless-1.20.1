@@ -344,16 +344,22 @@ public final class ClientForgeEvents {
     public static void onAttackKey(InputEvent.InteractionKeyMappingTriggered event) {
         Minecraft mc = Minecraft.getInstance();
         if (event.isAttack() && mc.player != null && mc.player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem) {
-            // the katana: clicks during a cut are ignored instead of cutting it short
+            // the katana never attacks what the crosshair is on: the server hits whatever the blade sweeps through
+            // (KatanaCombat). Looking at a block up close still mines it.
             KatanaAnim anim = KatanaAnim.of(mc.player);
-            if (anim != null && !anim.canAttack()) {
-                event.setCanceled(true);
+            if (anim == null || mc.hitResult != null && mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) return;
+            event.setCanceled(true);
+            if (anim.thrustNext()) {
+                // during gyaku (or right after it): the thrust follows on its own and lands at its lunge
+                anim.queueThrust();
                 event.setSwingHand(false);
-            } else if (anim != null) {
-                // tell the server which combo step this attack is before the attack itself reaches it
+            } else if (!anim.canAttack()) {
+                event.setSwingHand(false);   // mid-cut clicks do nothing instead of cutting it short
+            } else {
                 int step = anim.nextStep();
                 anim.announce(step);
                 com.soulless.network.ModNetwork.sendToServer(new com.soulless.network.KatanaCutPacket(step));
+                mc.player.resetAttackStrengthTicker();   // the swing (kept) starts the cut on screen
             }
             return;
         }

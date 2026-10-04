@@ -55,7 +55,8 @@ public final class DevAutoTest {
     @SubscribeEvent
     public static void onDummyHurt(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
         if (KATANA && event.getEntity() instanceof Zombie z) {
-            Soulless.LOGGER.info("[autotest] katana t={} dummy x={} took {}", tick, String.format("%.1f", z.getX() - ARENA_X), event.getAmount());
+            Soulless.LOGGER.info("[autotest] katana t={} dummy at ({}, {}) took {}", tick, String.format("%.1f", z.getX() - ARENA_X),
+                    String.format("%.1f", z.getZ() - ARENA_Z), event.getAmount());
         }
     }
 
@@ -228,10 +229,12 @@ public final class DevAutoTest {
                 p.setGameMode(GameType.SURVIVAL);
                 p.teleportTo(p.serverLevel(), ARENA_X, p.getY(), ARENA_Z, 0, 0);
                 p.getInventory().setItem(p.getInventory().selected, new ItemStack(ModItems.SOUL_KATANA.get()));
-                // a dummy right in front and one beside it: cuts sweep both, the thrust hits only the first
-                for (double dx : new double[]{0, 1.3}) {
+                // dummies in front, beside it, and behind the player: cuts hit the first two, the thrust only the
+                // one ahead, nothing reaches the one behind
+                for (double[] at : new double[][]{{0, 2.6}, {1.6, 2.0}, {0, -2.2}}) {
                     Zombie z = EntityType.ZOMBIE.create(p.serverLevel());
-                    z.moveTo(ARENA_X + dx, p.getY(), ARENA_Z + 2.2, 180, 0);
+                    z.moveTo(ARENA_X + at[0], p.getY(), ARENA_Z + at[1], 180, 0);
+                    z.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new ItemStack(net.minecraft.world.item.Items.LEATHER_HELMET));
                     z.setNoAi(true);
                     z.setSilent(true);
                     z.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE, 1_000_000, 0, false, false));

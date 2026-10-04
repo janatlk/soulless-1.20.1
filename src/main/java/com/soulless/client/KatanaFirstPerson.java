@@ -19,12 +19,12 @@ public final class KatanaFirstPerson {
     public static void render(RenderHandEvent event, LocalPlayer player, ItemStack stack) {
         KatanaAnim anim = KatanaAnim.of(player);
         float partial = event.getPartialTick();
-        String cut = anim != null ? anim.currentCut(partial) : null;
-        float[] p = KatanaPoses.sample(cut, cut != null ? anim.cutTime(partial) : 0, "fp", FP);
+        float[] p = anim != null ? anim.pose("fp", 6, partial) : KatanaPoses.sample(null, 0, "fp", FP);
 
         PoseStack ps = event.getPoseStack();
         ps.pushPose();
-        ps.translate(p[0], p[1] - event.getEquipProgress() * 0.6F, p[2]);
+        // no vanilla re-equip dip: it follows the attack cooldown and would jerk the blade after every cut
+        ps.translate(p[0], p[1], p[2]);
         ps.mulPose(Axis.XP.rotationDegrees(p[3]));
         ps.mulPose(Axis.ZP.rotationDegrees(p[5]));
         ps.mulPose(Axis.YP.rotationDegrees(p[4]));
