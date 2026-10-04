@@ -12,15 +12,15 @@ import java.util.Optional;
 
 /**
  * The sensei's dojo: a small Japanese house with a training yard, high up in cherry groves (worldgen/structure +
- * structure_set: about half as common as villages, and only where the ground is high and fairly level).
+ * structure_set: spread like villages but only in high cherry groves, and only where the ground is high and fairly level).
  * Built by {@link SenseiDojoPiece}.
  */
 public class SenseiDojoStructure extends Structure {
     public static final Codec<SenseiDojoStructure> CODEC = simpleCodec(SenseiDojoStructure::new);
     /** "High mountains": the site's lowest corner must be at least this high. */
-    public static final int MIN_Y = 100;
+    public static final int MIN_Y = 90;
     /** The site must be fairly level: at most this much between its highest and lowest corner. */
-    private static final int MAX_SLOPE = 9;
+    private static final int MAX_SLOPE = 12;
 
     public SenseiDojoStructure(StructureSettings settings) {
         super(settings);
