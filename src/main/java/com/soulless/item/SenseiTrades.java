@@ -74,9 +74,13 @@ public final class SenseiTrades {
         CompoundTag d = data(v);
         MerchantOffer offer = event.getMerchantOffer();
         if (offer.getResult().is(ModItems.PARRY_SCROLL.get())) {
-            // the scroll is handed over only once
+            // the scroll is handed over only once: it stays in the list (the open trading screen may have it selected -
+            // removing it crashed the screen), crossed out for good - a max of 0 uses stays sold out after restocks
             d.putBoolean("scroll_sold", true);
-            v.getOffers().remove(offer);
+            int i = v.getOffers().indexOf(offer);
+            if (i >= 0) {
+                v.getOffers().set(i, new MerchantOffer(offer.getBaseCostA(), offer.getCostB(), offer.getResult(), 0, 0, 0, 0));
+            }
             resend(player, v);
             return;
         }
