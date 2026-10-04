@@ -50,7 +50,7 @@ public final class KatanaPoses {
         def("guard.rLegBend", "0 30");
         def("guard.lLegBend", "0 38");
         def("guard.item", "-40 0 0");
-        def("guard.fp", "0.62 -1.0 -1.0 10 90 -4");
+        def("guard.fp", "0.62 -0.88 -1.0 10 90 -4");
 
         // kesa-giri: from over the right shoulder down across to the left hip
         def("kesa_mid.rArm", "-120 -15 10");
@@ -238,11 +238,11 @@ public final class KatanaPoses {
         def("r_pull.head", "10 0 0");
         // first person: the view bows (KatanaRitualFx); the blade turns point-down toward the belly, rises, plunges
         // toward the camera, is held, drawn out, and rises back to the guard
-        def("fr_turn.fp", "0.1 -0.3 -0.95 -45 90 180");
-        def("fr_raise.fp", "0.1 -0.1 -1.0 -35 90 180");
-        def("fr_stab.fp", "0.1 -0.6 -0.45 -62 90 180");
-        def("fr_hold.fp", "0.1 -0.65 -0.42 -64 90 180");
-        def("fr_pull.fp", "0.2 -0.55 -0.85 -45 90 180");
+        def("fr_turn.fp", "0.1 -0.18 -0.95 -45 90 180");
+        def("fr_raise.fp", "0.1 0.02 -1.0 -35 90 180");
+        def("fr_stab.fp", "0.1 -0.48 -0.45 -62 90 180");
+        def("fr_hold.fp", "0.1 -0.53 -0.42 -64 90 180");
+        def("fr_pull.fp", "0.2 -0.43 -0.85 -45 90 180");
         def("ritual.keys", "guard@0 r_kneel@8:inout r_raise@15:inout r_raise@17 r_stab@19:in r_hold@30 r_pull@37:inout guard@46:inout");
         def("ritual.fpkeys", "guard@0 fr_turn@8:inout fr_raise@15:inout fr_raise@17 fr_stab@19:in fr_hold@30 fr_pull@37:inout guard@46:inout");
         def("ritual.stab", "19");
@@ -262,7 +262,7 @@ public final class KatanaPoses {
         def("p_block.lLegBend", "0 80");
         def("p_block.bodyPos", "0 -4.5 0");
         def("p_block.item", "-90 90 0");
-        def("p_block.fp", "0.25 -0.45 -0.95 0 90 88");
+        def("p_block.fp", "0.25 -0.33 -0.95 0 90 88");
         def("p_recoil.rArm", "-85 -35 0");
         def("p_recoil.lArm", "-80 45 0");
         def("p_recoil.rBend", "0 -75");
@@ -274,7 +274,7 @@ public final class KatanaPoses {
         def("p_recoil.lLegBend", "0 80");
         def("p_recoil.bodyPos", "0 -5 -1.5");
         def("p_recoil.item", "-95 90 0");
-        def("p_recoil.fp", "0.3 -0.3 -0.8 12 90 80");
+        def("p_recoil.fp", "0.3 -0.18 -0.8 12 90 80");
         def("parry.keys", "guard@0 p_block@2.5:out p_block@9 guard@16:inout");
         def("parry.fpkeys", "guard@0 p_block@2.5:out p_block@9 guard@16:inout");
         def("parried.keys", "p_block@0 p_recoil@2:out p_block@5:inout guard@12:inout");
@@ -305,18 +305,18 @@ public final class KatanaPoses {
         // camera) and the blade turned flat to the view so its edge leads the swing; after each cut the blade drops
         // out of view and rises back into the guard. fp = tx ty tz (camera space) rx ry rz (degrees):
         // rz leans the blade (0 up, + to the left), rx tips it back toward the camera, ry spins it about itself
-        def("fk_wind.fp", "0.75 -0.45 -1.1 20 90 -30");
-        def("fk_end.fp", "-0.2 -0.95 -1.2 -5 90 45");
-        def("fk_follow.fp", "-0.42 -1.1 -1.2 -8 90 58");
-        def("fk_low.fp", "0.5 -1.6 -1.1 0 90 25");
-        def("fg_wind.fp", "-0.05 -0.45 -1.1 20 90 30");
-        def("fg_end.fp", "0.9 -0.95 -1.2 -5 90 -45");
-        def("fg_follow.fp", "1.08 -1.1 -1.2 -8 90 -58");
-        def("fg_low.fp", "0.62 -1.6 -1.1 0 90 -25");
-        def("ft_chamber.fp", "0.42 -0.62 -0.9 -82 90 14");
-        def("ft_load.fp", "0.48 -0.7 -0.62 -80 90 16");
-        def("ft_end.fp", "0.22 -0.48 -1.4 -88 90 6");
-        def("ft_low.fp", "0.5 -1.5 -1.1 -30 90 0");
+        def("fk_wind.fp", "0.75 -0.33 -1.1 45 90 -30");
+        def("fk_end.fp", "-0.2 -0.83 -1.2 -40 90 45");
+        def("fk_follow.fp", "-0.42 -0.98 -1.2 -55 90 58");
+        def("fk_low.fp", "0.5 -1.48 -1.1 -20 90 25");
+        def("fg_wind.fp", "-0.05 -0.33 -1.1 45 90 30");
+        def("fg_end.fp", "0.9 -0.83 -1.2 -40 90 -45");
+        def("fg_follow.fp", "1.08 -0.98 -1.2 -55 90 -58");
+        def("fg_low.fp", "0.62 -1.48 -1.1 -20 90 -25");
+        def("ft_chamber.fp", "0.42 -0.5 -0.9 -82 90 14");
+        def("ft_load.fp", "0.48 -0.58 -0.62 -80 90 16");
+        def("ft_end.fp", "0.22 -0.36 -1.4 -88 90 6");
+        def("ft_low.fp", "0.5 -1.38 -1.1 -30 90 0");
         def("kesa.fpkeys", "guard@0 fk_wind@2.25:out fk_end@6:inout fk_follow@9:out fk_low@12:in guard@15:out");
         def("gyaku.fpkeys", "guard@0 fg_wind@3:out fg_end@6.75:inout fg_follow@9.75:out fg_low@12.75:in guard@15.75:out");
         def("tsuki.fpkeys", "ft_chamber@0 ft_chamber@6 ft_load@8:inout ft_end@9.5:out ft_end@13 ft_low@17:in guard@22:out");

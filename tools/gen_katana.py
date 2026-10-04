@@ -182,8 +182,6 @@ def paint_blade(x, y, f):
             col = mix(STEEL["ha"], STEEL["edge"], (d - h) / (0.93 - h) * 0.4)
         else:
             col = STEEL["edge"]
-    if abs(y - (BLADE_Y1 - KISSAKI)) < 0.09 and d > 0.07:
-        col = STEEL["yokote"]                                           # the line where the point begins
     col = col * (1 + grain)
     col[3] = 255
     if f == "south":
