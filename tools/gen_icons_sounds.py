@@ -364,9 +364,6 @@ def make_stun_icon():
 
 def main():
     make_stun_icon()
-    make_hilt()
-    make_ingot()
-    make_core()
     make_heart()
     rng = np.random.default_rng(11)
     write_ogg(slam_windup(rng), "slam_windup")

@@ -1,6 +1,5 @@
 package com.soulless.item;
 
-import com.soulless.registry.ModItems;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.crafting.Ingredient;
 
@@ -12,5 +11,5 @@ public enum SoulForgedTier implements Tier {
     @Override public float getAttackDamageBonus() { return 5.0F; }
     @Override public int getLevel() { return 4; }
     @Override public int getEnchantmentValue() { return 18; }
-    @Override public Ingredient getRepairIngredient() { return Ingredient.of(ModItems.WRAITHSTEEL_INGOT.get()); }
+    @Override public Ingredient getRepairIngredient() { return Ingredient.of(net.minecraft.world.item.Items.NETHERITE_INGOT); }
 }

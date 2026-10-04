@@ -19,10 +19,7 @@ public final class ModItems {
     public static final RegistryObject<Item> SOUL_RING = ITEMS.register("soul_ring",
             () -> new com.soulless.item.SoulRingItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));
 
-    // Crafting materials. No source yet: they are meant to drop from future bosses.
-    public static final RegistryObject<Item> WRAITHSTEEL_INGOT = material("wraithsteel_ingot", Rarity.UNCOMMON, false);
-    public static final RegistryObject<Item> SOULFLAME_CORE = material("soulflame_core", Rarity.RARE, false);
-    public static final RegistryObject<Item> ANCIENT_HILT = material("ancient_hilt", Rarity.RARE, false);
+    /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 
     private static RegistryObject<Item> material(String name, Rarity rarity, boolean foil) {

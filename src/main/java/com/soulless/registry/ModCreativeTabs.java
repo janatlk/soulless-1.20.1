@@ -16,9 +16,6 @@ public final class ModCreativeTabs {
             .icon(() -> new ItemStack(ModItems.SOUL_FORGED.get()))
             .displayItems((params, out) -> {
                 out.accept(ModItems.SOUL_FORGED.get());
-                out.accept(ModItems.WRAITHSTEEL_INGOT.get());
-                out.accept(ModItems.SOULFLAME_CORE.get());
-                out.accept(ModItems.ANCIENT_HILT.get());
                 out.accept(ModItems.ABYSSAL_HEART.get());
                 out.accept(ModItems.SOUL_RING.get());
                 out.accept(ModBlocks.SOUL_ALTAR_ITEM.get());
