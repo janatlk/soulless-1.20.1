@@ -62,6 +62,7 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onClientSetup(net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
         KatanaAnim.register();
+        SwimRendAnim.register();
     }
 
     private ClientModEvents() {}

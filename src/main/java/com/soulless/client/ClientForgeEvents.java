@@ -104,7 +104,7 @@ public final class ClientForgeEvents {
                 if (left > 0) {
                     int seconds = Mth.ceil(left * com.soulless.item.KitsuneRitual.COOLDOWN_TICKS / 20F);
                     player.displayClientMessage(Component.translatable("message.soulless.ritual_cooldown", seconds), true);
-                } else if (!player.onGround()) {
+                } else if (!player.onGround() || player.isInWater()) {
                     player.displayClientMessage(Component.translatable("message.soulless.ritual_ground"), true);
                 } else if (anim == null || anim.canAttack()) {
                     ModNetwork.sendToServer(new SlamRequestPacket());
@@ -116,6 +116,8 @@ public final class ClientForgeEvents {
                 if (left > 0) {
                     int seconds = Mth.ceil(left * com.soulless.ability.SlamManager.COOLDOWN_TICKS / 20F);
                     player.displayClientMessage(Component.translatable("message.soulless.slam_cooldown", seconds), true);
+                } else if (player.isInWater()) {
+                    player.displayClientMessage(Component.translatable("message.soulless.slam_water"), true);
                 } else if (!player.onGround()) {
                     player.displayClientMessage(Component.translatable("message.soulless.slam_ground"), true);
                 } else {
@@ -338,7 +340,7 @@ public final class ClientForgeEvents {
         SlamAnim.Pose pose = SoulArmPose.current(p);
         PoseStack ps = event.getPoseStack();
         ps.pushPose();
-        if (pose == null) return;
+        if (pose == null || p.isVisuallySwimming()) return;
         float yaw = Mth.rotLerp(event.getPartialTick(), p.yBodyRotO, p.yBodyRot) * Mth.DEG_TO_RAD;
         // pitch axis = the player's right/left line; positive turns the head forward (front flip, lean)
         Vector3f axis = new Vector3f(Mth.cos(yaw), 0, Mth.sin(yaw));

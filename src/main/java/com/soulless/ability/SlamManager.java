@@ -75,6 +75,10 @@ public final class SlamManager {
         if (!(stack.getItem() instanceof SoulForgedItem item) || !player.isAlive() || player.isSpectator()) return;
         if (player.getCooldowns().isOnCooldown(item) || ACTIVE.containsKey(player.getUUID()) || RendManager.isActive(player)) return;
         boolean ring = com.soulless.item.SoulRing.worn(player);
+        if (player.isInWater()) {
+            player.displayClientMessage(Component.translatable("message.soulless.slam_water"), true);
+            return;
+        }
         if (!player.onGround()) {
             player.displayClientMessage(Component.translatable("message.soulless.slam_ground"), true);
             return;

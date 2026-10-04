@@ -122,5 +122,6 @@
   "trial.soulless.report3": "Damage taken %s hearts in %s hits, parries %s, rituals %s",
   "entity.minecraft.villager.soulless.sensei": "Sensei",
   "entity.minecraft.villager.sensei": "Sensei",
-  "message.soulless.sensei_ready": "The sensei nods: you have earned his scroll"
+  "message.soulless.sensei_ready": "The sensei nods: you have earned his scroll",
+  "message.soulless.slam_water": "Soul Crush can't be used in water"
 }

@@ -71,8 +71,20 @@ public final class KatanaAnim implements IAnimation {
 
     private boolean stanceAllowed() {
         return player.getMainHandItem().getItem() instanceof SoulKatanaItem && !player.isSpectator()
-                && !player.isSleeping() && !player.isFallFlying() && !player.isVisuallySwimming()
+                && !player.isSleeping() && !player.isFallFlying()
                 && !player.isPassenger() && player.getPose() != Pose.SPIN_ATTACK && !player.isUsingItem();
+    }
+
+    /**
+     * How much of the body the katana drives: on land everything; in water only the upper body (vanilla keeps the
+     * legs treading water and the body's tilt); swimming (horizontal) only the arms, and only while a cut plays.
+     */
+    private enum Mode { FULL, UPPER, ARMS }
+
+    private Mode mode() {
+        if (player.isVisuallySwimming()) return Mode.ARMS;
+        if (player.isInWater()) return Mode.UPPER;
+        return Mode.FULL;
     }
 
     @Override
@@ -249,6 +261,16 @@ public final class KatanaAnim implements IAnimation {
     public @NotNull Vec3f get3DTransform(@NotNull String part, @NotNull TransformType type, float tickDelta, @NotNull Vec3f v0) {
         float w = weight(tickDelta);
         if (w <= 0) return v0;
+        Mode mode = mode();
+        if (mode != Mode.FULL) {
+            boolean lower = part.equals("rightLeg") || part.equals("leftLeg") || part.equals("body");
+            if (lower) return v0;
+            if (mode == Mode.ARMS) {
+                if (currentCut(tickDelta) == null) return v0;
+                if (!(part.equals("rightArm") || part.equals("leftArm") || part.equals("rightItem"))) return v0;
+                if (type == TransformType.POSITION && !part.equals("rightItem")) return v0;
+            }
+        }
         return switch (type) {
             case ROTATION -> rotation(part, tickDelta, w, v0);
             case BEND -> bend(part, tickDelta, w, v0);

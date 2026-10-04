@@ -14,6 +14,8 @@ public final class KatanaThrust {
     public static final double DASH_SPEED = 0.95;
     /** Under the Kitsune's blessing the lunge carries this much further. */
     private static final double BLESSED_DASH = 1.35;
+    /** In water the lunge is a third as strong. */
+    private static final double WATER_FACTOR = 0.33;
     /** In the air the lunge pushes less. */
     private static final double AIR_FACTOR = 0.4;
 
@@ -21,7 +23,8 @@ public final class KatanaThrust {
     public static void dash(AbstractClientPlayer player, float rate) {
         float yaw = player.getYRot() * Mth.DEG_TO_RAD;
         Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
-        double speed = DASH_SPEED * (rate > 1 ? BLESSED_DASH : 1) * (player.onGround() ? 1 : AIR_FACTOR);
+        double speed = DASH_SPEED * (rate > 1 ? BLESSED_DASH : 1) * (player.onGround() ? 1 : AIR_FACTOR)
+                * (player.isInWater() ? WATER_FACTOR : 1);
         // stop short of the first creature in the way: the point reaches it, the body stays out of its reach
         double room = roomAhead(player, forward);
         speed = Math.min(speed, Math.max(0, room / SLIDE));
