@@ -305,14 +305,14 @@ public final class KatanaPoses {
         // camera) and the blade turned flat to the view so its edge leads the swing; after each cut the blade drops
         // out of view and rises back into the guard. fp = tx ty tz (camera space) rx ry rz (degrees):
         // rz leans the blade (0 up, + to the left), rx tips it back toward the camera, ry spins it about itself
-        def("fk_wind.fp", "0.75 -0.33 -1.1 45 90 -30");
-        def("fk_end.fp", "-0.2 -0.83 -1.2 -40 90 45");
-        def("fk_follow.fp", "-0.42 -0.98 -1.2 -55 90 58");
-        def("fk_low.fp", "0.5 -1.48 -1.1 -20 90 25");
-        def("fg_wind.fp", "-0.05 -0.33 -1.1 45 90 30");
-        def("fg_end.fp", "0.9 -0.83 -1.2 -40 90 -45");
-        def("fg_follow.fp", "1.08 -0.98 -1.2 -55 90 -58");
-        def("fg_low.fp", "0.62 -1.48 -1.1 -20 90 -25");
+        def("fk_wind.fp", "0.73 -0.42 -1.08 39.17 90 -25.67");
+        def("fk_end.fp", "-0.06 -0.84 -1.17 -31.67 90 36.83");
+        def("fk_follow.fp", "-0.25 -0.96 -1.17 -44.17 90 47.67");
+        def("fk_low.fp", "0.52 -1.38 -1.08 -15 90 20.17");
+        def("fg_wind.fp", "0.06 -0.42 -1.08 39.17 90 24.33");
+        def("fg_end.fp", "0.85 -0.84 -1.17 -31.67 90 -38.17");
+        def("fg_follow.fp", "1 -0.96 -1.17 -44.17 90 -49");
+        def("fg_low.fp", "0.62 -1.38 -1.08 -15 90 -21.5");
         def("ft_chamber.fp", "0.42 -0.5 -0.9 -82 90 14");
         def("ft_load.fp", "0.48 -0.58 -0.62 -80 90 16");
         def("ft_end.fp", "0.22 -0.36 -1.4 -88 90 6");

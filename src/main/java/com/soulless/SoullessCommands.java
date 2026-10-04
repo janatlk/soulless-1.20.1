@@ -173,6 +173,8 @@ public final class SoullessCommands {
     private static int resetCooldowns(CommandSourceStack src, Collection<ServerPlayer> players) {
         for (ServerPlayer p : players) {
             p.getCooldowns().removeCooldown(ModItems.SOUL_FORGED.get());
+            p.getCooldowns().removeCooldown(ModItems.SOUL_KATANA.get());
+            com.soulless.item.KatanaParry.resetCooldown(p);
             RendManager.resetCooldown(p);
             ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.RESET_COOLDOWNS, true));
         }

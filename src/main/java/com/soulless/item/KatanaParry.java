@@ -105,6 +105,12 @@ public final class KatanaParry {
         return t >= WINDOW_FROM && t < WINDOW_FROM + WINDOW;
     }
 
+    /** {@code /soulless resetcd}: the next parry may come at once. */
+    public static void resetCooldown(Player player) {
+        STARTED.remove(player.getUUID());
+        CAUGHT.remove(player.getUUID());
+    }
+
     /** A parry just landed: the riposte is ready (full strength, no weapon cooldown). */
     public static boolean riposteReady(Player player) {
         Long until = BONUS_UNTIL.get(player.getUUID());

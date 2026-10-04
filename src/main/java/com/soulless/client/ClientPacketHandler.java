@@ -70,6 +70,9 @@ public final class ClientPacketHandler {
             ClientState.parryKnown = value;
         } else if (action == ClientControlPacket.RESET_COOLDOWNS) {
             ClientState.rendReadyAt = 0;
+            ClientState.parryStart = -1000;
+            var mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc.player != null) mc.player.getCooldowns().removeCooldown(com.soulless.registry.ModItems.SOUL_KATANA.get());
         }
     }
 

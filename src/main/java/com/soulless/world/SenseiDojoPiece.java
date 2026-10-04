@@ -131,6 +131,16 @@ public class SenseiDojoPiece extends StructurePiece {
 
     private static final BlockState HANGING = Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true);
 
+    /** A lantern hung on a chain that runs up to whatever is above (the roof's underside, a beam). */
+    private void hang(int x, int y, int z) {
+        set(x, y, z, HANGING);
+        for (int up = 1; up <= 5; up++) {
+            BlockPos p = at(x, y + up, z);
+            if (!box.isInside(p) || !level.getBlockState(p).isAir()) break;
+            set(x, y + up, z, Blocks.CHAIN);
+        }
+    }
+
     @Override
     public void postProcess(WorldGenLevel level, StructureManager structures, ChunkGenerator gen, RandomSource random,
                             BoundingBox chunkBox, ChunkPos chunkPos, BlockPos pivot) {
@@ -214,13 +224,14 @@ public class SenseiDojoPiece extends StructurePiece {
             }
         }
         // engawa posts carrying the eaves, and a lantern on each corner post
+        // (up to the roof: its third ring sits two blocks above the wall top, right over the engawa's edge)
         for (int x = HX0; x <= HX1; x += 6) {
-            fill(x, FLOOR + 1, HZ0, x, WALL_TOP, HZ0, Blocks.DARK_OAK_FENCE);
-            fill(x, FLOOR + 1, HZ1, x, WALL_TOP, HZ1, Blocks.DARK_OAK_FENCE);
+            fill(x, FLOOR + 1, HZ0, x, WALL_TOP + 2, HZ0, Blocks.DARK_OAK_FENCE);
+            fill(x, FLOOR + 1, HZ1, x, WALL_TOP + 2, HZ1, Blocks.DARK_OAK_FENCE);
         }
         for (int z = HZ0; z <= HZ1; z += 6) {
-            fill(HX0, FLOOR + 1, z, HX0, WALL_TOP, z, Blocks.DARK_OAK_FENCE);
-            fill(HX1, FLOOR + 1, z, HX1, WALL_TOP, z, Blocks.DARK_OAK_FENCE);
+            fill(HX0, FLOOR + 1, z, HX0, WALL_TOP + 2, z, Blocks.DARK_OAK_FENCE);
+            fill(HX1, FLOOR + 1, z, HX1, WALL_TOP + 2, z, Blocks.DARK_OAK_FENCE);
         }
         // the ceiling: spruce boards crossed by dark beams
         fill(WX0 + 1, WALL_TOP, WZ0 + 1, WX1 - 1, WALL_TOP, WZ1 - 1, Blocks.SPRUCE_PLANKS);
@@ -317,12 +328,12 @@ public class SenseiDojoPiece extends StructurePiece {
         set(gx1 + 1, ridgeY + 1, ridgeZ, Blocks.POLISHED_BLACKSTONE_WALL);
         // lanterns all along the eaves, every three blocks, hung from the roof's underside
         for (int x = HX0; x <= HX1; x += 3) {
-            set(x, WALL_TOP, HZ1 + 1, HANGING);
-            set(x, WALL_TOP, HZ0 - 1, HANGING);
+            hang(x, WALL_TOP, HZ1 + 1);
+            hang(x, WALL_TOP, HZ0 - 1);
         }
         for (int z = HZ0; z <= HZ1; z += 3) {
-            set(HX0 - 1, WALL_TOP, z, HANGING);
-            set(HX1 + 1, WALL_TOP, z, HANGING);
+            hang(HX0 - 1, WALL_TOP, z);
+            hang(HX1 + 1, WALL_TOP, z);
         }
     }
 
