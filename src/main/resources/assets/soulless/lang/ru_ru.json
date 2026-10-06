@@ -166,5 +166,8 @@
   "dialogue.soulless.sensei.opt.who": "Кто ты?",
   "dialogue.soulless.sensei.opt.learn": "Научи меня.",
   "dialogue.soulless.sensei.opt.back": "Назад.",
-  "dialogue.soulless.sensei.opt.bye": "Прощай."
+  "dialogue.soulless.sensei.opt.bye": "Прощай.",
+  "entity.soulless.tamed_fox": "Белая лиса",
+  "message.soulless.fox_sit": "Лиса сидит",
+  "message.soulless.fox_follow": "Лиса следует за вами"
 }

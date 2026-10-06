@@ -166,5 +166,8 @@
   "dialogue.soulless.sensei.opt.who": "Who are you?",
   "dialogue.soulless.sensei.opt.learn": "Teach me.",
   "dialogue.soulless.sensei.opt.back": "Back.",
-  "dialogue.soulless.sensei.opt.bye": "Farewell."
+  "dialogue.soulless.sensei.opt.bye": "Farewell.",
+  "entity.soulless.tamed_fox": "White Fox",
+  "message.soulless.fox_sit": "The fox sits",
+  "message.soulless.fox_follow": "The fox follows you"
 }
