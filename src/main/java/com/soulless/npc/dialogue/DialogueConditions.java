@@ -22,8 +22,7 @@ import java.util.function.Predicate;
  * <ul>
  * <li>{@code flag} - {@code flag}, {@code scope} "player" (default) or "npc";</li>
  * <li>{@code has_item} - {@code item}, {@code count} (default 1): the player carries that many;</li>
- * <li>{@code advancement} - {@code id}: the player has it;</li>
- * <li>{@code knows_parry} - the player has read the Scroll of Parrying.</li>
+ * <li>{@code advancement} - {@code id}: the player has it.</li>
  * </ul>
  * A new type: {@code DialogueConditions.register("name", json -> ctx -> ...)}.
  */
@@ -51,7 +50,6 @@ public final class DialogueConditions {
                 return adv != null && ctx.player.getAdvancements().getOrStartProgress(adv).isDone();
             };
         });
-        register("knows_parry", j -> ctx -> com.soulless.item.ParryScrollItem.knows(ctx.player));
     }
 
     /** "if": absent (always true), one condition, or a list (all must hold). */

@@ -36,7 +36,6 @@ public final class ClientState {
     public static long parryStart = -1000;
     public static boolean parryCaught;
     /** The local player has read the Scroll of Parrying (synced by the server). */
-    public static boolean parryKnown;
 
     public static float shake;
     /** Game time the local player's current slash started, or MIN_VALUE. */

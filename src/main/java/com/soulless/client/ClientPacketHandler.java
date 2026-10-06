@@ -66,8 +66,6 @@ public final class ClientPacketHandler {
     public static void control(int action, boolean value) {
         if (action == ClientControlPacket.SHOW_ZONES) {
             ClientState.showZones = value;
-        } else if (action == ClientControlPacket.PARRY_KNOWN) {
-            ClientState.parryKnown = value;
         } else if (action == ClientControlPacket.RESET_COOLDOWNS) {
             ClientState.rendReadyAt = 0;
             ClientState.parryStart = -1000;

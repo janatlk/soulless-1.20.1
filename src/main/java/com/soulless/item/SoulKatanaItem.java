@@ -71,7 +71,6 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         tooltip.add(line(k + "d.parry.1", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.parry.2", ChatFormatting.GRAY, v(KatanaParry.STUN_TICKS / 20), v(Math.round((KatanaParry.BONUS - 1) * 100)),
                 v(KatanaParry.BLESSING_TICKS / 20)));
-        tooltip.add(line(k + "d.parry.3", ChatFormatting.DARK_AQUA));
         tooltip.add(line(k + "d.ritual.title", ChatFormatting.LIGHT_PURPLE, key));
         tooltip.add(line(k + "d.ritual.1", ChatFormatting.GRAY, v(fmt(KitsuneRitual.SELF_DAMAGE / 2))));
         tooltip.add(line(k + "d.ritual.2", ChatFormatting.GRAY, v(KitsuneRitual.BLESSING_SECONDS), v(Math.round(KitsuneRitual.LIFESTEAL * 100)),

@@ -19,5 +19,5 @@
       "trigger": "minecraft:impossible"
     }
   },
-  "parent": "soulless:buy_scroll"
+  "parent": "soulless:get_katana"
 }

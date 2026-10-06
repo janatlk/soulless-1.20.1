@@ -81,10 +81,6 @@ public final class KatanaParry {
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem) || !player.isAlive() || player.isSpectator()) return;
         if (KitsuneRitual.isActive(player) || KatanaCombat.isCutting(player)) return;
-        if (!ParryScrollItem.knows(player)) {
-            player.displayClientMessage(Component.translatable("message.soulless.parry_unknown"), true);
-            return;
-        }
         long now = player.level().getGameTime();
         Long last = STARTED.get(player.getUUID());
         if (last != null && now - last < WHIFF_COOLDOWN && !CAUGHT.contains(player.getUUID())) return;

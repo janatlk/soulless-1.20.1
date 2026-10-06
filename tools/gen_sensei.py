@@ -1,5 +1,4 @@
-"""Sensei villager profession texture (64x64 overlay on the vanilla villager layout) and the 32x32 rolled
-Scroll of Parrying icon.
+"""Sensei texture (64x64 overlay on the vanilla villager layout).
 
     uv run --no-project --with pillow --with numpy tools/gen_sensei.py [--preview out.png]
 
@@ -127,80 +126,18 @@ def sensei(rng):
     return img
 
 
-def scroll_icon(size=32):
-    """A rolled scroll lying on the diagonal: aged parchment wound round a dark lacquered rod with brass knobs, tied
-    in the middle with a red cord and a hanging tag sealed with the sensei's mark."""
-    S = size * 8
-    img = Image.new("RGBA", (S, S))
-    px = img.load()
-    a = np.radians(-38)
-    ca, sa = np.cos(a), np.sin(a)
-    cx, cy = S / 2, S / 2
-    L, R = S * 0.36, S * 0.135          # half length, radius of the roll
-    for y in range(S):
-        for x in range(S):
-            dx, dy = x - cx, y - cy
-            u = dx * ca + dy * sa           # along the roll
-            v = -dx * sa + dy * ca          # across
-            col = None
-            if abs(u) <= L and abs(v) <= R:
-                shade = np.cos(v / R * np.pi / 2)            # round: light on the upper side
-                lift = 0.55 + 0.45 * shade + (-v / R) * 0.18
-                t = (u / L + 1) / 2
-                base = np.array([228, 206, 158]) * (1 - 0.15 * abs(np.sin(t * 9)))   # the wound layers
-                band = abs(u) < S * 0.03
-                if band:
-                    base = np.array([178, 34, 42])
-                c = np.clip(base * lift, 0, 255)
-                # the spiral edge of the last wrap
-                if abs(v - (R * 0.55)) < S * 0.008 and not band:
-                    c = c * 0.75
-                col = (*[int(q) for q in c], 255)
-            # the rod's knobs at both ends
-            for end in (-1, 1):
-                ku = u - end * (L + S * 0.035)
-                if ku * ku / (S * 0.04) ** 2 + v * v / (R * 0.6) ** 2 <= 1:
-                    lift = 0.6 + 0.4 * np.cos(v / (R * 0.6) * np.pi / 2)
-                    col = (int(200 * lift), int(160 * lift), int(70 * lift), 255)
-                elif abs(ku) < S * 0.012 and abs(v) < R * 0.85:
-                    col = (40, 26, 24, 255)
-            # the cord's tail and the seal tag hanging below the band
-            tag_u, tag_v = u - S * 0.02, v - R * 1.9
-            if abs(u) < S * 0.012 and R < v < R * 1.5:
-                col = (160, 28, 36, 255)
-            if abs(tag_u) < S * 0.06 and abs(tag_v) < S * 0.07:
-                inner = abs(tag_u) < S * 0.03 and abs(tag_v) < S * 0.035
-                col = (196, 36, 44, 255) if not inner else (120, 16, 24, 255)
-            if col:
-                px[x, y] = col
-    small = img.resize((size, size), Image.LANCZOS)
-    arr = np.array(small)
-    arr[:, :, 3] = np.where(arr[:, :, 3] > 100, 255, 0)
-    mask = arr[:, :, 3] > 0
-    edge = np.zeros_like(mask)
-    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-        edge |= np.roll(np.roll(mask, dx, 1), dy, 0)
-    edge &= ~mask
-    arr[edge] = (40, 24, 18, 255)
-    return Image.fromarray(arr, "RGBA")
-
-
 def main():
     rng = np.random.default_rng(5)
     out = ASSETS / "textures/entity/npc"
     out.mkdir(parents=True, exist_ok=True)
     tex = Image.fromarray(sensei(rng), "RGBA")
     tex.save(out / "sensei.png")
-    icon = scroll_icon()
-    icon.save(ASSETS / "textures/item/parry_scroll.png")
     if "--preview" in sys.argv:
         p = Image.new("RGBA", (64 * 6 + 32 * 8 + 20, 64 * 6), (70, 70, 80, 255))
         big = tex.resize((384, 384), Image.NEAREST)
         p.paste(big, (0, 0), big)
-        ic = icon.resize((256, 256), Image.NEAREST)
-        p.paste(ic, (404, 0), ic)
         p.save(sys.argv[sys.argv.index("--preview") + 1])
-    print("sensei texture + scroll icon written")
+    print("sensei texture written")
 
 
 if __name__ == "__main__":

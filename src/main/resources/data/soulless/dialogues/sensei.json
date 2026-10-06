@@ -48,18 +48,7 @@
         },
         {
           "text": "dialogue.soulless.sensei.opt.learn",
-          "goto": "learn",
-          "if": {
-            "type": "knows_parry",
-            "not": true
-          }
-        },
-        {
-          "text": "dialogue.soulless.sensei.opt.parry",
-          "goto": "parry",
-          "if": {
-            "type": "knows_parry"
-          }
+          "goto": "learn"
         },
         {
           "text": "dialogue.soulless.sensei.opt.bye"
@@ -80,18 +69,6 @@
         "dialogue.soulless.sensei.learn.1",
         "dialogue.soulless.sensei.learn.2"
       ],
-      "options": [
-        {
-          "text": "dialogue.soulless.sensei.opt.back",
-          "goto": "greet"
-        },
-        {
-          "text": "dialogue.soulless.sensei.opt.bye"
-        }
-      ]
-    },
-    "parry": {
-      "text": "dialogue.soulless.sensei.parry",
       "options": [
         {
           "text": "dialogue.soulless.sensei.opt.back",

@@ -122,9 +122,6 @@ public final class SoullessCommands {
         if (event.getEntity() instanceof ServerPlayer p && p.getPersistentData().getBoolean("soulless_zones")) {
             ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.SHOW_ZONES, true));
         }
-        if (event.getEntity() instanceof ServerPlayer p) {
-            ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.PARRY_KNOWN, com.soulless.item.ParryScrollItem.knows(p)));
-        }
     }
 
     /** A motionless, harmless copy of the Reaper 6 blocks ahead, facing you, looping one animation. */
