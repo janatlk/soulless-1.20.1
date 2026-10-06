@@ -43,9 +43,15 @@ public final class ModEntities {
             () -> EntityType.Builder.<com.soulless.ability.SoulSlashEntity>of(com.soulless.ability.SoulSlashEntity::new, MobCategory.MISC)
                     .sized(1.0F, 1.0F).fireImmune().clientTrackingRange(8).updateInterval(1).build("soul_slash"));
 
+    /** Talking characters (npc.NpcEntity): villager-sized. */
+    public static final RegistryObject<EntityType<com.soulless.npc.SenseiEntity>> SENSEI = ENTITIES.register("sensei",
+            () -> EntityType.Builder.<com.soulless.npc.SenseiEntity>of(com.soulless.npc.SenseiEntity::new, MobCategory.MISC)
+                    .sized(0.6F, 1.95F).clientTrackingRange(10).build("sensei"));
+
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(WAILING_REAPER.get(), WailingReaperEntity.createAttributes().build());
+        event.put(SENSEI.get(), com.soulless.npc.NpcEntity.createAttributes().build());
     }
 
     private ModEntities() {}

@@ -47,6 +47,12 @@ public final class ModNetwork {
         CHANNEL.messageBuilder(ClientControlPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ClientControlPacket::encode).decoder(ClientControlPacket::decode)
                 .consumerMainThread(ClientControlPacket::handle).add();
+        CHANNEL.messageBuilder(DialogueShowPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DialogueShowPacket::encode).decoder(DialogueShowPacket::decode)
+                .consumerMainThread(DialogueShowPacket::handle).add();
+        CHANNEL.messageBuilder(DialogueChoicePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DialogueChoicePacket::encode).decoder(DialogueChoicePacket::decode)
+                .consumerMainThread(DialogueChoicePacket::handle).add();
     }
 
     public static void sendToServer(Object msg) {

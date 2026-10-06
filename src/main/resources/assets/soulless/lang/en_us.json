@@ -122,7 +122,6 @@
   "trial.soulless.report3": "Damage taken %s hearts in %s hits, parries %s, harakiri %s",
   "entity.minecraft.villager.soulless.sensei": "Sensei",
   "entity.minecraft.villager.sensei": "Sensei",
-  "message.soulless.sensei_ready": "The sensei nods: you have earned his scroll",
   "message.soulless.slam_water": "Soul Crush can't be used in water",
   "hud.soulless.lmb": "LMB",
   "tooltip.soulless.soul_katana.c.cuts": "The blade cuts everything in the arc before you",
@@ -164,5 +163,19 @@
   "advancement.soulless.kitsune_ritual": "The Fox's Gift",
   "advancement.soulless.kitsune_ritual.desc": "Commit harakiri and receive the Kitsune's blessing",
   "advancement.soulless.died_with_honour": "Died with Honour",
-  "advancement.soulless.died_with_honour.desc": "Fall to your own blade committing harakiri"
+  "advancement.soulless.died_with_honour.desc": "Fall to your own blade committing harakiri",
+  "entity.soulless.sensei": "Sensei",
+  "item.soulless.sensei_spawn_egg": "Sensei Spawn Egg",
+  "dialogue.soulless.sensei.first.1": "Another wanderer with a sword on his back... You stand at the gate of my dojo, %1$s, and you did not even bow.",
+  "dialogue.soulless.sensei.first.2": "Very well. Speak - why have you come?",
+  "dialogue.soulless.sensei.greet": "You again. Speak.",
+  "dialogue.soulless.sensei.who": "I am the one who teaches the blade to obey the hand, and the hand to obey the heart. My name is of no use to you.",
+  "dialogue.soulless.sensei.learn.1": "Learn? Words cost nothing.",
+  "dialogue.soulless.sensei.learn.2": "Come back when your path is clearer. Then we will speak of lessons.",
+  "dialogue.soulless.sensei.opt.who": "Who are you?",
+  "dialogue.soulless.sensei.opt.learn": "Teach me.",
+  "dialogue.soulless.sensei.opt.back": "Back.",
+  "dialogue.soulless.sensei.opt.bye": "Farewell.",
+  "dialogue.soulless.sensei.parry": "You already hold the blade like a student. Now only practice remains: a thousand parries, then a thousand more.",
+  "dialogue.soulless.sensei.opt.parry": "I have learned to parry."
 }

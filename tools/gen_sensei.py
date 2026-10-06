@@ -187,7 +187,7 @@ def scroll_icon(size=32):
 
 def main():
     rng = np.random.default_rng(5)
-    out = ASSETS / "textures/entity/villager/profession"
+    out = ASSETS / "textures/entity/npc"
     out.mkdir(parents=True, exist_ok=True)
     tex = Image.fromarray(sensei(rng), "RGBA")
     tex.save(out / "sensei.png")

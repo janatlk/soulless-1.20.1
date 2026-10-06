@@ -112,16 +112,28 @@ public final class DevAutoTestClient {
             for (int[] s : new int[][]{{70, 0}, {120, 1}, {170, 2}, {220, 3}}) {
                 if (tick == s[0]) shot(mc, "dojo_" + s[1]);
             }
-            if (tick == 245 || tick == 315) {
-                var v = mc.level.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, mc.player.getBoundingBox().inflate(6))
+            if (tick == 245 || tick == 360) {
+                var v = mc.level.getEntitiesOfClass(com.soulless.npc.SenseiEntity.class, mc.player.getBoundingBox().inflate(6))
                         .stream().findFirst().orElse(null);
                 if (v != null) mc.gameMode.interact(mc.player, v, net.minecraft.world.InteractionHand.MAIN_HAND);
             }
+            // the dialogue: Space finishes the typing / turns the page, digits choose
+            int space = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE, one = org.lwjgl.glfw.GLFW.GLFW_KEY_1;
+            int[][] keys = {{255, space}, {265, space}, {268, space}, {280, one}, {288, space}, {300, one}, {306, space},
+                    {320, one + 1}, {324, space}, {326, space}, {328, space}, {340, one + 1}, {370, space}, {385, one + 2}};
+            for (int[] k : keys) {
+                if (tick == k[0] && mc.screen != null) mc.screen.keyPressed(k[1], 0, 0);
+            }
             if (tick == 238) shot(mc, "dojo_4");
-            if (tick == 270) shot(mc, "dojo_trade1");
-            if (tick == 280 || tick == 350) mc.player.closeContainer();
-            if (tick == 340) shot(mc, "dojo_trade2");
-            if (tick == 380) mc.stop();
+            if (tick == 250) shot(mc, "dojo_dialog_typing");
+            if (tick == 260) shot(mc, "dojo_dialog_1");
+            if (tick == 275) shot(mc, "dojo_dialog_2");
+            if (tick == 295) shot(mc, "dojo_dialog_who");
+            if (tick == 312) shot(mc, "dojo_dialog_greet");
+            if (tick == 330) shot(mc, "dojo_dialog_learn");
+            if (tick == 378) shot(mc, "dojo_dialog_greet2");
+
+            if (tick == 430) mc.stop();
             return;
         }
         if (DevAutoTest.BOSS) {

@@ -340,24 +340,19 @@ public final class DevAutoTest {
                 sensei.setNoAi(true);
             }
         }
-        if (tick == 300) {
-            // the four lessons, each once: the scroll unlocks
+        if (tick == 345) {
             var sensei = sensei(p);
             if (sensei != null) {
-                for (var offer : new java.util.ArrayList<>(sensei.getOffers())) {
-                    net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
-                            new net.minecraftforge.event.entity.player.TradeWithVillagerEvent(p, offer, sensei));
-                }
-                Soulless.LOGGER.info("[autotest] sensei offers now: {}", sensei.getOffers().stream()
-                        .map(o -> o.getCostA().getCount() + " " + o.getCostA().getItem() + " -> " + o.getResult().getItem()).toList());
+                Soulless.LOGGER.info("[autotest] sensei flags: {}, player flags: {}", sensei.flags(),
+                        com.soulless.npc.dialogue.DialogueContext.playerFlags(p));
             }
         }
     }
 
     @org.jetbrains.annotations.Nullable
-    private static net.minecraft.world.entity.npc.Villager sensei(ServerPlayer p) {
-        return p.serverLevel().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, p.getBoundingBox().inflate(40),
-                com.soulless.item.SenseiTrades::isSensei).stream().findFirst().orElse(null);
+    private static com.soulless.npc.SenseiEntity sensei(ServerPlayer p) {
+        return p.serverLevel().getEntitiesOfClass(com.soulless.npc.SenseiEntity.class, p.getBoundingBox().inflate(40))
+                .stream().findFirst().orElse(null);
     }
 
     private static final java.util.List<LivingEntity> rendTargets = new java.util.ArrayList<>();

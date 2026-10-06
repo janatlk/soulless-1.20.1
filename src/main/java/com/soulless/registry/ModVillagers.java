@@ -9,9 +9,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * The sensei: a villager profession with no job site (no ordinary villager can take it up); it only lives in its dojo
- * (world.SenseiDojoPiece). Its trades: item.SenseiTrades. Its look: textures/entity/villager/profession/sensei.png,
- * no big nose (client.SenseiRender).
+ * Legacy: the sensei used to be a villager with this profession. Kept registered only so old worlds still load
+ * those villagers - npc.LegacySensei turns each into the sensei character (npc.SenseiEntity).
  */
 public final class ModVillagers {
     public static final DeferredRegister<VillagerProfession> PROFESSIONS = DeferredRegister.create(ForgeRegistries.VILLAGER_PROFESSIONS, Soulless.MODID);

@@ -21,6 +21,7 @@ public final class ModCreativeTabs {
                 out.accept(ModItems.ABYSSAL_HEART.get());
                 out.accept(ModItems.SOUL_RING.get());
                 out.accept(ModBlocks.SOUL_ALTAR_ITEM.get());
+                out.accept(ModItems.SENSEI_SPAWN_EGG.get());
             })
             .build());
 

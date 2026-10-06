@@ -27,6 +27,9 @@ public final class ModItems {
     public static final RegistryObject<Item> PARRY_SCROLL = ITEMS.register("parry_scroll",
             () -> new com.soulless.item.ParryScrollItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
 
+    public static final RegistryObject<Item> SENSEI_SPAWN_EGG = ITEMS.register("sensei_spawn_egg",
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.SENSEI, 0x2B2420, 0xB3343A, new Item.Properties()));
+
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

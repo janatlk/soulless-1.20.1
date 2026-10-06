@@ -1,17 +1,14 @@
 package com.soulless.world;
 
 import com.soulless.registry.ModStructures;
-import com.soulless.registry.ModVillagers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
-import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
@@ -486,13 +483,10 @@ public class SenseiDojoPiece extends StructurePiece {
     private void spawn(WorldGenLevel level, BoundingBox chunkBox) {
         BlockPos home = at(13, FLOOR + 1, 10);
         if (chunkBox.isInside(home)) {
-            Villager sensei = EntityType.VILLAGER.create(level.getLevel());
+            com.soulless.npc.SenseiEntity sensei = com.soulless.registry.ModEntities.SENSEI.get().create(level.getLevel());
             if (sensei != null) {
                 sensei.moveTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5, 180, 0);
-                sensei.finalizeSpawn(level, level.getCurrentDifficultyAt(home), MobSpawnType.STRUCTURE, null, null);
-                sensei.setVillagerData(sensei.getVillagerData().setProfession(ModVillagers.SENSEI.get()).setLevel(1));
-                sensei.setVillagerXp(1);   // keeps the profession without a job site
-                sensei.setPersistenceRequired();
+                sensei.setHome(home);
                 level.addFreshEntityWithPassengers(sensei);
             }
         }

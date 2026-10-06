@@ -122,7 +122,6 @@
   "trial.soulless.report3": "Получено урона %s сердец за %s ударов, парирований %s, харакири %s",
   "entity.minecraft.villager.soulless.sensei": "Сенсей",
   "entity.minecraft.villager.sensei": "Сенсей",
-  "message.soulless.sensei_ready": "Сенсей кивает: вы заслужили его свиток",
   "message.soulless.slam_water": "Сокрушение душ нельзя применить в воде",
   "hud.soulless.lmb": "ЛКМ",
   "tooltip.soulless.soul_katana.c.cuts": "Клинок рубит всех в дуге перед вами",
@@ -164,5 +163,19 @@
   "advancement.soulless.kitsune_ritual": "Дар лисы",
   "advancement.soulless.kitsune_ritual.desc": "Совершите харакири и получите благословение Кицунэ",
   "advancement.soulless.died_with_honour": "Умер с честью",
-  "advancement.soulless.died_with_honour.desc": "Падите от собственного клинка, совершая харакири"
+  "advancement.soulless.died_with_honour.desc": "Падите от собственного клинка, совершая харакири",
+  "entity.soulless.sensei": "Сенсей",
+  "item.soulless.sensei_spawn_egg": "Яйцо призыва сенсея",
+  "dialogue.soulless.sensei.first.1": "Ещё один путник с мечом за спиной... Ты стоишь у ворот моего додзё, %1$s, и даже не поклонился.",
+  "dialogue.soulless.sensei.first.2": "Ладно. Говори, зачем пришёл.",
+  "dialogue.soulless.sensei.greet": "Снова ты. Говори.",
+  "dialogue.soulless.sensei.who": "Я тот, кто учит клинок слушаться руки, а руку - сердца. Имя моё тебе ни к чему.",
+  "dialogue.soulless.sensei.learn.1": "Учиться? Слова ничего не стоят.",
+  "dialogue.soulless.sensei.learn.2": "Приходи, когда твой путь станет яснее. Тогда и поговорим об уроках.",
+  "dialogue.soulless.sensei.opt.who": "Кто ты?",
+  "dialogue.soulless.sensei.opt.learn": "Научи меня.",
+  "dialogue.soulless.sensei.opt.back": "Назад.",
+  "dialogue.soulless.sensei.opt.bye": "Прощай.",
+  "dialogue.soulless.sensei.parry": "Ты уже держишь клинок как ученик. Теперь только практика: тысяча парирований, затем ещё тысяча.",
+  "dialogue.soulless.sensei.opt.parry": "Я научился парировать."
 }

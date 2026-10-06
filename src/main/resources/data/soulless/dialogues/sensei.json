@@ -1,0 +1,106 @@
+{
+  "accent": "#B3343A",
+  "start": [
+    {
+      "if": {
+        "type": "flag",
+        "flag": "sensei.met",
+        "not": true
+      },
+      "node": "first"
+    },
+    {
+      "node": "greet"
+    }
+  ],
+  "nodes": {
+    "first": {
+      "text": [
+        "dialogue.soulless.sensei.first.1",
+        "dialogue.soulless.sensei.first.2"
+      ],
+      "do": [
+        {
+          "type": "set_flag",
+          "flag": "sensei.met"
+        }
+      ],
+      "options": [
+        {
+          "text": "dialogue.soulless.sensei.opt.who",
+          "goto": "who"
+        },
+        {
+          "text": "dialogue.soulless.sensei.opt.learn",
+          "goto": "learn"
+        },
+        {
+          "text": "dialogue.soulless.sensei.opt.bye"
+        }
+      ]
+    },
+    "greet": {
+      "text": "dialogue.soulless.sensei.greet",
+      "options": [
+        {
+          "text": "dialogue.soulless.sensei.opt.who",
+          "goto": "who"
+        },
+        {
+          "text": "dialogue.soulless.sensei.opt.learn",
+          "goto": "learn",
+          "if": {
+            "type": "knows_parry",
+            "not": true
+          }
+        },
+        {
+          "text": "dialogue.soulless.sensei.opt.parry",
+          "goto": "parry",
+          "if": {
+            "type": "knows_parry"
+          }
+        },
+        {
+          "text": "dialogue.soulless.sensei.opt.bye"
+        }
+      ]
+    },
+    "who": {
+      "text": "dialogue.soulless.sensei.who",
+      "options": [
+        {
+          "text": "dialogue.soulless.sensei.opt.back",
+          "goto": "greet"
+        }
+      ]
+    },
+    "learn": {
+      "text": [
+        "dialogue.soulless.sensei.learn.1",
+        "dialogue.soulless.sensei.learn.2"
+      ],
+      "options": [
+        {
+          "text": "dialogue.soulless.sensei.opt.back",
+          "goto": "greet"
+        },
+        {
+          "text": "dialogue.soulless.sensei.opt.bye"
+        }
+      ]
+    },
+    "parry": {
+      "text": "dialogue.soulless.sensei.parry",
+      "options": [
+        {
+          "text": "dialogue.soulless.sensei.opt.back",
+          "goto": "greet"
+        },
+        {
+          "text": "dialogue.soulless.sensei.opt.bye"
+        }
+      ]
+    }
+  }
+}

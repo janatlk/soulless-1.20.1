@@ -41,6 +41,9 @@ public final class ClientModEvents {
         event.registerEntityRenderer(com.soulless.registry.ModEntities.SOUL_ERUPTION.get(), BossRenderers.Invisible::new);
         event.registerEntityRenderer(com.soulless.registry.ModEntities.ICE_SHARD.get(), BossRenderers.IceShard::new);
         event.registerEntityRenderer(com.soulless.registry.ModEntities.SOUL_SLASH.get(), BossRenderers.Slash::new);
+        // talking characters
+        event.registerEntityRenderer(com.soulless.registry.ModEntities.SENSEI.get(), ctx -> new NpcRenderer<>(ctx, false,
+                NpcRenderer.VILLAGER, NpcRenderer.PLAINS, com.soulless.Soulless.id("textures/entity/npc/sensei.png")));
     }
 
     @SubscribeEvent
