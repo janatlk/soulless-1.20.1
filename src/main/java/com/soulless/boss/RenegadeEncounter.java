@@ -49,7 +49,7 @@ public final class RenegadeEncounter {
     /** Player flags: the time he is due (game time), and the fight won. */
     public static final String DUE = "renegade.due", DEFEATED = "renegade.defeated";
     private static final int FIRST_DELAY = 2400, RETRY_DELAY = 6000;
-    private static final int FLOOR_Y = 99, FLOOR_RADIUS = 26;
+    private static final int FLOOR_Y = 99, FLOOR_RADIUS = com.soulless.world.RenegadeArena.RADIUS;
     private static final Vec3 ARRIVE = new Vec3(0.5, FLOOR_Y + 1, 8.5), HIM = new Vec3(0.5, FLOOR_Y + 1, -6.5);
     private static final String TAG = "soulless_renegade";
 
@@ -244,13 +244,7 @@ public final class RenegadeEncounter {
 
     /** The floor of the dark astral, made the first time. */
     private static void prepare(ServerLevel dark) {
-        BlockPos centre = new BlockPos(0, FLOOR_Y, 0);
-        if (dark.getBlockState(centre).is(Blocks.BARRIER)) return;
-        for (int x = -FLOOR_RADIUS; x <= FLOOR_RADIUS; x++) {
-            for (int z = -FLOOR_RADIUS; z <= FLOOR_RADIUS; z++) {
-                if (x * x + z * z <= FLOOR_RADIUS * FLOOR_RADIUS) dark.setBlock(centre.offset(x, 0, z), Blocks.BARRIER.defaultBlockState(), 2);
-            }
-        }
+        if (!com.soulless.world.RenegadeArena.built(dark, FLOOR_Y)) com.soulless.world.RenegadeArena.build(dark, FLOOR_Y);
     }
 
     /** Nobody dies here: a blow that would kill leaves half a heart, and the Renegade has won this time. */
