@@ -23,7 +23,7 @@ import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 /** The Renegade (tools/gen_renegade.py): red eyes and blade edge glow; mid-blink he is not drawn at all. */
 public class RenegadeRenderer extends GeoEntityRenderer<RenegadeEntity> {
     public RenegadeRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx, new DefaultedEntityGeoModel<>(Soulless.id("renegade"), true));
+        super(ctx, new Model());
         addRenderLayer(new AutoGlowingGeoLayer<>(this));
         shadowRadius = 0.5F;
     }
@@ -37,6 +37,24 @@ public class RenegadeRenderer extends GeoEntityRenderer<RenegadeEntity> {
     @Override
     protected float getDeathMaxRotation(RenegadeEntity animatable) {
         return 0;
+    }
+
+    /** His head follows the foe on top of the animation's own head movement (the default would overwrite it). */
+    static class Model extends DefaultedEntityGeoModel<RenegadeEntity> {
+        Model() {
+            super(Soulless.id("renegade"), false);
+        }
+
+        @Override
+        public void setCustomAnimations(RenegadeEntity animatable, long instanceId,
+                                        software.bernie.geckolib.core.animation.AnimationState<RenegadeEntity> state) {
+            super.setCustomAnimations(animatable, instanceId, state);
+            var head = getAnimationProcessor().getBone("head");
+            var data = state.getData(software.bernie.geckolib.constant.DataTickets.ENTITY_MODEL_DATA);
+            if (head == null || data == null) return;
+            head.setRotX(head.getRotX() + Mth.clamp(data.headPitch(), -40, 40) * Mth.DEG_TO_RAD * 0.8F);
+            head.setRotY(head.getRotY() + Mth.clamp(data.netHeadYaw(), -50, 50) * Mth.DEG_TO_RAD);
+        }
     }
 
     /** His red blades of dark magic: a sword hanging point down, then flying point first; glowing. */

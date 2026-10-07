@@ -6,7 +6,6 @@ import com.soulless.npc.dialogue.DialogueContext;
 import com.soulless.registry.ModEntities;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -30,7 +29,6 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +52,6 @@ public final class RenegadeEncounter {
     private static final int FLOOR_Y = 99, FLOOR_RADIUS = 26;
     private static final Vec3 ARRIVE = new Vec3(0.5, FLOOR_Y + 1, 8.5), HIM = new Vec3(0.5, FLOOR_Y + 1, -6.5);
     private static final String TAG = "soulless_renegade";
-    private static final DustParticleOptions SMOKE = new DustParticleOptions(new Vector3f(0.1F, 0.03F, 0.08F), 2.2F);
 
     /** A fight under way: the player, his entity, the boss bar, where it stands (pull -> talk -> fight -> end). */
     private static final class Fight {
@@ -139,7 +136,7 @@ public final class RenegadeEncounter {
         ServerLevel level = p.serverLevel();
         if (f.stage == 0) {
             // dark smoke closes round the player, then the pull
-            if (f.t % 2 == 0) level.sendParticles(SMOKE, p.getX(), p.getY() + 1, p.getZ(), 10, 1.2 - f.t * 0.012, 0.9, 1.2 - f.t * 0.012, 0);
+            if (f.t % 2 == 0) level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), p.getX(), p.getY() + 1, p.getZ(), 10, 1.2 - f.t * 0.012, 0.9, 1.2 - f.t * 0.012, 0);
             if (f.t == 40) p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 60, 0, false, false));
             if (f.t == 70) {
                 ServerLevel dark = p.server.getLevel(LEVEL);
@@ -191,7 +188,7 @@ public final class RenegadeEncounter {
         if (f.won) {
             if (f.t == 60) line(p, "dialogue.soulless.renegade.defeat2");
             if (f.t == 110 && him != null) {
-                level.sendParticles(SMOKE, him.getX(), him.getY() + 1, him.getZ(), 60, 0.5, 1, 0.5, 0);
+                level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), him.getX(), him.getY() + 1, him.getZ(), 60, 0.5, 1, 0.5, 0);
                 level.playSound(null, him.getX(), him.getY(), him.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1, 0.5F);
                 him.discard();
             }
@@ -266,9 +263,9 @@ public final class RenegadeEncounter {
         if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level) || level.dimension() != LEVEL) return;
         if (level.getGameTime() % 4 != 0) return;
         for (ServerPlayer p : level.players()) {
-            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ASH, p.getX(), p.getY() + 3, p.getZ(), 8, 6, 2, 6, 0);
+            level.sendParticles(com.soulless.registry.ModParticles.ASH_FLAKE.get(), p.getX(), p.getY() + 3, p.getZ(), 6, 6, 2, 6, 0);
             double a = level.random.nextDouble() * Math.PI * 2;
-            level.sendParticles(SMOKE, Math.cos(a) * FLOOR_RADIUS, FLOOR_Y + 1 + level.random.nextDouble() * 3, Math.sin(a) * FLOOR_RADIUS, 1, 0, 0, 0, 0);
+            level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), Math.cos(a) * FLOOR_RADIUS, FLOOR_Y + 1 + level.random.nextDouble() * 3, Math.sin(a) * FLOOR_RADIUS, 1, 0, 0, 0, 0);
         }
     }
 

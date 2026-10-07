@@ -29,6 +29,12 @@ public final class ClientModEvents {
     public static void onParticles(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SOUL_EMBER.get(), SoulEmberParticle.Provider::new);
         event.registerSpriteSet(ModParticles.GOLD_EMBER.get(), SoulEmberParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.BLOOD_EMBER.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.EMBER));
+        event.registerSpriteSet(ModParticles.DARK_SMOKE.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.SMOKE));
+        event.registerSpriteSet(ModParticles.RED_SPARK.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.SPARK));
+        event.registerSpriteSet(ModParticles.CRIMSON_SLASH.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.SLASH));
+        event.registerSpriteSet(ModParticles.CRIMSON_BURST.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.BURST));
+        event.registerSpriteSet(ModParticles.ASH_FLAKE.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.ASH));
     }
 
     @SubscribeEvent

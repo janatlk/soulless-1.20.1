@@ -1,6 +1,5 @@
 package com.soulless.boss;
 
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -15,7 +14,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 
 import java.util.UUID;
 
@@ -26,7 +24,6 @@ import java.util.UUID;
  */
 public class RedSlashEntity extends Entity {
     private static final EntityDataAccessor<Float> ROLL = SynchedEntityData.defineId(RedSlashEntity.class, EntityDataSerializers.FLOAT);
-    private static final DustParticleOptions RED = new DustParticleOptions(new Vector3f(1F, 0.1F, 0.16F), 1.0F);
     private static final double HALF_LENGTH = 1.4, REACH = 1.0;
 
     @Nullable private UUID owner, target;
@@ -65,7 +62,7 @@ public class RedSlashEntity extends Entity {
             float yaw = getYRot() * Mth.DEG_TO_RAD;
             for (int i = -6; i <= 6; i++) {
                 double s = i / 6.0 * HALF_LENGTH;
-                level.sendParticles(RED, getX() + Math.cos(yaw) * s, getY() + Math.sin(Math.toRadians(roll())) * s * 0.5,
+                level.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX() + Math.cos(yaw) * s, getY() + Math.sin(Math.toRadians(roll())) * s * 0.5,
                         getZ() + Math.sin(yaw) * s, 1, 0, 0, 0, 0);
             }
         }
@@ -76,7 +73,7 @@ public class RedSlashEntity extends Entity {
             float yaw = getYRot() * Mth.DEG_TO_RAD;
             for (int i = -8; i <= 8; i++) {
                 double s = i / 8.0 * HALF_LENGTH;
-                level.sendParticles(RED, getX() + Math.cos(yaw) * s, getY() + Math.sin(Math.toRadians(roll())) * s * 0.5,
+                level.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX() + Math.cos(yaw) * s, getY() + Math.sin(Math.toRadians(roll())) * s * 0.5,
                         getZ() + Math.sin(yaw) * s, 2, 0.05, 0.05, 0.05, 0.02);
             }
             level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 0.7F, 1.6F);

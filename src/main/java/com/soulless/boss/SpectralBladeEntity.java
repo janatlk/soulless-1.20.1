@@ -1,6 +1,5 @@
 package com.soulless.boss;
 
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -13,7 +12,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
 
 /**
  * One of the Renegade's red blades of dark magic: it hangs over his head (slot 0..2, a fan), then, launched, flies
@@ -21,7 +19,6 @@ import org.joml.Vector3f;
  * pointing along its flight (client.RenegadeRenderer.Blade).
  */
 public class SpectralBladeEntity extends Projectile {
-    private static final DustParticleOptions RED = new DustParticleOptions(new Vector3f(1F, 0.12F, 0.2F), 0.9F);
     private static final float DAMAGE = 3;
     private static final double SPEED = 1.05;
     private int slot;
@@ -72,7 +69,7 @@ public class SpectralBladeEntity extends Projectile {
             }
             Vec3 at = hoverSpot(o);
             setPos(at.x, at.y + Math.sin((tickCount + slot * 7) * 0.2) * 0.08, at.z);
-            if (level() instanceof ServerLevel s && tickCount % 3 == 0) s.sendParticles(RED, getX(), getY(), getZ(), 1, 0.1, 0.3, 0.1, 0);
+            if (level() instanceof ServerLevel s && tickCount % 3 == 0) s.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX(), getY(), getZ(), 1, 0.1, 0.3, 0.1, 0);
             return;
         }
         Vec3 v = getDeltaMovement();
@@ -81,7 +78,7 @@ public class SpectralBladeEntity extends Projectile {
             onHit(hit);
         }
         setPos(getX() + v.x, getY() + v.y, getZ() + v.z);
-        if (level() instanceof ServerLevel s) s.sendParticles(RED, getX(), getY(), getZ(), 2, 0.05, 0.05, 0.05, 0);
+        if (level() instanceof ServerLevel s) s.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX(), getY(), getZ(), 2, 0.05, 0.05, 0.05, 0);
         if (++flight > 60 && !level().isClientSide) discard();
     }
 

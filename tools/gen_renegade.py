@@ -8,7 +8,11 @@ raised forward, a head looking up); ry > 0 turns the front toward his right (-x)
 his left (+x) - so a right arm lifted out sideways is rz < 0. Files get rotations as (-rx, -ry, rz), as GeckoLib reads
 them. The katana bone: at rest the blade runs forward (-z) out of the right fist.
 
-    uv run --no-project --with pillow --with numpy tools/gen_renegade.py [--preview out.png]
+The animations: choreographed in tools/renegade_moves.py, solved and baked frame by frame by tools/renegade_motion.py
+(springs, foot and hand IK, the blade's edge leading, swinging loose ends; a key per bone per 1/20 s).
+
+    uv run --no-project --with pillow --with numpy tools/gen_renegade.py [--preview out.png] [--sheet out.png]
+        [--anims DIR (a gif and a contact sheet of each animation)] [--only name,name (bake and report, write nothing)]
 """
 import json
 import math
@@ -89,8 +93,8 @@ def mirror(lo, hi):
 def build():
     bone("root", None, (0, 0, 0))
     bone("waist", "root", (0, 12, 0))
-    bone("saya", "waist", (4.9, 11.6, -1.5), rest=(18, 0, 0))   # the sheath at the left hip, tip dropping behind
-    box("saya", "saya", "saya", (4.3, 11, -3.2), (5.5, 12.2, 12.5))
+    bone("saya", "waist", (4.4, 12.4, -2.4), rest=(18, 0, 0))   # the sheath through the obi at the left hip, tip dropping behind
+    box("saya", "saya", "saya", (3.8, 11.8, -4.4), (5.0, 13.0, 18.6))   # as long as the blade it holds
     bone("chest", "waist", (0, 12, 0))
     box("torso", "chest", "haori", (-4, 12, -2), (4, 24, 2))
     box("obi", "chest", "obi", (-4.35, 12, -2.35), (4.35, 14.2, 2.35))
@@ -112,7 +116,7 @@ def build():
         bone(f"forearm_{side}", f"arm_{side}", (6 * s, 16.2, 0))
         box(f"forearm_{side}", f"forearm_{side}", "wrap", *m((4.25, 11, -1.75), (7.75, 16.5, 1.75)))
         box(f"hand_{side}", f"forearm_{side}", "skin", *m((4.25, 9.6, -1.75), (7.75, 11, 1.75)))
-        bone(f"leg_{side}", "root", (2.2 * s, 12, 0))
+        bone(f"leg_{side}", "waist", (2.2 * s, 12, 0))   # under the hips: lowering them bends the knees (IK)
         box(f"thigh_{side}", f"leg_{side}", "hakama", *m((0.2, 6, -2), (4.2, 12, 2)))
         bone(f"shin_{side}", f"leg_{side}", (2.2 * s, 6, 0))
         box(f"shin_{side}", f"shin_{side}", "shin", *m((0.2, 0, -2), (4.2, 6, 2)))
@@ -522,92 +526,57 @@ def to_file_rot(rot):
     return [r(-rot[0]), r(-rot[1]), r(rot[2])]
 
 
-def keyframes(frames, ease="easeInOutSine", extra=None):
-    """[(time, pose[, easing])] -> bone channels (bones a pose leaves out sit at rest)."""
-    bones = sorted(set().union(*(set(f[1]) for f in frames)))
-    out = {}
-    for b in bones:
-        chans = {}
-        for ch, key in (("rot", "rotation"), ("pos", "position")):
-            if not any(ch in f[1].get(b, {}) for f in frames):
-                continue
-            chans[key] = {}
-            for f in frames:
-                t, pose = f[0], f[1]
-                e = f[2] if len(f) > 2 else ease
-                v = pose.get(b, {}).get(ch, (0, 0, 0))
-                vec = to_file_rot(v) if ch == "rot" else [0, r(v[1]), r(v[2])]
-                chans[key][str(t)] = {"vector": vec, "easing": e}
-        out[b] = chans
-    for b, chans in (extra or {}).items():
-        out.setdefault(b, {}).update(chans)
-    return out
-
-
-def anims():
-    t = "query.anim_time"
-    a = {}
-    sway = {"scarf_tail": {"rotation": [f"-8 - math.sin({t} * 160) * 6", 0, f"math.sin({t} * 110) * 5"]}}
-    # idle: the guard, breathing, the scarf stirring in a wind that is not there
-    idle = keyframes([(0.0, GUARD), (1.6, merge(GUARD, P(chest=(-2, 12, 0)))), (3.2, GUARD)], extra=sway)
-    a["idle"] = (True, 3.2, idle)
-    # stalking: light quick steps sideways round the foe, guard kept up
-    walk = keyframes([(0.0, merge(GUARD, P(leg_r=(28, 0, -3), leg_l=(-24, 0, 4), shin_l=(-30, 0, 0)))),
-                      (0.3, merge(GUARD, P(leg_r=(-20, 0, -3), leg_l=(26, 0, 4), shin_r=(-30, 0, 0)))),
-                      (0.6, merge(GUARD, P(leg_r=(28, 0, -3), leg_l=(-24, 0, 4), shin_l=(-30, 0, 0))))], ease="linear", extra=sway)
-    a["walk"] = (True, 0.6, walk)
-    # 1. iai: the hand to the hilt, 1.5 s of stillness (he vanishes at its end)...
-    sheathe = {"blade": {"scale": {"0.0": {"vector": [1, 1, 1]}, "0.3": {"vector": [1, 1, 1]}, "0.34": {"vector": [0, 0, 0]},
-                                   "1.5": {"vector": [0, 0, 0]}}}}
-    a["iai_ready"] = ("hold_on_last_frame", 1.5, keyframes([(0.0, GUARD), (0.35, IAI_READY, "easeOutBack"), (1.5, IAI_READY)],
-                                                           extra=merge(sway, sheathe)))
-    # ...and behind the foe: the draw cut (hits at 0.15 s)
-    draw = {"blade": {"scale": {"0.0": {"vector": [0, 0, 0]}, "0.04": {"vector": [1, 1, 1]}}}}
-    a["iai_strike"] = (False, 0.9, keyframes([(0.0, IAI_READY), (0.08, IAI_DRAW, "linear"), (0.2, IAI_FOLLOW, "easeOutQuad"),
-                                              (0.55, IAI_FOLLOW), (0.9, GUARD)], extra=merge(sway, draw)))
-    # 2. three flickering steps: a cut at each (0.35 s each)
-    a["step_cut1"] = (False, 0.35, keyframes([(0.0, JODAN), (0.12, KESA_END, "easeOutQuad"), (0.35, KESA_END)]))
-    a["step_cut2"] = (False, 0.35, keyframes([(0.0, KESA_END), (0.12, GYAKU_END, "easeOutQuad"), (0.35, GYAKU_END)]))
-    a["step_cut3"] = (False, 0.55, keyframes([(0.0, GYAKU_END), (0.12, LEVEL_END, "easeOutQuad"), (0.3, LEVEL_END), (0.55, GUARD)]))
-    # 3. the thrust: drawn back 0.6 s, then the lunge held through the dash
-    a["thrust"] = ("hold_on_last_frame", 0.8, keyframes([(0.0, GUARD), (0.5, THRUST_BACK), (0.62, THRUST_LUNGE, "easeOutQuad"),
-                                                         (0.8, THRUST_LUNGE)], extra=sway))
-    # 4. the whirl: a crouch, the leap with two full turns, the landing (hits at 1.15 s)
-    spin = {"root": {"rotation": {"0.0": {"vector": [0, 0, 0]}, "0.45": {"vector": [0, 0, 0]},
-                                  "0.65": {"vector": [0, 180, 0], "easing": "linear"}, "0.85": {"vector": [0, 360, 0], "easing": "linear"},
-                                  "1.0": {"vector": [0, 540, 0], "easing": "linear"}, "1.15": {"vector": [0, 720, 0], "easing": "linear"},
-                                  "1.6": {"vector": [0, 720, 0]}}}}
-    a["whirl"] = (False, 1.6, keyframes([(0.0, GUARD), (0.4, CROUCH), (0.55, WHIRL, "easeOutQuad"), (1.1, WHIRL),
-                                         (1.2, CROUCH, "easeOutQuad"), (1.6, GUARD)], extra=spin))
-    # 5. the summoning: the hand to the sky, then three casts (at 1.0, 1.5, 2.0 s)
-    cast = [(0.0, GUARD), (0.4, CALL, "easeOutBack"), (0.8, CALL)]
-    for k, at in enumerate((1.0, 1.5, 2.0)):
-        cast += [(at - 0.1, merge(CALL, P(arm_l=(130, 0, 6)))), (at, POINT, "easeOutQuad")]
-    cast += [(2.4, POINT), (2.8, GUARD)]
-    a["summon"] = (False, 2.8, keyframes(cast, extra=sway))
-    # 6. the combo: kesa, gyaku, then straight down from overhead (hits at 0.35, 0.75, 1.2 s)
-    a["combo"] = (False, 1.7, keyframes([(0.0, GUARD), (0.22, JODAN), (0.35, KESA_END, "easeOutQuad"), (0.5, KESA_END),
-                                         (0.75, GYAKU_END, "easeOutQuad"), (0.95, JODAN), (1.2, DIVE_END, "easeInQuad"),
-                                         (1.4, DIVE_END), (1.7, GUARD)], extra=sway))
-    # 7. from the sky: hanging over the foe, blade high (1 s), the dive (hits at 1.2 s), back up
-    a["drop"] = (False, 1.9, keyframes([(0.0, HANG), (1.0, HANG), (1.2, DIVE_END, "easeInQuad"), (1.55, DIVE_END), (1.9, GUARD)]))
-    # thrown back by a parry
-    a["stagger"] = (False, 1.0, keyframes([(0.0, GUARD), (0.12, STAGGER, "easeOutQuad"), (0.7, STAGGER), (1.0, GUARD)]))
-    # arriving out of the dark: risen from a crouch, blade drawn
-    a["appear"] = (False, 1.2, keyframes([(0.0, CROUCH), (0.5, CROUCH), (1.0, GUARD, "easeOutBack"), (1.2, GUARD)], extra=sway))
-    # talking before the fight: standing loose, blade lowered
-    a["talk"] = (True, 3.0, keyframes([(0.0, STAND), (1.5, merge(STAND, P(head=(-4, 6, 0)))), (3.0, STAND)], extra=sway))
-    # beaten
-    a["defeat"] = ("hold_on_last_frame", 1.2, keyframes([(0.0, STAGGER), (0.6, DEFEAT, "easeOutBounce"), (1.2, DEFEAT)]))
-    return a
-
-
 def write_anims():
-    out = {}
-    for name, (loop, length, bones) in anims().items():
-        out[f"animation.renegade.{name}"] = {"loop": loop, "animation_length": length, "bones": bones}
-    p = ASSETS / "animations/entity/renegade.animation.json"
-    p.write_text(json.dumps({"format_version": "1.8.0", "animations": out}, indent=1))
+    """Bake every animation (tools/renegade_moves.py, solved by tools/renegade_motion.py) and write them."""
+    import renegade_motion as rm
+    import renegade_moves as mv
+    rm.G = sys.modules[__name__]
+    baked = {}
+    only = sys.argv[sys.argv.index("--only") + 1].split(",") if "--only" in sys.argv else None
+    for name, (loop, length, fn, snap) in mv.moves().items():
+        if only and name not in only:
+            continue
+        frames, rp = rm.bake_one(name, fn, length, loop is True, snap=snap)
+        baked[name] = (loop, length, frames)
+        flag = "  <-- BLADE IN THE GROUND" if rp["blade_low"] < 0.3 else ""
+        print(f"  {name:14s} {len(frames):3d} frames  blade lowest {rp['blade_low']:5.1f} at {rp['blade_low_at']:.2f}s"
+              f"  feet/knees lowest {rp['feet_low']:5.1f}  blade fastest {rp['peaks'][:5]}{flag}")
+        miss = {k: rp[k] for k in ("grip_miss", "saya_miss", "foot_miss_r", "foot_miss_l", "hand_miss_r", "hand_miss_l") if rp[k][0] > 0.2}
+        if miss:
+            print(f"  {'':14s} out of reach: " + ", ".join(f"{k} {v:.1f}px at {at:.2f}s" for k, (v, at) in miss.items()))
+    if not only:
+        rm.write(baked, ASSETS / "animations/entity/renegade.animation.json")
+    return baked
+
+
+def check_sheets(base, baked, out_dir):
+    """A contact sheet (png) and a gif of each animation, from the front three-quarter and the side."""
+    import renegade_motion as rm
+    from PIL import ImageDraw
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rnd = rm.Render(base, scale=5)
+    for name, (loop, length, frames) in baked.items():
+        tiles, gif = [], []
+        for i, f in enumerate(frames):
+            a = rnd.frame(f, yaw=-30, size=(64, 54))
+            im = Image.fromarray(np.concatenate([a, rnd.frame(f, yaw=-105, size=(64, 54))], axis=1))
+            ImageDraw.Draw(im).text((4, 3), f"{name} {i / rm.FPS:.2f}s", fill=(255, 255, 255))
+            gif.append(im)
+            t = Image.fromarray(a)
+            ImageDraw.Draw(t).text((4, 3), f"{i / rm.FPS:.2f}", fill=(255, 255, 255))
+            tiles.append(np.array(t))
+        gif[0].save(out_dir / f"{name}.gif", save_all=True, append_images=gif[1:], duration=50, loop=0)
+        cols = 6
+        step = max(1, -(-len(tiles) // 24))
+        pk = tiles[::step]
+        rows = []
+        for i in range(0, len(pk), cols):
+            row = pk[i:i + cols]
+            while len(row) < cols:
+                row.append(np.zeros_like(tiles[0]))
+            rows.append(np.concatenate(row, axis=1))
+        Image.fromarray(np.concatenate(rows, axis=0)).save(out_dir / f"{name}.png")
 
 
 def write_geo(tex_h):
@@ -839,7 +808,9 @@ def main():
     Image.fromarray(np.clip(base, 0, 255).astype(np.uint8), "RGBA").save(t / "renegade.png")
     Image.fromarray(np.clip(gm, 0, 255).astype(np.uint8), "RGBA").save(t / "renegade_glowmask.png")
     write_geo(tex_h)
-    write_anims()
+    baked = write_anims()
+    if "--anims" in sys.argv:
+        check_sheets(base, baked, sys.argv[sys.argv.index("--anims") + 1])
     if "--sheet" in sys.argv:
         sheet(base, sys.argv[sys.argv.index("--sheet") + 1])
         head_closeup(base, sys.argv[sys.argv.index("--sheet") + 1].replace(".png", "_head.png"))

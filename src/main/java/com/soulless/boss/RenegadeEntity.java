@@ -2,8 +2,6 @@ package com.soulless.boss;
 
 import com.soulless.registry.ModEffects;
 import com.soulless.registry.ModEntities;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -23,7 +21,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -59,17 +56,17 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     // animation ids (synced; the renderer picks the animation, a new start tick replays it)
     public static final int A_IDLE = 0, A_WALK = 1, A_TALK = 2, A_APPEAR = 3, A_IAI_READY = 4, A_IAI_STRIKE = 5,
             A_STEP1 = 6, A_STEP2 = 7, A_STEP3 = 8, A_THRUST = 9, A_WHIRL = 10, A_SUMMON = 11, A_COMBO = 12, A_DROP = 13,
-            A_STAGGER = 14, A_DEFEAT = 15;
+            A_STAGGER = 14, A_DEFEAT = 15, A_WALK_BACK = 16, A_STRAFE_L = 17, A_STRAFE_R = 18;
     public static final String[] ANIMS = {"idle", "walk", "talk", "appear", "iai_ready", "iai_strike", "step_cut1", "step_cut2",
-            "step_cut3", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat"};
+            "step_cut3", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat", "walk_back", "strafe_l", "strafe_r"};
+    /** How fast (blocks a tick) each stepping animation is made for: played faster or slower to match his real speed. */
+    private static final double STEP_SPEED = 16.7 / 16 / 20, STRAFE_SPEED = 15.0 / 16 / 20;
     private static final EntityDataAccessor<Integer> ANIM = SynchedEntityData.defineId(RenegadeEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> ANIM_AT = SynchedEntityData.defineId(RenegadeEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> HIDDEN = SynchedEntityData.defineId(RenegadeEntity.class, EntityDataSerializers.BOOLEAN);
 
     private enum Attack { IAI, STEPS, THRUST, WHIRL, BLADES, COMBO, DROP }
 
-    private static final DustParticleOptions RED = new DustParticleOptions(new Vector3f(0.9F, 0.08F, 0.14F), 1.3F);
-    private static final DustParticleOptions DARK = new DustParticleOptions(new Vector3f(0.12F, 0.05F, 0.16F), 1.8F);
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     @Nullable private UUID foe;
@@ -146,10 +143,10 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     // ---- a preview statue (/soulless preview renegade <animation>): stands still and replays one animation
 
     /** Animation lengths in ticks (tools/gen_renegade.py) - how long to wait before replaying a one-shot one. */
-    private static final int[] LENGTH = {64, 12, 60, 24, 30, 18, 7, 7, 11, 16, 32, 56, 34, 38, 20, 24};
+    private static final int[] LENGTH = {80, 12, 50, 25, 30, 18, 8, 8, 24, 32, 32, 56, 34, 38, 40, 60, 12, 12, 12};
     /** Whole attacks for the preview: the iai (ready, then the draw) and the three steps. */
-    public static final String[] PREVIEWS = {"idle", "walk", "talk", "appear", "iai", "steps", "thrust", "whirl", "summon",
-            "combo", "drop", "stagger", "defeat"};
+    public static final String[] PREVIEWS = {"idle", "walk", "walk_back", "strafe_l", "strafe_r", "talk", "appear", "iai",
+            "steps", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat"};
     private String preview = "";
     private int previewStep;
 
@@ -177,7 +174,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     private void previewTick() {
         int[] seq = previewSequence();
         int a = seq[previewStep % seq.length];
-        boolean loop = a == A_IDLE || a == A_WALK || a == A_TALK;
+        boolean loop = loops(a);
         if (loop) {
             if (anim() != a) play(a);
             return;
@@ -223,7 +220,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             endAttack();
             hide(false);
             play(A_STAGGER);
-            level.sendParticles(ParticleTypes.CRIT, getX(), getY() + 1.4, getZ(), 12, 0.3, 0.3, 0.3, 0.3);
+            level.sendParticles(com.soulless.registry.ModParticles.RED_SPARK.get(), getX(), getY() + 1.4, getZ(), 14, 0.3, 0.3, 0.3, 0.25);
         }
         wasStunned = stunned;
         if (stunned) return;
@@ -239,16 +236,39 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         startAttack(p);
     }
 
-    /** Between attacks: circle the foe at a few blocks, guard up. */
+    /** Between attacks: circle the foe at a few blocks, slowly, guard up, always facing him - stepping forward, back or
+     * sideways as he moves. */
     private void stalk(Player p) {
         Vec3 to = p.position().subtract(position());
         double d = to.horizontalDistance();
         Vec3 dir = new Vec3(to.x, 0, to.z).normalize();
         Vec3 side = new Vec3(-dir.z, 0, dir.x).scale(strafeDir);
-        Vec3 want = position().add(side.scale(1.2)).add(dir.scale(d > 5.5 ? 1 : d < 3.5 ? -0.8 : 0));
-        getMoveControl().setWantedPosition(want.x, want.y, want.z, 0.9);
+        Vec3 move = side.scale(1.2).add(dir.scale(d > 5.5 ? 1 : d < 3.5 ? -0.8 : 0));
+        Vec3 want = position().add(move);
+        getMoveControl().setWantedPosition(want.x, want.y, want.z, 0.45);
         if (random.nextInt(80) == 0) strafeDir = -strafeDir;
-        if (anim() != A_WALK && anim() != A_STAGGER && anim() != A_APPEAR) play(A_WALK);
+        // which way that is for him (he faces the foe): forward, back, to his right or his left
+        double fwd = move.dot(dir);
+        double right = move.dot(new Vec3(-dir.z, 0, dir.x));   // facing south (+z), his right is west (-x)
+        int step = Math.abs(fwd) > Math.abs(right) * 1.1 ? (fwd > 0 ? A_WALK : A_WALK_BACK) : (right > 0 ? A_STRAFE_R : A_STRAFE_L);
+        boolean stepping = anim() == A_WALK || anim() == A_WALK_BACK || anim() == A_STRAFE_L || anim() == A_STRAFE_R;
+        if (anim() == A_STAGGER || anim() == A_APPEAR) return;
+        if (!stepping || step != anim() && tickCount - animStart() > 8) play(step);
+    }
+
+    private static boolean loops(int a) {
+        return a == A_IDLE || a == A_WALK || a == A_TALK || a == A_WALK_BACK || a == A_STRAFE_L || a == A_STRAFE_R;
+    }
+
+    /** He always squares up to whoever he faces: the body turns with the head, never toward where he walks. */
+    @Override
+    protected net.minecraft.world.entity.ai.control.BodyRotationControl createBodyControl() {
+        return new net.minecraft.world.entity.ai.control.BodyRotationControl(this) {
+            @Override
+            public void clientTick() {
+                yBodyRot = yHeadRot;
+            }
+        };
     }
 
     /** Scripted runs (the dev autotest): these attacks next, in this order (ordinals of the list in the class doc). */
@@ -332,10 +352,10 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
 
     private void blink(ServerLevel level, Vec3 to) {
         if (level.dimension() == RenegadeEncounter.LEVEL && attack != Attack.DROP) to = new Vec3(to.x, FLOOR, to.z);
-        level.sendParticles(DARK, getX(), getY() + 1, getZ(), 18, 0.3, 0.6, 0.3, 0);
+        level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), getX(), getY() + 1, getZ(), 18, 0.3, 0.6, 0.3, 0);
         level.playSound(null, getX(), getY(), getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 0.8F, 0.6F);
         moveTo(to.x, to.y, to.z, getYRot(), getXRot());
-        level.sendParticles(DARK, to.x, to.y + 1, to.z, 18, 0.3, 0.6, 0.3, 0);
+        level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), to.x, to.y + 1, to.z, 18, 0.3, 0.6, 0.3, 0);
     }
 
     /** A spot on the floor beside {@code from}, toward {@code dir}, {@code dist} blocks off. */
@@ -353,7 +373,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         }
         if (t < 30) {
             getNavigation().stop();
-            if (t % 3 == 0) level.sendParticles(RED, getX(), getY() + 0.9, getZ(), 2, 0.25, 0.15, 0.25, 0);
+            if (t % 3 == 0) level.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX(), getY() + 0.9, getZ(), 2, 0.25, 0.15, 0.25, 0);
         }
         if (t == 30) hide(true);
         if (t == 32) {
@@ -408,12 +428,12 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         if (t < 12) {
             face(p);
             mark = new Vec3(p.getX() - getX(), 0, p.getZ() - getZ()).normalize();
-            if (t % 2 == 0) level.sendParticles(RED, getX(), getY() + 1, getZ(), 1, 0.2, 0.2, 0.2, 0);
+            if (t % 2 == 0) level.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX(), getY() + 1, getZ(), 1, 0.2, 0.2, 0.2, 0);
         }
         if (t == 12) level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.HOSTILE, 1, 0.8F);
         if (t >= 12 && t < 20) {
             setDeltaMovement(mark.x * 1.1, getDeltaMovement().y, mark.z * 1.1);
-            level.sendParticles(DARK, getX(), getY() + 1, getZ(), 3, 0.2, 0.4, 0.2, 0);
+            level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), getX(), getY() + 1, getZ(), 3, 0.2, 0.4, 0.2, 0);
             if (blowsLeft == 0 && t == 12) blowsLeft = 1;
             if (blowsLeft > 0 && distanceTo(p) < 1.8) {
                 strike(p, 2.2, 120, 4);
@@ -433,7 +453,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             play(A_WHIRL);
             mark = p.position();
         }
-        if (t < 23 && t % 2 == 0) ring(level, mark, 2.8, RED, 24);
+        if (t < 23 && t % 2 == 0) ring(level, mark, 2.8, com.soulless.registry.ModParticles.BLOOD_EMBER.get(), 24);
         if (t == 9) {
             Vec3 to = mark.subtract(position());
             setDeltaMovement(to.x / 13.0, 0.62, to.z / 13.0);
@@ -441,8 +461,8 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         }
         if (t == 23) {
             strikeAt(p, mark, 2.9, 4);
-            ring(level, mark, 2.9, RED, 48);
-            level.sendParticles(ParticleTypes.SWEEP_ATTACK, mark.x, mark.y + 0.4, mark.z, 6, 1.4, 0.1, 1.4, 0);
+            ring(level, mark, 2.9, com.soulless.registry.ModParticles.BLOOD_EMBER.get(), 48);
+            level.sendParticles(com.soulless.registry.ModParticles.CRIMSON_SLASH.get(), mark.x, mark.y + 0.6, mark.z, 6, 1.4, 0.2, 1.4, 0);
             level.playSound(null, mark.x, mark.y, mark.z, SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.5F, 1.6F);
         }
         if (t >= 32) endAttack();
@@ -502,7 +522,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         }
         if (t == 3 + 24) {
             strike(p, 3.2, 60, 4);
-            level.sendParticles(ParticleTypes.CRIT, getX(), getY() + 0.2, getZ(), 14, 0.6, 0.1, 0.6, 0.2);
+            level.sendParticles(com.soulless.registry.ModParticles.RED_SPARK.get(), getX(), getY() + 0.2, getZ(), 16, 0.6, 0.1, 0.6, 0.2);
         }
         if (t >= 3 + 34) endAttack();
     }
@@ -522,14 +542,15 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         }
         if (t < 20) {
             setDeltaMovement(Vec3.ZERO);
-            if (t % 2 == 0) ring(level, mark, 2.2, RED, 20);
+            if (t % 2 == 0) ring(level, mark, 2.2, com.soulless.registry.ModParticles.BLOOD_EMBER.get(), 20);
         }
         if (t == 20) setDeltaMovement(0, -1.6, 0);
         if (t == 24) {
             moveTo(mark.x, mark.y, mark.z, getYRot(), getXRot());
             strikeAt(p, mark, 2.3, 5);
-            ring(level, mark, 2.3, RED, 40);
-            level.sendParticles(ParticleTypes.EXPLOSION, mark.x, mark.y + 0.3, mark.z, 1, 0, 0, 0, 0);
+            ring(level, mark, 2.3, com.soulless.registry.ModParticles.BLOOD_EMBER.get(), 40);
+            level.sendParticles(com.soulless.registry.ModParticles.CRIMSON_BURST.get(), mark.x, mark.y + 0.4, mark.z, 1, 0, 0, 0, 0);
+            level.sendParticles(com.soulless.registry.ModParticles.RED_SPARK.get(), mark.x, mark.y + 0.2, mark.z, 20, 0.8, 0.1, 0.8, 0.3);
             level.playSound(null, mark.x, mark.y, mark.z, SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 0.6F, 0.7F);
         }
         if (t >= 38) endAttack();
@@ -539,11 +560,11 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         float yaw = getYRot() * Mth.DEG_TO_RAD;
         for (int i = -6; i <= 6; i++) {
             double a = yaw + i * 0.15;
-            level.sendParticles(RED, getX() - Math.sin(a) * r, getY() + 1.1 + i * 0.03, getZ() + Math.cos(a) * r, 1, 0, 0, 0, 0);
+            level.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX() - Math.sin(a) * r, getY() + 1.1 + i * 0.03, getZ() + Math.cos(a) * r, 1, 0, 0, 0, 0);
         }
     }
 
-    private static void ring(ServerLevel level, Vec3 c, double r, DustParticleOptions p, int n) {
+    private static void ring(ServerLevel level, Vec3 c, double r, net.minecraft.core.particles.ParticleOptions p, int n) {
         for (int i = 0; i < n; i++) {
             double a = Math.PI * 2 * i / n;
             level.sendParticles(p, c.x + Math.cos(a) * r, c.y + 0.1, c.z + Math.sin(a) * r, 1, 0, 0, 0, 0);
@@ -609,9 +630,21 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "main", 3, event -> {
             int a = anim();
-            boolean loop = a == A_IDLE || a == A_WALK || a == A_TALK;
+            boolean loop = loops(a);
             String name = "animation.renegade." + ANIMS[a];
-            event.setAnimation(loop ? RawAnimation.begin().thenLoop(name) : RawAnimation.begin().thenPlayAndHold(name));
+            if (a == A_DEFEAT) {
+                event.setAnimation(RawAnimation.begin().thenPlay(name).thenLoop("animation.renegade.defeat_breath"));
+            } else {
+                event.setAnimation(loop ? RawAnimation.begin().thenLoop(name) : RawAnimation.begin().thenPlayAndHold(name));
+            }
+            // steps played as fast as he really moves, so the feet do not slide
+            double speed = 1;
+            if (a == A_WALK || a == A_WALK_BACK || a == A_STRAFE_L || a == A_STRAFE_R) {
+                double v = Math.sqrt((getX() - xo) * (getX() - xo) + (getZ() - zo) * (getZ() - zo));
+                double made = a == A_WALK || a == A_WALK_BACK ? STEP_SPEED : STRAFE_SPEED;
+                if (v > 0.004) speed = Mth.clamp(v / made, 0.5, 2.2);
+            }
+            event.getController().setAnimationSpeed(speed);
             if (event.getController().getCurrentAnimation() != null && lastStart != animStart() && !loop) {
                 event.getController().forceAnimationReset();
             }
