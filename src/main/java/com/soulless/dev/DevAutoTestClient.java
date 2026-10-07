@@ -106,6 +106,22 @@ public final class DevAutoTestClient {
             katanaTick(mc);
             return;
         }
+        if (DevAutoTest.FOX) {
+            opts.setCameraType(CameraType.FIRST_PERSON);
+            var fox = mc.level.getEntitiesOfClass(com.soulless.pet.TamedFox.class, mc.player.getBoundingBox().inflate(40))
+                    .stream().findFirst().orElse(null);
+            for (int s : new int[]{90, 160, 290, 380, 440, 530}) {
+                if (fox != null && tick >= s - 3 && tick <= s) {
+                    double dx = fox.getX() - mc.player.getX(), dz = fox.getZ() - mc.player.getZ();
+                    double dy = fox.getY() + 0.3 - mc.player.getEyeY();
+                    mc.player.setYRot((float) (Math.toDegrees(Math.atan2(dz, dx)) - 90));
+                    mc.player.setXRot((float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))));
+                }
+                if (tick == s) shot(mc, "fox_" + s);
+            }
+            if (tick == 580) mc.stop();
+            return;
+        }
         if (DevAutoTest.DOJO) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             opts.hideGui = tick < 240;

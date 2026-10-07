@@ -44,6 +44,8 @@ public class DialogueScreen extends Screen {
     private int ticks;
     private boolean waiting;
     private boolean closedByServer;
+    /** The option row under the mouse, or -1. */
+    private int hovered = -1;
 
     private DialogueScreen(DialogueShowPacket p) {
         super(p.name());
@@ -181,10 +183,12 @@ public class DialogueScreen extends Screen {
         }
 
         int base = py + PAD + textLines * LINE + 8;
+        hovered = -1;
         if (optionsShown()) {
             for (int i = 0; i < options.size(); i++) {
                 int ry = base + i * ROW;
                 boolean hover = mouseX >= px + PAD - 4 && mouseX < px + pw - PAD + 4 && mouseY >= ry - 3 && mouseY < ry + ROW - 3;
+                if (hover) hovered = i;
                 if (hover && !waiting) selected = i;
                 boolean sel = i == selected;
                 if (sel) {
@@ -246,7 +250,9 @@ public class DialogueScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            advance();
+            // once the options are up, a click chooses only the one under the mouse
+            if (optionsShown()) choose(hovered);
+            else advance();
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);

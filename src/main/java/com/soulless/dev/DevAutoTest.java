@@ -46,6 +46,8 @@ public final class DevAutoTest {
     public static final boolean KATANA = ENABLED && System.getenv("SOULLESS_KATANA") != null;
     /** SOULLESS_DOJO=1: build the sensei's dojo, photograph it from outside and in, trade with the sensei. */
     public static final boolean DOJO = ENABLED && System.getenv("SOULLESS_DOJO") != null;
+    /** SOULLESS_FOX=1: tame a white fox, check following, teleporting, sitting, the bed, healing, saving. */
+    public static final boolean FOX = ENABLED && System.getenv("SOULLESS_FOX") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -97,7 +99,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !DOJO) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !DOJO && !FOX) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -229,6 +231,10 @@ public final class DevAutoTest {
             dojoTick(p);
             return;
         }
+        if (FOX) {
+            foxTick(p);
+            return;
+        }
         if (KATANA) {
             // the ritual every cycle: no cooldown, and the health it costs comes back between cycles
             p.getCooldowns().removeCooldown(ModItems.SOUL_KATANA.get());
@@ -353,6 +359,129 @@ public final class DevAutoTest {
     private static com.soulless.npc.SenseiEntity sensei(ServerPlayer p) {
         return p.serverLevel().getEntitiesOfClass(com.soulless.npc.SenseiEntity.class, p.getBoundingBox().inflate(40))
                 .stream().findFirst().orElse(null);
+    }
+
+    private static net.minecraft.world.entity.animal.Fox wildFox, redFox;
+    private static net.minecraft.core.BlockPos foxBed;
+    private static net.minecraft.world.phys.Vec3 sitAt;
+
+    private static void foxLog(String what, Object... args) {
+        Soulless.LOGGER.info("[autotest] fox t=" + tick + " " + what, args);
+    }
+
+    @org.jetbrains.annotations.Nullable
+    private static com.soulless.pet.TamedFox pet(ServerPlayer p) {
+        return p.serverLevel().getEntitiesOfClass(com.soulless.pet.TamedFox.class, p.getBoundingBox().inflate(80))
+                .stream().findFirst().orElse(null);
+    }
+
+    private static void hold(ServerPlayer p, ItemStack stack) {
+        p.getInventory().setItem(0, stack);
+        p.getInventory().selected = 0;
+    }
+
+    private static void foxTick(ServerPlayer p) {
+        ServerLevel level = p.serverLevel();
+        double x = ARENA_X, z = ARENA_Z, y = p.getY();
+        var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        var berries = net.minecraft.world.item.Items.SWEET_BERRIES;
+        if (tick == 20) {
+            level.getEntitiesOfClass(net.minecraft.world.entity.Entity.class, p.getBoundingBox().inflate(80),
+                    e -> !(e instanceof ServerPlayer)).forEach(net.minecraft.world.entity.Entity::discard);
+            p.setGameMode(GameType.SURVIVAL);
+            p.getAbilities().invulnerable = true;
+            wildFox = net.minecraft.world.entity.EntityType.FOX.create(level);
+            wildFox.moveTo(x, y, z + 3, 180, 0);
+            wildFox.setVariant(net.minecraft.world.entity.animal.Fox.Type.SNOW);
+            level.addFreshEntity(wildFox);
+            redFox = net.minecraft.world.entity.EntityType.FOX.create(level);
+            redFox.moveTo(x + 3, y, z + 3, 180, 0);
+            redFox.setVariant(net.minecraft.world.entity.animal.Fox.Type.RED);
+            level.addFreshEntity(redFox);
+        }
+        if (tick >= 30 && tick < 70 && tick % 2 == 0 && pet(p) == null && wildFox.isAlive()) {
+            hold(p, new ItemStack(berries, 64));
+            p.interactOn(wildFox, hand);
+            foxLog("berry -> tamed={} berries left={}", pet(p) != null, p.getMainHandItem().getCount());
+        }
+        if (tick == 72) {
+            hold(p, new ItemStack(berries, 64));
+            for (int i = 0; i < 10; i++) p.interactOn(redFox, hand);
+            foxLog("RED fox after 10 berries: class={} alive={} berries left={}", redFox.getClass().getSimpleName(), redFox.isAlive(),
+                    p.getMainHandItem().getCount());
+            redFox.discard();
+            var f = pet(p);
+            foxLog("PET {} variant={} owner={} pickUp={} hp={}/{} targets={}", f != null, f == null ? null : f.getVariant(),
+                    f != null && f.isOwner(p), f != null && f.canPickUpLoot(), f == null ? 0 : f.getHealth(), f == null ? 0 : f.getMaxHealth(),
+                    f == null ? -1 : f.targetSelector.getAvailableGoals().size());
+            if (f != null) {
+                level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(level, f.getX(), f.getY(), f.getZ(),
+                        new ItemStack(net.minecraft.world.item.Items.CHICKEN)));
+            }
+        }
+        var f = pet(p);
+        if (f == null) {
+            if (tick == 100) foxLog("FAIL no pet");
+            return;
+        }
+        if (tick == 110) {
+            int items = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, f.getBoundingBox().inflate(4)).size();
+            foxLog("PICKUP chicken still on the ground={} mouth={}", items, f.getMainHandItem());
+            level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, p.getBoundingBox().inflate(40))
+                    .forEach(net.minecraft.world.entity.Entity::discard);
+            hold(p, ItemStack.EMPTY);
+            p.teleportTo(level, x, y, z + 12, 0, 20);
+        }
+        if (tick == 170) foxLog("FOLLOW dist after walk-off={}", String.format("%.1f", f.distanceTo(p)));
+        if (tick == 175) p.teleportTo(level, x + 40, y, z + 12, 0, 20);
+        if (tick == 225) foxLog("TELEPORT dist={}", String.format("%.1f", f.distanceTo(p)));
+        if (tick == 230) {
+            p.interactOn(f, hand);
+            sitAt = f.position();
+        }
+        if (tick == 236) p.teleportTo(level, p.getX() + 9, y, p.getZ(), 0, 20);
+        if (tick == 300) {
+            foxLog("SIT sitting={} moved={}", f.isSitting(), String.format("%.2f", f.position().distanceTo(sitAt)));
+            p.teleportTo(level, f.getX() + 1.5, y, f.getZ(), 90, 20);
+        }
+        if (tick == 305) {
+            p.interactOn(f, hand);
+            foxLog("STAND sitting after toggle={}", f.isSitting());
+            // a bed 4 blocks from the owner
+            foxBed = net.minecraft.core.BlockPos.containing(p.getX() - 4, y, p.getZ() + 2);
+            var dir = net.minecraft.core.Direction.SOUTH;
+            var bed = net.minecraft.world.level.block.Blocks.RED_BED.defaultBlockState()
+                    .setValue(net.minecraft.world.level.block.BedBlock.FACING, dir);
+            level.setBlock(foxBed, bed.setValue(net.minecraft.world.level.block.BedBlock.PART,
+                    net.minecraft.world.level.block.state.properties.BedPart.FOOT), 3);
+            level.setBlock(foxBed.relative(dir), bed.setValue(net.minecraft.world.level.block.BedBlock.PART,
+                    net.minecraft.world.level.block.state.properties.BedPart.HEAD), 3);
+        }
+        if (tick > 305 && tick < 460 && tick % 20 == 0) {
+            foxLog("BED lying={} at={} y={} bed={}", f.isSleeping(), f.blockPosition(), String.format("%.3f", f.getY()), foxBed);
+        }
+        if (tick == 470) p.teleportTo(level, p.getX() + 25, y, p.getZ(), 0, 20);
+        if (tick == 540) foxLog("WAKE lying={} dist={}", f.isSleeping(), String.format("%.1f", f.distanceTo(p)));
+        if (tick == 545) {
+            boolean hurt = f.hurt(p.damageSources().playerAttack(p), 5);
+            f.setHealth(10);
+            hold(p, new ItemStack(berries, 5));
+            p.interactOn(f, hand);
+            foxLog("OWNER HIT hurt={} | HEAL hp={} berries={} sitting={}", hurt, f.getHealth(), p.getMainHandItem().getCount(), f.isSitting());
+            var zombie = net.minecraft.world.entity.EntityType.ZOMBIE.create(level);
+            boolean hurtByOther = f.hurt(level.damageSources().mobAttack(zombie), 2);
+            foxLog("OTHER HIT hurt={} hp={}", hurtByOther, f.getHealth());
+        }
+        if (tick == 550) {
+            var tag = new net.minecraft.nbt.CompoundTag();
+            f.saveWithoutId(tag);
+            var copy = com.soulless.registry.ModEntities.TAMED_FOX.get().create(level);
+            copy.load(tag);
+            foxLog("SAVE owner={} variant={} targets={} pickUp={} sitTag={}", copy.isOwner(p), copy.getVariant(),
+                    copy.targetSelector.getAvailableGoals().size(), copy.canPickUpLoot(), tag.getBoolean("OrderedToSit"));
+            copy.discard();
+        }
+        if (tick == 560) foxLog("done");
     }
 
     private static final java.util.List<LivingEntity> rendTargets = new java.util.ArrayList<>();

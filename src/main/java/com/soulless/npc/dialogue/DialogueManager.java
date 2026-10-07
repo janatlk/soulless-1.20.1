@@ -93,7 +93,12 @@ public final class DialogueManager {
             end(player, false);
             return;
         }
-        Dialogue.Option option = d.nodes.get(s.node).options().get(s.shown[index]);
+        Dialogue.Node node = d.nodes.get(s.node);   // /reload may have changed the dialogue mid-conversation
+        if (node == null || s.shown[index] >= node.options().size()) {
+            end(player, true);
+            return;
+        }
+        Dialogue.Option option = node.options().get(s.shown[index]);
         DialogueContext ctx = new DialogueContext(player, npc);
         if (!option.condition().test(ctx)) {   // things changed since it was shown: show the node again
             show(ctx, d, s.node);

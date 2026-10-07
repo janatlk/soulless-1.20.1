@@ -108,6 +108,7 @@ public class TamedFox extends Fox {
 
     public void tame(Player player) {
         owner = player.getUUID();
+        setCanPickUpLoot(false);   // convertTo copied the wild fox's "picks things up"
         setVariant(Type.SNOW);
         noHunting();
         setHealth(getMaxHealth());
@@ -349,7 +350,7 @@ public class TamedFox extends Fox {
                 if (!free(pos) || pos.distSqr(p.blockPosition()) > OWNER_NEAR * OWNER_NEAR) continue;
                 double d = pos.distSqr(at);
                 // the foot end first: the head end is where the owner lies down
-                if (level().getBlockState(pos).getValue(BedBlock.PART) == BedPart.FOOT) d -= 4;
+                if (level().getBlockState(pos).getOptionalValue(BedBlock.PART).orElse(null) == BedPart.FOOT) d -= 4;
                 if (d < bestD) {
                     bestD = d;
                     best = pos.immutable();

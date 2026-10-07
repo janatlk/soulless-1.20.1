@@ -68,6 +68,15 @@ public abstract class NpcEntity extends PathfinderMob {
         restrictTo(home, HOME_RADIUS);
     }
 
+    /** Placed by a spawn egg or /summon: home is where it appeared. */
+    @Override
+    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor level,
+            net.minecraft.world.DifficultyInstance difficulty, net.minecraft.world.entity.MobSpawnType reason,
+            @Nullable net.minecraft.world.entity.SpawnGroupData data, @Nullable CompoundTag tag) {
+        if (home == null) setHome(blockPosition());
+        return super.finalizeSpawn(level, difficulty, reason, data, tag);
+    }
+
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
