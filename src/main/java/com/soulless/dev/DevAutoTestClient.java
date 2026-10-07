@@ -211,7 +211,7 @@ public final class DevAutoTestClient {
                 if (tick % 6 == 0 && rgShots < 120 && mc.player.getVehicle() == null) shot(mc, String.format("renegade_%04d", rgShots++));
             }
             // chained (the loss): from the front, to see the chains and him taking the blade
-            opts.setCameraType(mc.player.getVehicle() != null ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON);
+            opts.setCameraType(mc.player.getVehicle() != null ? (rgSeizeShots % 2 == 0 ? CameraType.THIRD_PERSON_FRONT : CameraType.THIRD_PERSON_BACK) : CameraType.FIRST_PERSON);
             if (mc.player.getVehicle() != null && tick % 4 == 0 && rgSeizeShots < 40) shot(mc, String.format("renegade_seize_%03d", rgSeizeShots++));
             if (tick == 4400) mc.stop();
             return;

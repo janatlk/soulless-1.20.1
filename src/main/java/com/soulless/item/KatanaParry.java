@@ -72,6 +72,9 @@ public final class KatanaParry {
     private static final int BONUS_TICKS = 60;
 
     private static final Map<UUID, Long> STARTED = new HashMap<>();
+    /** When the last blow was caught: the window stays open {@link #CHAIN} ticks after each one. */
+    private static final Map<UUID, Long> LAST_CATCH = new HashMap<>();
+    public static final int CHAIN = 10;
     /** Players whose current window has parried something (every blow in the window is parried; no whiff cooldown). */
     private static final java.util.Set<UUID> CAUGHT = new java.util.HashSet<>();
     /** How many blows the current window has caught (three at once earns an advancement). */
@@ -108,8 +111,12 @@ public final class KatanaParry {
     private static boolean inWindow(Player player) {
         Long start = STARTED.get(player.getUUID());
         if (start == null || !(player.getMainHandItem().getItem() instanceof SoulKatanaItem)) return false;
-        long t = player.level().getGameTime() - start;
-        return t >= WINDOW_FROM && t < WINDOW_FROM + WINDOW;
+        long now = player.level().getGameTime();
+        long t = now - start;
+        if (t >= WINDOW_FROM && t < WINDOW_FROM + WINDOW) return true;
+        // a parry that caught something keeps the guard up a little longer: a quick second blow is caught too
+        Long caught = LAST_CATCH.get(player.getUUID());
+        return CAUGHT.contains(player.getUUID()) && caught != null && now - caught < CHAIN;
     }
 
     /** {@code /soulless resetcd}: the next parry may come at once. */
@@ -174,6 +181,7 @@ public final class KatanaParry {
      */
     private static void success(ServerPlayer player, Vec3 at, Entity attacker) {
         boolean first = CAUGHT.add(player.getUUID());
+        LAST_CATCH.put(player.getUUID(), player.level().getGameTime());
         int count = CAUGHT_COUNT.merge(player.getUUID(), 1, Integer::sum);
         TOTAL.merge(player.getUUID(), 1, Integer::sum);
         com.soulless.Achievements.grant(player, "first_parry");
