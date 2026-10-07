@@ -173,3 +173,4 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
   - The head's look is added to the animation (RenegadeRenderer.Model) - the default turnsHead overwrote every head movement.
   - Custom particles (`client.RenegadeParticle`, textures by `tools/gen_renegade_particles.py`): blood_ember (was red dust: aura, rings, slash lines, red slashes, spectral blades), dark_smoke (blinks, the pull, his vanishing), red_spark (parry stagger, combo's ground blow, drop impact), crimson_slash (whirl landing), crimson_burst (drop impact), ash_flake (dark astral ambience).
   - Not yet seen in game (the user's game was running): needs a restart for the Java side.
+- 2026-10-07: the spectral blades stuttered: the client ran their tick without knowing slot/launch and kept snapping them back over his head while the server flew them -> the client no longer moves them (server positions every tick, updateInterval 1). Netherite sword look kept.

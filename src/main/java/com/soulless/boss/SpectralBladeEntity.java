@@ -61,6 +61,9 @@ public class SpectralBladeEntity extends Projectile {
     @Override
     public void tick() {
         super.tick();
+        // moved by the server only: the client just draws it between the positions it is sent (it knew neither the
+        // slot nor the launch, and kept pulling the blade back over his head - the stutter)
+        if (level().isClientSide) return;
         if (!launched) {
             Entity o = getOwner();
             if (o == null || !o.isAlive()) {
