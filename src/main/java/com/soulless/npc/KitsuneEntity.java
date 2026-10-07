@@ -193,10 +193,25 @@ public class KitsuneEntity extends NpcEntity implements GeoEntity {
 
     // ---- life in the astral
 
+    /**
+     * She is not saved with her chunk: entities load a moment after their chunk, so a saved Kitsune was not seen yet
+     * when the dream was prepared and a second one appeared. The astral makes her afresh whenever it is entered.
+     */
+    @Override
+    public boolean shouldBeSaved() {
+        return false;
+    }
+
     @Override
     public void tick() {
         super.tick();
         if (!(level() instanceof ServerLevel level)) return;
+        // two of her (from before this fix): one fades away
+        if (tickCount % 40 == 0 && state() != REFORGE && !level.getEntitiesOfClass(KitsuneEntity.class, getBoundingBox().inflate(16),
+                k -> k != this && k.getUUID().compareTo(getUUID()) < 0).isEmpty()) {
+            discard();
+            return;
+        }
         if (state() == REFORGE) reforgeTick(level);
         boolean watched = level.getNearestPlayer(this, 40) != null;
         // with nobody left in the dream she falls back asleep
