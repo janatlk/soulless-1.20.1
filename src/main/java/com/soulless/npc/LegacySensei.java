@@ -16,7 +16,8 @@ import java.util.List;
 /**
  * The sensei used to be a villager with the soulless:sensei profession. Worlds made back then still have those:
  * each one met is swapped (on the next tick - not while its chunk is still loading) for a {@link SenseiEntity} in
- * the same place (the old trades are gone: the sensei only talks now).
+ * the same place (the old trades are gone: the sensei only talks now). Zombie villagers, which pick a random profession
+ * from all registered ones, lose this one at once (blank profession textures cover the moment before).
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class LegacySensei {
@@ -24,6 +25,12 @@ public final class LegacySensei {
 
     @SubscribeEvent
     public static void onJoin(EntityJoinLevelEvent event) {
+        // zombie villagers pick a random profession from all registered ones - never this one (it has no textures)
+        if (event.getEntity() instanceof net.minecraft.world.entity.monster.ZombieVillager zv
+                && zv.getVillagerData().getProfession() == ModVillagers.SENSEI.get()) {
+            zv.setVillagerData(zv.getVillagerData().setProfession(net.minecraft.world.entity.npc.VillagerProfession.NONE));
+            return;
+        }
         if (!event.getLevel().isClientSide && event.getEntity() instanceof Villager v
                 && v.getVillagerData().getProfession() == ModVillagers.SENSEI.get()) {
             PENDING.add(v);
