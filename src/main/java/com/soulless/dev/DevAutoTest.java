@@ -48,6 +48,8 @@ public final class DevAutoTest {
     public static final boolean DOJO = ENABLED && System.getenv("SOULLESS_DOJO") != null;
     /** SOULLESS_FOX=1: tame a white fox, check following, teleporting, sitting, the bed, healing, saving. */
     public static final boolean FOX = ENABLED && System.getenv("SOULLESS_FOX") != null;
+    /** SOULLESS_ASTRAL=1: the dream - sleeping with the fox, Kitsune, the oath and the reforging, the refusal. */
+    public static final boolean ASTRAL = ENABLED && System.getenv("SOULLESS_ASTRAL") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -99,7 +101,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !DOJO && !FOX) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !DOJO && !FOX && !ASTRAL) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -233,6 +235,10 @@ public final class DevAutoTest {
         }
         if (FOX) {
             foxTick(p);
+            return;
+        }
+        if (ASTRAL) {
+            astralTick(p);
             return;
         }
         if (KATANA) {
@@ -482,6 +488,130 @@ public final class DevAutoTest {
             copy.discard();
         }
         if (tick == 560) foxLog("done");
+    }
+
+    private static net.minecraft.core.BlockPos astralBed;
+
+    private static String inv(ServerPlayer p) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            ItemStack s = p.getInventory().getItem(i);
+            if (!s.isEmpty()) out.add(s.getCount() + "x" + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(s.getItem()).getPath());
+        }
+        return out.toString();
+    }
+
+    private static void astralLog(ServerPlayer p, String what) {
+        Soulless.LOGGER.info("[autotest] astral t={} {} | dim={} pos={} inv={} flags={} time={}", tick, what, p.level().dimension().location(),
+                p.blockPosition().toShortString(), inv(p), com.soulless.npc.dialogue.DialogueContext.playerFlags(p),
+                p.server.overworld().getDayTime() % 24000);
+    }
+
+    private static void astralTick(ServerPlayer p) {
+        ServerLevel level = p.serverLevel();
+        double x = ARENA_X, z = ARENA_Z, y = p.getY();
+        var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
+        if (tick == 20) {
+            level.getEntitiesOfClass(net.minecraft.world.entity.Entity.class, p.getBoundingBox().inflate(80),
+                    e -> !(e instanceof ServerPlayer)).forEach(net.minecraft.world.entity.Entity::discard);
+            flags.remove(com.soulless.item.KatanaOath.SWORN);
+            flags.remove(com.soulless.item.KatanaOath.REFUSED);
+            flags.remove(com.soulless.item.KatanaOath.FREED);
+            p.setGameMode(GameType.SURVIVAL);
+            p.getAbilities().invulnerable = true;
+            p.onUpdateAbilities();
+            level.setDayTime(14000);
+            p.getInventory().clearContent();
+            p.getInventory().setItem(0, new ItemStack(net.minecraft.world.item.Items.BREAD, 5));
+            p.getInventory().setItem(5, new ItemStack(net.minecraft.world.item.Items.DIAMOND, 3));
+            // a bed under a stone roof, the player beside it
+            astralBed = net.minecraft.core.BlockPos.containing(x + 3, y, z);
+            var dir = net.minecraft.core.Direction.SOUTH;
+            var bed = net.minecraft.world.level.block.Blocks.WHITE_BED.defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING, dir);
+            level.setBlock(astralBed, bed.setValue(net.minecraft.world.level.block.BedBlock.PART,
+                    net.minecraft.world.level.block.state.properties.BedPart.FOOT), 3);
+            level.setBlock(astralBed.relative(dir), bed.setValue(net.minecraft.world.level.block.BedBlock.PART,
+                    net.minecraft.world.level.block.state.properties.BedPart.HEAD), 3);
+            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 3; dz++) {
+                level.setBlock(astralBed.offset(dx, 3, dz), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
+            }
+            p.teleportTo(level, x + 1, y, z + 1, 90, 10);
+            var fox = com.soulless.registry.ModEntities.TAMED_FOX.get().create(level);
+            fox.moveTo(x + 1, y, z - 1, 0, 0);
+            fox.tame(p);
+            level.addFreshEntity(fox);
+        }
+        if (tick == 120) {
+            var f = level.getEntitiesOfClass(com.soulless.pet.TamedFox.class, p.getBoundingBox().inflate(10)).stream().findFirst().orElse(null);
+            astralLog(p, "fox lying=" + (f != null && f.isSleeping()) + " fox at " + (f == null ? null : f.blockPosition().toShortString()));
+            var r = p.startSleepInBed(astralBed.relative(net.minecraft.core.Direction.SOUTH));
+            astralLog(p, "sleep #1 (no blade) -> " + r.left().map(Object::toString).orElse("ok"));
+        }
+        if (tick == 200) {
+            astralLog(p, "after sleep #1 sleeping=" + p.isSleeping() + " timer=" + p.getSleepTimer());
+            if (p.isSleeping()) p.stopSleepInBed(true, true);
+            level.setDayTime(14000);
+            p.getInventory().setItem(3, new ItemStack(com.soulless.registry.ModItems.BROKEN_KATANA.get()));
+        }
+        if (tick == 210) {
+            var r = p.startSleepInBed(astralBed.relative(net.minecraft.core.Direction.SOUTH));
+            astralLog(p, "sleep #2 (with blade) -> " + r.left().map(Object::toString).orElse("ok"));
+        }
+        if (tick == 300) astralLog(p, "DREAM");
+        if (tick == 330 && com.soulless.world.Astral.in(p)) p.teleportTo(0.5, 100, -0.2);
+        if (tick == 332) p.setYRot(180);
+        if (tick == 640) {
+            astralLog(p, "WOKE");
+            // the oath: an innocent cow takes nothing, the blow turns back, the blade loses 50
+            var cow = net.minecraft.world.entity.EntityType.COW.create(level);
+            cow.moveTo(p.getX() + 2, p.getY(), p.getZ(), 0, 0);
+            level.addFreshEntity(cow);
+            p.getAbilities().invulnerable = false;
+            p.onUpdateAbilities();
+            p.setHealth(20);
+            ItemStack katana = p.getInventory().getItem(3);
+            p.getInventory().selected = 3;
+            int before = katana.getDamageValue();
+            boolean side = com.soulless.item.KatanaOath.stops(p, cow, false, 8);
+            float hpSide = p.getHealth();
+            boolean main = com.soulless.item.KatanaOath.stops(p, cow, true, 8);
+            Soulless.LOGGER.info("[autotest] astral OATH held={} side stopped={} hp after side={} | main stopped={} hp after main={} cow hp={} wear {} -> {}",
+                    p.getMainHandItem().getItem(), side, hpSide, main, p.getHealth(), cow.getHealth(), before, p.getMainHandItem().getDamageValue());
+            var zombie = net.minecraft.world.entity.EntityType.ZOMBIE.create(level);
+            Soulless.LOGGER.info("[autotest] astral OATH zombie stopped={}", com.soulless.item.KatanaOath.stops(p, zombie, true, 8));
+            flags.putBoolean(com.soulless.item.KatanaOath.FREED, true);
+            p.setHealth(20);
+            boolean freedStop = com.soulless.item.KatanaOath.stops(p, cow, true, 8);
+            Soulless.LOGGER.info("[autotest] astral OATH freed: stopped={} hp={} wear={}", freedStop, p.getHealth(), p.getMainHandItem().getDamageValue());
+            // worn to nothing: it breaks in two instead of vanishing
+            p.getMainHandItem().setDamageValue(p.getMainHandItem().getMaxDamage() - 3);
+            com.soulless.item.KatanaOath.wear(p, 5);
+            Soulless.LOGGER.info("[autotest] astral WEAR to nothing -> {}", p.getMainHandItem().getItem());
+            p.getAbilities().invulnerable = true;
+            p.onUpdateAbilities();
+            cow.discard();
+        }
+        if (tick == 660) {
+            // the refusal, driven from the server
+            flags.remove(com.soulless.item.KatanaOath.SWORN);
+            flags.remove(com.soulless.item.KatanaOath.FREED);
+            com.soulless.world.Astral.enter(p, null);
+        }
+        if (tick == 680) {
+            var k = p.serverLevel().getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, p.getBoundingBox().inflate(40)).stream().findFirst().orElse(null);
+            if (k == null) {
+                astralLog(p, "FAIL no kitsune");
+                return;
+            }
+            p.teleportTo(0.5, 100, -0.2);
+            com.soulless.npc.dialogue.DialogueManager.open(p, k);
+            int[] path = {0, 0, 1, 0, 1, 0};   // blade, mend, "to be stronger", listen, refuse, refuse for good
+            for (int c : path) com.soulless.npc.dialogue.DialogueManager.choose(p, c);
+            astralLog(p, "REFUSED (still dreaming, before 'wake')");
+            com.soulless.npc.dialogue.DialogueManager.choose(p, 0);   // wake
+            astralLog(p, "REFUSED woke");
+        }
+        if (tick == 700) Soulless.LOGGER.info("[autotest] astral done");
     }
 
     private static final java.util.List<LivingEntity> rendTargets = new java.util.ArrayList<>();

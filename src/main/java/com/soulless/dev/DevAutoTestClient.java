@@ -122,6 +122,49 @@ public final class DevAutoTestClient {
             if (tick == 580) mc.stop();
             return;
         }
+        if (DevAutoTest.ASTRAL) {
+            opts.setCameraType(CameraType.FIRST_PERSON);
+            opts.hideGui = false;
+            if (tick == 150) shot(mc, "astral_bed");
+            if (tick == 300) shot(mc, "astral_arrive");
+            if (tick == 335 && mc.player != null) {
+                mc.player.setYRot(180);
+                mc.player.setXRot(28);
+            }
+            if (tick == 345) shot(mc, "astral_kitsune_sleep");
+            if (tick == 350) {
+                var k = mc.level.getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, mc.player.getBoundingBox().inflate(10)).stream().findFirst().orElse(null);
+                if (k != null) mc.gameMode.interact(mc.player, k, net.minecraft.world.InteractionHand.MAIN_HAND);
+            }
+            int sp = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE, one = org.lwjgl.glfw.GLFW.GLFW_KEY_1;
+            int[][] keys = {
+                    {358, sp}, {362, sp}, {365, sp},                       // wake: 2 pages
+                    {378, one}, {383, sp}, {387, sp}, {390, sp},           // -> blade: 2 pages
+                    {400, one}, {405, sp},                                 // -> why
+                    {415, one}, {420, sp},                                 // "I don't know"
+                    {428, one}, {433, sp}, {436, sp}, {439, sp}, {442, sp}, {445, sp},   // -> the oath: 3 pages
+                    {455, one}};                                           // "I swear"
+            for (int[] k : keys) {
+                if (tick == k[0] && mc.screen != null) mc.screen.keyPressed(k[1], 0, 0);
+            }
+            if (tick == 368) shot(mc, "astral_k_wake");
+            if (tick == 393) shot(mc, "astral_k_blade");
+            if (tick == 410) shot(mc, "astral_k_why");
+            if (tick == 450) shot(mc, "astral_k_oath");
+            if (tick == 470) shot(mc, "astral_k_sworn");
+            if (tick == 490) {
+                if (mc.screen != null) mc.screen.onClose();
+                opts.hideGui = true;
+            }
+            if (tick == 505) shot(mc, "astral_k_reforge1");
+            if (tick == 530) shot(mc, "astral_k_reforge2");
+            if (tick == 600) {
+                opts.hideGui = false;
+                shot(mc, "astral_woke");
+            }
+            if (tick == 720) mc.stop();
+            return;
+        }
         if (DevAutoTest.DOJO) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             opts.hideGui = tick < 240;

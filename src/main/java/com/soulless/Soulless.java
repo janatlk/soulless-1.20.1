@@ -45,6 +45,7 @@ public class Soulless {
 
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(ModNetwork::register);
+        com.soulless.npc.KitsuneEntity.registerDialogueActions();
     }
 
     public static ResourceLocation id(String path) {

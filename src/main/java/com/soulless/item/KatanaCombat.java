@@ -188,7 +188,7 @@ public final class KatanaCombat {
             }
         }
         float side = player.hasEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get()) ? CUT_SIDE_DAMAGE_BLESSED : CUT_SIDE_DAMAGE;
-        for (LivingEntity t : hit) strike(player, t, charge, bonus * (t == main ? 1 : side), facing, 0.4F);
+        for (LivingEntity t : hit) strike(player, t, t == main, charge, bonus * (t == main ? 1 : side), facing, 0.4F);
         if (!hit.isEmpty()) wear(player);
     }
 
@@ -201,7 +201,7 @@ public final class KatanaCombat {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(),
                 SoundSource.PLAYERS, HIT_VOLUME, 1.15F);
         level.sendParticles(ParticleTypes.CRIT, best.getX(), best.getY(0.6), best.getZ(), 12, 0.2, 0.2, 0.2, 0.3);
-        strike(player, best, charge, THRUST_DAMAGE_MULT * KatanaParry.consumeBonus(player), new Vec3(dir.x, 0, dir.z).normalize(), 0.7F);
+        strike(player, best, true, charge, THRUST_DAMAGE_MULT * KatanaParry.consumeBonus(player), new Vec3(dir.x, 0, dir.z).normalize(), 0.7F);
         wear(player);
     }
 
@@ -210,13 +210,17 @@ public final class KatanaCombat {
                 && t != player.getVehicle() && t.getVehicle() != player;
     }
 
-    /** One target: damage like a vanilla attack (attribute + enchantments, scaled by charge), knockback, fire aspect. */
-    private static void strike(ServerPlayer player, LivingEntity t, float charge, float mult, Vec3 push, float knockback) {
+    /**
+     * One target: damage like a vanilla attack (attribute + enchantments, scaled by charge), knockback, fire aspect.
+     * {@code primary}: aimed at it (not a side target of a cut) - the oath to Kitsune judges the two differently.
+     */
+    private static void strike(ServerPlayer player, LivingEntity t, boolean primary, float charge, float mult, Vec3 push, float knockback) {
         ItemStack stack = player.getMainHandItem();
         float base = (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE);
         float ench = EnchantmentHelper.getDamageBonus(stack, t.getMobType());
         float damage = (base * (0.2F + charge * charge * 0.8F) + ench * charge) * mult;
         float hpBefore = t.getHealth();
+        if (KatanaOath.stops(player, t, primary, damage)) return;
         if (!t.hurt(player.damageSources().playerAttack(player), damage)) return;
         float kb = knockback + EnchantmentHelper.getKnockbackBonus(player) * 0.5F;
         t.knockback(kb, -push.x, -push.z);
@@ -233,7 +237,7 @@ public final class KatanaCombat {
     }
 
     private static void wear(ServerPlayer player) {
-        player.getMainHandItem().hurtAndBreak(1, player, p -> p.broadcastBreakEvent(net.minecraft.world.InteractionHand.MAIN_HAND));
+        KatanaOath.wear(player, 1);   // worn out, the katana breaks in two instead of vanishing
     }
 
     @SubscribeEvent

@@ -77,10 +77,16 @@ public abstract class NpcEntity extends PathfinderMob {
         return super.finalizeSpawn(level, difficulty, reason, data, tag);
     }
 
+    /** Walks about its home and looks around when idle. False: stays where it is (it still faces whoever talks). */
+    protected boolean roams() {
+        return true;
+    }
+
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new FaceListenerGoal());
+        if (!roams()) return;
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.5));
         goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 8));
         goalSelector.addGoal(9, new RandomLookAroundGoal(this));
@@ -109,7 +115,7 @@ public abstract class NpcEntity extends PathfinderMob {
     }
 
     @Nullable
-    private Player listener() {
+    protected Player listener() {
         return talkingTo == null ? null : level().getPlayerByUUID(talkingTo);
     }
 

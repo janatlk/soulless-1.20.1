@@ -53,11 +53,17 @@ public final class ModEntities {
             () -> EntityType.Builder.<com.soulless.pet.TamedFox>of(com.soulless.pet.TamedFox::new, MobCategory.CREATURE)
                     .sized(0.6F, 0.7F).clientTrackingRange(8).build("tamed_fox"));
 
+    /** Kitsune, asleep in the astral (npc.KitsuneEntity): about three blocks long lying down. */
+    public static final RegistryObject<EntityType<com.soulless.npc.KitsuneEntity>> KITSUNE = ENTITIES.register("kitsune",
+            () -> EntityType.Builder.<com.soulless.npc.KitsuneEntity>of(com.soulless.npc.KitsuneEntity::new, MobCategory.MISC)
+                    .sized(2.0F, 1.6F).fireImmune().clientTrackingRange(10).build("kitsune"));
+
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(WAILING_REAPER.get(), WailingReaperEntity.createAttributes().build());
         event.put(SENSEI.get(), com.soulless.npc.NpcEntity.createAttributes().build());
         event.put(TAMED_FOX.get(), com.soulless.pet.TamedFox.createAttributes().build());
+        event.put(KITSUNE.get(), com.soulless.npc.KitsuneEntity.createAttributes().build());
     }
 
     private ModEntities() {}

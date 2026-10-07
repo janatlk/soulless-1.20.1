@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "soulless:seppuku"
+    "soulless:seppuku",
+    "soulless:oath"
   ]
 }

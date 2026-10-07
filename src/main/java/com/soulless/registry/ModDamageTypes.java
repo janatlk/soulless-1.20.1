@@ -14,6 +14,13 @@ public final class ModDamageTypes {
     /** The Kitsune ritual's own blade (a death by it reads "... died with honour"). */
     public static final ResourceKey<DamageType> SEPPUKU = ResourceKey.create(Registries.DAMAGE_TYPE, Soulless.id("seppuku"));
 
+    /** A broken oath to Kitsune: the blow at an innocent turned back on the one who struck. */
+    public static final ResourceKey<DamageType> OATH = ResourceKey.create(Registries.DAMAGE_TYPE, Soulless.id("oath"));
+
+    public static DamageSource oath(Level level) {
+        return new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(OATH));
+    }
+
     public static DamageSource seppuku(Level level) {
         return new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(SEPPUKU));
     }

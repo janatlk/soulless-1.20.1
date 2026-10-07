@@ -27,6 +27,10 @@ public final class ModItems {
     public static final RegistryObject<Item> SENSEI_SPAWN_EGG = ITEMS.register("sensei_spawn_egg",
             () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.SENSEI, 0x2B2420, 0xB3343A, new Item.Properties()));
 
+    /** The sensei's ancestral blade, snapped; Kitsune mends it in the astral. */
+    public static final RegistryObject<Item> BROKEN_KATANA = ITEMS.register("broken_katana",
+            () -> new com.soulless.item.BrokenKatanaItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));
+
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

@@ -34,6 +34,20 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         super(SoulForgedTier.INSTANCE, DAMAGE_MODIFIER, ATTACK_SPEED_MODIFIER, properties);
     }
 
+    /** Never worn away to nothing by any path: it stops one short, and {@link #inventoryTick} breaks it in two. */
+    @Override
+    public <T extends net.minecraft.world.entity.LivingEntity> int damageItem(ItemStack stack, int amount, T entity, Consumer<T> onBroken) {
+        return Math.max(0, Math.min(amount, stack.getMaxDamage() - 1 - stack.getDamageValue()));
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slot, boolean selected) {
+        if (!level.isClientSide && entity instanceof net.minecraft.server.level.ServerPlayer p && stack.isDamageableItem()
+                && stack.getDamageValue() >= stack.getMaxDamage() - 1 && p.getInventory().getItem(slot) == stack) {
+            p.getInventory().setItem(slot, KatanaOath.shatter(p));
+        }
+    }
+
     /**
      * Compact by default (a line per feature), the full breakdown while Shift is held - in the same style as Soul
      * Forged's: a stat line, then passive and active sections. Numbers come from the code.

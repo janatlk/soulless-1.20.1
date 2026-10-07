@@ -109,6 +109,36 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.altar"), true);
                             return 1;
                         }))
+                .then(Commands.literal("astral")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> {
+                            // straight into the dream (bringing the broken blade, given if missing)
+                            var p = ctx.getSource().getPlayerOrException();
+                            var blade = new net.minecraft.world.item.ItemStack(com.soulless.registry.ModItems.BROKEN_KATANA.get());
+                            if (!p.getInventory().contains(blade)) p.getInventory().add(blade);
+                            com.soulless.world.Astral.enter(p, null);
+                            return 1;
+                        })
+                        .then(Commands.literal("leave").executes(ctx -> {
+                            com.soulless.world.Astral.leave(ctx.getSource().getPlayerOrException());
+                            return 1;
+                        })))
+                .then(Commands.literal("oath")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.literal("reset").executes(ctx -> {
+                            var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(ctx.getSource().getPlayerOrException());
+                            flags.remove(com.soulless.item.KatanaOath.SWORN);
+                            flags.remove(com.soulless.item.KatanaOath.REFUSED);
+                            flags.remove(com.soulless.item.KatanaOath.FREED);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Oath reset"), false);
+                            return 1;
+                        }))
+                        .then(Commands.literal("free").executes(ctx -> {
+                            com.soulless.npc.dialogue.DialogueContext.playerFlags(ctx.getSource().getPlayerOrException())
+                                    .putBoolean(com.soulless.item.KatanaOath.FREED, true);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Kitsune freed (oath no longer punishes)"), false);
+                            return 1;
+                        })))
                 .then(Commands.literal("resetcd")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> resetCooldowns(ctx.getSource(), self(ctx.getSource())))
