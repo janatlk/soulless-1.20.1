@@ -143,7 +143,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     // ---- a preview statue (/soulless preview renegade <animation>): stands still and replays one animation
 
     /** Animation lengths in ticks (tools/gen_renegade.py) - how long to wait before replaying a one-shot one. */
-    private static final int[] LENGTH = {80, 12, 50, 25, 30, 18, 8, 8, 24, 32, 32, 56, 34, 38, 40, 60, 12, 12, 12};
+    private static final int[] LENGTH = {80, 12, 50, 25, 30, 18, 8, 8, 24, 38, 32, 56, 34, 38, 40, 60, 12, 12, 12};
     /** Whole attacks for the preview: the iai (ready, then the draw) and the three steps. */
     public static final String[] PREVIEWS = {"idle", "walk", "walk_back", "strafe_l", "strafe_r", "talk", "appear", "iai",
             "steps", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat"};
@@ -425,23 +425,23 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             play(A_THRUST);
             mark = new Vec3(p.getX() - getX(), 0, p.getZ() - getZ()).normalize();
         }
-        if (t < 12) {
+        if (t < 18) {   // the gathering: 0.9 s
             face(p);
             mark = new Vec3(p.getX() - getX(), 0, p.getZ() - getZ()).normalize();
             if (t % 2 == 0) level.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX(), getY() + 1, getZ(), 1, 0.2, 0.2, 0.2, 0);
         }
-        if (t == 12) level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.HOSTILE, 1, 0.8F);
-        if (t >= 12 && t < 20) {
+        if (t == 18) level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.HOSTILE, 1, 0.8F);
+        if (t >= 18 && t < 26) {
             setDeltaMovement(mark.x * 1.1, getDeltaMovement().y, mark.z * 1.1);
             level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), getX(), getY() + 1, getZ(), 3, 0.2, 0.4, 0.2, 0);
-            if (blowsLeft == 0 && t == 12) blowsLeft = 1;
+            if (blowsLeft == 0 && t == 18) blowsLeft = 1;
             if (blowsLeft > 0 && distanceTo(p) < 1.8) {
                 strike(p, 2.2, 120, 4);
                 blowsLeft = 0;
             }
         }
-        if (t == 20) setDeltaMovement(Vec3.ZERO);
-        if (t >= 32) endAttack();
+        if (t == 26) setDeltaMovement(Vec3.ZERO);
+        if (t >= 38) endAttack();
     }
 
     private int blowsLeft;

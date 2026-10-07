@@ -247,22 +247,22 @@ THRUST_OUT = P(GUARD, hips=(0.2, -4.6, -1.6), waist=(-20, 4, 0), chest=(-16, 6, 
 def thrust(t):
     p = THRUST_T(t)
     # the gathering trembles, just before it lets go
-    tr = bump(t, 0.3, 0.6) * math.sin(t * 90)
+    tr = bump(t, 0.5, 0.9) * math.sin(t * 90)
     p = add(p, blade=(0.012 * tr, 0.012 * tr, 0))
-    if 0.6 <= t <= 1.05:
+    if 0.9 <= t <= 1.35:
         p["wind"] = (0, 0, 280)
     return p
 
 
 THRUST_T = Track([
     (0.0, GUARD),
-    (0.5, THRUST_COIL, "io"),
-    (0.6, add(THRUST_COIL, hips=(0, -0.3, 0.4)), "io"),
-    (0.66, THRUST_OUT, "out3"),
-    (1.0, add(THRUST_OUT, hips=(0, 0.2, 0)), "io"),
-    (1.12, P(THRUST_OUT, hips=(0.2, -4.0, -1.0), waist=(-10, 4, 0), head=(14, -8, 0), foot_r=(-3.0, 0, -8.0),
+    (0.75, THRUST_COIL, "io"),
+    (0.9, add(THRUST_COIL, hips=(0, -0.3, 0.4)), "io"),
+    (0.96, THRUST_OUT, "out3"),
+    (1.3, add(THRUST_OUT, hips=(0, 0.2, 0)), "io"),
+    (1.42, P(THRUST_OUT, hips=(0.2, -4.0, -1.0), waist=(-10, 4, 0), head=(14, -8, 0), foot_r=(-3.0, 0, -8.0),
              foot_l=(3.0, 0, 6.5)), "out3"),                                                   # the brake: both feet down
-    (1.6, GUARD, "io"),
+    (1.9, GUARD, "io"),
 ])
 
 # ------------------------------------------------------------------ 4. the whirl
@@ -420,7 +420,7 @@ def moves():
         "step_cut1": (False, 0.4, STEP1, 1.7),
         "step_cut2": (False, 0.4, STEP2, 1.7),
         "step_cut3": (False, 1.2, STEP3, 1.7),
-        "thrust": ("hold_on_last_frame", 1.6, thrust, 1.5),
+        "thrust": ("hold_on_last_frame", 1.9, thrust, 1.5),
         "whirl": (False, 1.6, whirl, 1.4),
         "summon": (False, 2.8, summon, 1.3),
         "combo": (False, 1.7, COMBO, 1.6),
