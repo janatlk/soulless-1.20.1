@@ -86,12 +86,20 @@ public final class SoullessCommands {
                                                 new String[]{"idle", "fly", "bolt", "erupt", "ult", "stunned", "emerge", "death"}, b))
                                         .executes(ctx -> preview(ctx.getSource(),
                                                 com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "animation")))))
+                        .then(Commands.literal("renegade")
+                                .executes(ctx -> previewRenegade(ctx.getSource(), "idle"))
+                                .then(Commands.argument("animation", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                        .suggests((c, b) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                                                com.soulless.boss.RenegadeEntity.PREVIEWS, b))
+                                        .executes(ctx -> previewRenegade(ctx.getSource(),
+                                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "animation")))))
                         .then(Commands.literal("clear").executes(ctx -> {
                             var level = ctx.getSource().getLevel();
                             int n = 0;
                             for (var e : level.getAllEntities()) {
-                                if (e instanceof com.soulless.boss.WailingReaperEntity r && r.isPreview()) {
-                                    r.discard();
+                                if (e instanceof com.soulless.boss.WailingReaperEntity r && r.isPreview()
+                                        || e instanceof com.soulless.boss.RenegadeEntity g && g.isPreview()) {
+                                    e.discard();
                                     n++;
                                 }
                             }
@@ -188,6 +196,23 @@ public final class SoullessCommands {
         if (event.getEntity() instanceof ServerPlayer p && p.getPersistentData().getBoolean("soulless_zones")) {
             ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.SHOW_ZONES, true));
         }
+    }
+
+    /** A motionless Renegade 4 blocks ahead, facing you, replaying one animation (or a whole attack). */
+    private static int previewRenegade(CommandSourceStack src, String animation) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        var p = src.getPlayerOrException();
+        var level = p.serverLevel();
+        var r = com.soulless.registry.ModEntities.RENEGADE.get().create(level);
+        if (r == null) return 0;
+        var look = net.minecraft.world.phys.Vec3.directionFromRotation(0, p.getYRot());
+        double x = p.getX() + look.x * 4, z = p.getZ() + look.z * 4;
+        r.moveTo(x, p.getY(), z, p.getYRot() + 180, 0);
+        r.setYHeadRot(p.getYRot() + 180);
+        r.setYBodyRot(p.getYRot() + 180);
+        r.makePreview(animation);
+        level.addFreshEntity(r);
+        src.sendSuccess(() -> Component.translatable("command.soulless.preview", animation), true);
+        return 1;
     }
 
     /** A motionless, harmless copy of the Reaper 6 blocks ahead, facing you, looping one animation. */

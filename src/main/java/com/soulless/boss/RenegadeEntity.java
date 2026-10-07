@@ -143,12 +143,63 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         entityData.set(HIDDEN, h);
     }
 
+    // ---- a preview statue (/soulless preview renegade <animation>): stands still and replays one animation
+
+    /** Animation lengths in ticks (tools/gen_renegade.py) - how long to wait before replaying a one-shot one. */
+    private static final int[] LENGTH = {64, 12, 60, 24, 30, 18, 7, 7, 11, 16, 32, 56, 34, 38, 20, 24};
+    /** Whole attacks for the preview: the iai (ready, then the draw) and the three steps. */
+    public static final String[] PREVIEWS = {"idle", "walk", "talk", "appear", "iai", "steps", "thrust", "whirl", "summon",
+            "combo", "drop", "stagger", "defeat"};
+    private String preview = "";
+    private int previewStep;
+
+    public void makePreview(String name) {
+        preview = name;
+        previewStep = 0;
+        setInvulnerable(true);
+    }
+
+    public boolean isPreview() {
+        return !preview.isEmpty();
+    }
+
+    private int[] previewSequence() {
+        return switch (preview) {
+            case "iai" -> new int[]{A_IAI_READY, A_IAI_STRIKE};
+            case "steps" -> new int[]{A_STEP1, A_STEP2, A_STEP3};
+            default -> {
+                int i = java.util.Arrays.asList(ANIMS).indexOf(preview.equals("thrust") ? "thrust" : preview);
+                yield new int[]{Math.max(0, i)};
+            }
+        };
+    }
+
+    private void previewTick() {
+        int[] seq = previewSequence();
+        int a = seq[previewStep % seq.length];
+        boolean loop = a == A_IDLE || a == A_WALK || a == A_TALK;
+        if (loop) {
+            if (anim() != a) play(a);
+            return;
+        }
+        // one-shot: play each step of the sequence, then a pause, and again
+        if (tickCount - animStart() >= LENGTH[a] + (previewStep % seq.length == seq.length - 1 ? 25 : 0) || anim() != a && previewStep == 0) {
+            if (anim() == a) previewStep++;
+            play(seq[previewStep % seq.length]);
+        }
+    }
+
     // ---- the fight
 
     @Override
     public void tick() {
         super.tick();
         if (!(level() instanceof ServerLevel level)) return;
+        if (isPreview()) {
+            setDeltaMovement(Vec3.ZERO);
+            previewTick();
+            return;
+        }
         setNoGravity(attack == Attack.DROP && t < 20);
         if (level.dimension() == RenegadeEncounter.LEVEL && getY() < FLOOR - 8) {
             moveTo(0.5, FLOOR, -4.5, getYRot(), getXRot());
@@ -528,6 +579,19 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     @Override
     public boolean removeWhenFarAway(double distance) {
         return false;
+    }
+
+    @Override
+    public void addAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        if (isPreview()) tag.putString("preview", preview);
+    }
+
+    @Override
+    public void readAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        if (tag.contains("preview")) makePreview(tag.getString("preview"));
+        else discard();   // a fight is never resumed from a save (RenegadeEncounter starts it afresh)
     }
 
     @Override

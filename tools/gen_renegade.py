@@ -586,6 +586,20 @@ def preview(base, out, names=None, yaw=-35):
     Image.fromarray(np.concatenate(rows, axis=0)).save(out)
 
 
+def sheet(base, out):
+    """The model for review: the loose stance and the guard, from the front, three-quarter, side and back."""
+    from PIL import ImageDraw
+    rows = []
+    for name in ("stand", "guard"):
+        tiles = []
+        for yaw, label in ((0, "front"), (-40, "3/4"), (-90, "side"), (180, "back")):
+            t = Image.fromarray(np.clip(render(base, POSES[name], yaw, scale=9, sub=3), 0, 255).astype(np.uint8))
+            ImageDraw.Draw(t).text((8, 6), f"{name} - {label}", fill=(255, 255, 255))
+            tiles.append(np.array(t))
+        rows.append(np.concatenate(tiles, axis=1))
+    Image.fromarray(np.concatenate(rows, axis=0)).save(out)
+
+
 def main():
     build()
     aim_blades()
@@ -595,6 +609,8 @@ def main():
     Image.fromarray(np.clip(gm, 0, 255).astype(np.uint8), "RGBA").save(t / "renegade_glowmask.png")
     write_geo(tex_h)
     write_anims()
+    if "--sheet" in sys.argv:
+        sheet(base, sys.argv[sys.argv.index("--sheet") + 1])
     if "--preview" in sys.argv:
         yaw = float(sys.argv[sys.argv.index("--yaw") + 1]) if "--yaw" in sys.argv else -35
         preview(base, sys.argv[sys.argv.index("--preview") + 1], yaw=yaw)
