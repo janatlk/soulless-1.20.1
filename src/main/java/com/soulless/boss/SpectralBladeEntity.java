@@ -20,7 +20,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class SpectralBladeEntity extends Projectile {
     private static final float DAMAGE = 5;
-    private static final double SPEED = 1.05;
+    private static final double SPEED = 1.5;
     private int slot;
     private boolean launched;
     private int flight;

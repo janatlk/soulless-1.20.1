@@ -49,9 +49,9 @@ import java.util.UUID;
  * A parry staggers him; at low health he goes down on one knee and the fight ends.
  */
 public class RenegadeEntity extends PathfinderMob implements GeoEntity {
-    public static final float MAX_HEALTH = 280;
+    public static final float MAX_HEALTH = 400;
     /** He kneels, beaten, at this much health; nothing takes him lower. */
-    private static final float DEFEAT_AT = 28;
+    private static final float DEFEAT_AT = 40;
 
     // animation ids (synced; the renderer picks the animation, a new start tick replays it)
     public static final int A_IDLE = 0, A_WALK = 1, A_TALK = 2, A_APPEAR = 3, A_IAI_READY = 4, A_IAI_STRIKE = 5,
@@ -118,6 +118,10 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     }
 
     private boolean calm;
+    /** How long a parry stuns him (ticks). */
+    private static final int STUN = 22;
+    /** The chance he slips aside from a blow. */
+    private static final float DODGE = 0.1F;
     /** The attacks not yet used this round: each comes once before any comes again. */
     private final java.util.List<Attack> bag = new java.util.ArrayList<>();
 
@@ -160,7 +164,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     // ---- a preview statue (/soulless preview renegade <animation>): stands still and replays one animation
 
     /** Animation lengths in ticks (tools/gen_renegade.py) - how long to wait before replaying a one-shot one. */
-    private static final int[] LENGTH = {80, 12, 50, 25, 30, 18, 8, 8, 24, 38, 32, 56, 34, 38, 40, 60, 12, 12, 12};
+    private static final int[] LENGTH = {80, 12, 50, 25, 30, 18, 8, 8, 24, 38, 32, 48, 34, 38, 22, 60, 12, 12, 12};
     /** Whole attacks for the preview: the iai (ready, then the draw) and the three steps. */
     public static final String[] PREVIEWS = {"idle", "walk", "walk_back", "strafe_l", "strafe_r", "talk", "appear", "iai",
             "steps", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat"};
@@ -234,6 +238,11 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         // a parry throws him back: whatever he was doing is lost
         boolean stunned = hasEffect(ModEffects.STUN.get());
         if (stunned && !wasStunned) {
+            var st = getEffect(ModEffects.STUN.get());
+            if (st != null && st.getDuration() > STUN) {
+                removeEffect(ModEffects.STUN.get());
+                forceAddEffect(new net.minecraft.world.effect.MobEffectInstance(ModEffects.STUN.get(), STUN, 0, false, false, true), null);
+            }
             endAttack();
             hide(false);
             play(A_STAGGER);
@@ -328,7 +337,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     private void endAttack() {
         attack = null;
         t = 0;
-        rest = 30 + random.nextInt(25);   // a breath between attacks: time to answer
+        rest = 14 + random.nextInt(14);   // a short breath between attacks
         hide(false);
         setNoGravity(false);
         for (SpectralBladeEntity b : blades) if (b.isAlive() && !b.launched()) b.discard();
@@ -412,17 +421,19 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
 
     // 2. STEPS: three blinks toward the foe, zigzagging; a red slash left where each cut was, biting 0.5 s later
     private void steps(ServerLevel level, Player p) {
-        int k = t / 10;
-        if (t % 10 == 0 && k < 3) {
+        int k = t / STEP_EVERY;
+        if (t % STEP_EVERY == 0 && k < 3) {
             hide(true);
-            Vec3 to = p.position().subtract(position());
-            double d = to.horizontalDistance();
-            Vec3 dir = new Vec3(to.x, 0, to.z).normalize();
-            Vec3 side = new Vec3(-dir.z, 0, dir.x).scale(k == 1 ? -0.5 : 0.5);
-            double hop = k == 2 ? Math.max(0, d - 1.4) : Math.max(0, (d - 1.4) / (3 - k));
-            blink(level, position().add(dir.scale(hop)).add(side));
+            // round the foe: from where he stood, swung 70 degrees one way, then behind the foe, then 70 the other way
+            Vec3 from = new Vec3(getX() - p.getX(), 0, getZ() - p.getZ());
+            if (from.lengthSqr() < 1e-4) from = new Vec3(0, 0, 1);
+            if (k == 0) stepsFrom = from.normalize();
+            double ang = Math.toRadians(k == 0 ? 70 : k == 1 ? 180 : -70) * strafeDir;
+            Vec3 d = stepsFrom;
+            Vec3 at = new Vec3(d.x * Math.cos(ang) - d.z * Math.sin(ang), 0, d.x * Math.sin(ang) + d.z * Math.cos(ang)).scale(2.3);
+            blink(level, p.position().add(at));
         }
-        if (t % 10 == 2 && k < 3) {
+        if (t % STEP_EVERY == 1 && k < 3) {
             hide(false);
             face(p);
             play(k == 0 ? A_STEP1 : k == 1 ? A_STEP2 : A_STEP3);
@@ -435,8 +446,12 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             }
             level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 0.8F, 1.3F);
         }
-        if (t >= 46) endAttack();
+        if (t >= STEP_EVERY * 2 + 1 + 24) endAttack();
     }
+
+    /** The steps come this often (ticks): hidden one tick, then the cut. */
+    private static final int STEP_EVERY = 7;
+    private Vec3 stepsFrom = new Vec3(0, 0, 1);
 
     // 3. THRUST: drawn back at the hip, then a lunge straight through the foe
     private void thrust(ServerLevel level, Player p) {
@@ -505,13 +520,13 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             }
         }
         for (int i = 0; i < blades.size(); i++) {
-            if (t == 20 + i * 10) {
+            if (t == 20 + i * 6) {
                 face(p);
                 blades.get(i).launch(p);
                 level.playSound(null, getX(), getY(), getZ(), SoundEvents.TRIDENT_THROW, SoundSource.HOSTILE, 1, 1.2F);
             }
         }
-        if (t >= 56) {
+        if (t >= 48) {
             blades.clear();
             endAttack();
         }
@@ -606,6 +621,17 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             return false;
         }
         if (defeated || intro > 0 || hidden()) return false;
+        if (source.getEntity() instanceof Player attacker && !hasEffect(ModEffects.STUN.get()) && random.nextFloat() < DODGE
+                && level() instanceof ServerLevel level) {
+            // slips aside: a blink 2.5 blocks to one side of the blow
+            Vec3 look = position().subtract(attacker.position());
+            look = new Vec3(look.x, 0, look.z).normalize();
+            Vec3 side = new Vec3(-look.z, 0, look.x).scale(random.nextBoolean() ? 2.5 : -2.5);
+            blink(level, position().add(side).add(look.scale(0.6)));
+            face(attacker);
+            level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_NODAMAGE, SoundSource.HOSTILE, 1, 0.7F);
+            return false;
+        }
         if (getHealth() - amount <= DEFEAT_AT) {
             setHealth(DEFEAT_AT);
             defeated = true;
@@ -668,12 +694,30 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             if (event.getController().getCurrentAnimation() != null && lastStart != animStart() && !loop) {
                 event.getController().forceAnimationReset();
             }
+            if (lastStart != animStart() && lastStart != -1) startEffects(a);
             lastStart = animStart();
             return PlayState.CONTINUE;
         }));
     }
 
     private int lastStart = -1;
+    /** Client: where he was last seen (the steps' wind lines run from there). */
+    private Vec3 lastSeen = Vec3.ZERO;
+
+    /** Client side of the animation controller: effects that go with an animation's start. */
+    private void startEffects(int a) {
+        if (a != A_STEP1 && a != A_STEP2 && a != A_STEP3) return;
+        int kind = a == A_STEP1 ? 0 : 1;   // kesa down to the left; the others swept back the other way
+        com.soulless.client.KatanaTrails.add(this, kind, 1.6F);
+        com.soulless.client.KatanaTrails.whoosh(this, kind);
+        com.soulless.client.KatanaTrails.gust(this, lastSeen);
+    }
+
+    @Override
+    public void baseTick() {
+        super.baseTick();
+        if (level().isClientSide && !hidden()) lastSeen = position();
+    }
 
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {

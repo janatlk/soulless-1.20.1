@@ -69,6 +69,13 @@ public final class KatanaTrails {
     }
 
     /** The lunge begins: wind lines from here, a puff of dust at the feet, a gust of air. */
+    /** Wind lines from {@code from} to where {@code e} is now (the Renegade's steps), no sound of its own. */
+    public static void gust(Entity e, Vec3 from) {
+        if (from.distanceToSqr(e.position()) > 0.25 && from.distanceToSqr(e.position()) < 400) {
+            GUSTS.add(new Gust(e.getId(), from, ClientState.gameTime()));
+        }
+    }
+
     public static void dash(Entity player) {
         GUSTS.add(new Gust(player.getId(), player.position(), ClientState.gameTime()));
         player.level().playLocalSound(player.getX(), player.getY() + 0.5, player.getZ(), ModSounds.KATANA_DASH.get(),

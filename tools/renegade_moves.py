@@ -313,17 +313,17 @@ CALL = P(GUARD, hips=(0.2, -0.6, 0.4), waist=(5, -6, 0), chest=(10, -10, -4), he
 POINT = P(CALL, hips=(0.2, -2.0, 0.2), waist=(-6, -22, 0), chest=(-6, -22, 0), head=(6, 26, 0),
           arm_l=(94, 0, -8), fore_l=(0, 0, 0), foot_r=(-3.2, 0, 3.4), foot_l=(3.4, 0, -3.6))
 SUMMON_KEYS = [(0.0, GUARD), (0.42, CALL, "outback"), (0.5, add(CALL, chest=(-3, 0, 0), head=(-4, 0, 0)), "io")]
-for _at in (1.0, 1.5, 2.0):
+for _at in (1.0, 1.3, 1.6):
     SUMMON_KEYS += [(_at - 0.14, P(POINT, arm_l=(150, 0, 0), fore_l=(30, 0, 0), chest=(6, -14, 0)), "io"),
                     (_at, P(POINT), "snap")]
-SUMMON_KEYS += [(2.35, add(POINT, arm_l=(-6, 0, 0)), "io"), (2.8, GUARD, "io")]
+SUMMON_KEYS += [(1.95, add(POINT, arm_l=(-6, 0, 0)), "io"), (2.4, GUARD, "io")]
 SUMMON_T = Track(SUMMON_KEYS)
 
 
 def summon(t):
     p = SUMMON_T(t)
     # the raised hand trembles with the weight of what it holds
-    tr = (bump(t, 0.45, 0.9) + 0.5 * bump(t, 0.9, 2.1)) * math.sin(t * 70)
+    tr = (bump(t, 0.45, 0.9) + 0.5 * bump(t, 0.9, 1.7)) * math.sin(t * 70)
     return add(p, arm_l=(1.6 * tr, 0, 1.2 * tr), chest=(0.5 * tr, 0, 0))
 
 
@@ -378,27 +378,27 @@ def drop(t):
 # ------------------------------------------------------------------ thrown back by a parry (2 s: the stun)
 STAGGER_T = Track([
     (0.0, GUARD),
-    (0.1, P(GUARD, hips=(-0.4, -1.2, 2.8), waist=(16, 10, -6), chest=(22, -16, 8), head=(30, 14, 8),
+    (0.055, P(GUARD, hips=(-0.4, -1.2, 2.8), waist=(16, 10, -6), chest=(22, -16, 8), head=(30, 14, 8),
             arm_r=(70, 0, -70), fore_r=(20, 0, 0), arm_l=(40, 0, 70), fore_l=(30, 0, 0),
             blade=(-0.6, 0.75, 0.3), edge=(0, 1, 0), grip=0.0, foot_l=(3.4, 1.6, 6.0)), "out3"),
-    (0.3, P(GUARD, hips=(0.2, -2.8, 2.6), waist=(6, 10, -4), chest=(10, -14, 6), head=(10, 14, 4),
+    (0.165, P(GUARD, hips=(0.2, -2.8, 2.6), waist=(6, 10, -4), chest=(10, -14, 6), head=(10, 14, 4),
             arm_r=(50, 0, -50), fore_r=(30, 0, 0), arm_l=(30, 0, 50), fore_l=(40, 0, 0),
             blade=(-0.6, 0.5, -0.6), grip=0.0, foot_l=(3.4, 0, 7.4), foot_r=(-2.8, 1.2, -1.0)), "io"),
-    (0.5, P(GUARD, hips=(0.2, -3.2, 1.6), waist=(-10, 0, 0), chest=(-18, 4, 0), head=(-14, 0, 0),
+    (0.275, P(GUARD, hips=(0.2, -3.2, 1.6), waist=(-10, 0, 0), chest=(-18, 4, 0), head=(-14, 0, 0),
             arm_r=(30, 0, -10), fore_r=(30, 0, 0), arm_l=(20, 0, 20), fore_l=(50, 0, 0),
             blade=(-0.3, -0.25, -0.92), grip=0.0, foot_l=(3.4, 0, 7.4), foot_r=(-2.8, 0, 2.0)), "io"),   # bent over
-    (1.3, P(GUARD, hips=(0.2, -3.0, 1.6), waist=(-8, 0, 0), chest=(-12, 4, 0), head=(-8, 0, 0),
+    (0.715, P(GUARD, hips=(0.2, -3.0, 1.6), waist=(-8, 0, 0), chest=(-12, 4, 0), head=(-8, 0, 0),
             arm_r=(32, 0, -10), fore_r=(30, 0, 0), arm_l=(30, 0, 10), fore_l=(70, 0, 0),
             blade=(-0.3, -0.22, -0.92), grip=0.0, foot_l=(3.4, 0, 7.4), foot_r=(-2.8, 0, 2.0)), "io"),
-    (1.6, P(GUARD, foot_l=(3.2, 0, 4.4)), "io"),
-    (2.0, GUARD, "io"),
+    (0.88, P(GUARD, foot_l=(3.2, 0, 4.4)), "io"),
+    (1.1, GUARD, "io"),
 ])
 
 
 def stagger(t):
     p = STAGGER_T(t)
     # shaking the daze off
-    sh = bump(t, 0.6, 1.3) * math.sin((t - 0.6) * 2 * math.pi * 3.2)
+    sh = bump(t, 0.33, 0.72) * math.sin((t - 0.33) * 2 * math.pi * 4.5)
     return add(p, head=(0, 10 * sh, 4 * sh))
 
 
@@ -422,10 +422,10 @@ def moves():
         "step_cut3": (False, 1.2, STEP3, 1.7),
         "thrust": ("hold_on_last_frame", 1.9, thrust, 1.5),
         "whirl": (False, 1.6, whirl, 1.4),
-        "summon": (False, 2.8, summon, 1.3),
+        "summon": (False, 2.4, summon, 1.3),
         "combo": (False, 1.7, COMBO, 1.6),
         "drop": (False, 1.9, drop, 1.5),
-        "stagger": (False, 2.0, stagger, 1.3),
+        "stagger": (False, 1.1, stagger, 1.5),
         "defeat": ("hold_on_last_frame", 1.2, defeat, 1.2),
         "defeat_breath": (True, 2.4, defeat_breath, 0.8),
     }
