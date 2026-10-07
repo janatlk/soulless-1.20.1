@@ -124,45 +124,49 @@ public final class DevAutoTestClient {
         }
         if (DevAutoTest.ASTRAL) {
             opts.setCameraType(CameraType.FIRST_PERSON);
-            opts.hideGui = false;
             if (tick == 150) shot(mc, "astral_bed");
-            if (tick == 300) shot(mc, "astral_arrive");
-            if (tick == 335 && mc.player != null) {
+            boolean dreaming = mc.level.dimension() == com.soulless.world.Astral.LEVEL;
+            var k = dreaming ? mc.level.getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, mc.player.getBoundingBox().inflate(30))
+                    .stream().findFirst().orElse(null) : null;
+            if (dreaming && astralArrived < 0) {
+                astralArrived = tick;
+                astralTalk = -1;
+            }
+            if (astralArrived >= 0 && tick == astralArrived + 15) shot(mc, "astral_arrive");
+            // close to her (the server moves the player there): look down at her, take a picture, talk
+            if (k != null && astralTalk < 0 && mc.player.distanceTo(k) < 5) {
                 mc.player.setYRot(180);
-                mc.player.setXRot(28);
+                mc.player.setXRot(22);
+                if (astralNear < 0) astralNear = tick;
+                if (tick == astralNear + 10) shot(mc, "astral_kitsune_sleep");
+                if (tick == astralNear + 15) mc.gameMode.interact(mc.player, k, net.minecraft.world.InteractionHand.MAIN_HAND);
             }
-            if (tick == 345) shot(mc, "astral_kitsune_sleep");
-            if (tick == 350) {
-                var k = mc.level.getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, mc.player.getBoundingBox().inflate(10)).stream().findFirst().orElse(null);
-                if (k != null) mc.gameMode.interact(mc.player, k, net.minecraft.world.InteractionHand.MAIN_HAND);
+            if (astralTalk < 0 && mc.screen instanceof com.soulless.client.DialogueScreen) astralTalk = tick;
+            if (astralTalk >= 0) {
+                int t = tick - astralTalk;
+                int sp = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE, one = org.lwjgl.glfw.GLFW.GLFW_KEY_1;
+                int[][] keys = {
+                        {4, sp}, {8, sp}, {11, sp},                          // wake: 2 pages
+                        {24, one}, {29, sp}, {33, sp}, {36, sp},             // -> blade: 2 pages
+                        {46, one}, {51, sp},                                 // -> why
+                        {61, one}, {66, sp},                                 // "I don't know"
+                        {74, one}, {79, sp}, {82, sp}, {85, sp}, {88, sp}, {91, sp},   // -> the oath: 3 pages
+                        {101, one}};                                         // "I swear"
+                for (int[] key : keys) {
+                    if (t == key[0] && mc.screen != null) mc.screen.keyPressed(key[1], 0, 0);
+                }
+                if (t == 14) shot(mc, "astral_k_wake");
+                if (t == 39) shot(mc, "astral_k_blade");
+                if (t == 56) shot(mc, "astral_k_why");
+                if (t == 96) shot(mc, "astral_k_oath");
+                if (t == 112) shot(mc, "astral_k_sworn");
+                if (t == 118 && mc.screen != null) mc.screen.onClose();
+                if (t == 130) shot(mc, "astral_k_reforge1");
+                if (t == 150) shot(mc, "astral_k_reforge2");
+                if (t > 150 && !dreaming && astralWoke < 0) astralWoke = tick;
             }
-            int sp = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE, one = org.lwjgl.glfw.GLFW.GLFW_KEY_1;
-            int[][] keys = {
-                    {358, sp}, {362, sp}, {365, sp},                       // wake: 2 pages
-                    {378, one}, {383, sp}, {387, sp}, {390, sp},           // -> blade: 2 pages
-                    {400, one}, {405, sp},                                 // -> why
-                    {415, one}, {420, sp},                                 // "I don't know"
-                    {428, one}, {433, sp}, {436, sp}, {439, sp}, {442, sp}, {445, sp},   // -> the oath: 3 pages
-                    {455, one}};                                           // "I swear"
-            for (int[] k : keys) {
-                if (tick == k[0] && mc.screen != null) mc.screen.keyPressed(k[1], 0, 0);
-            }
-            if (tick == 368) shot(mc, "astral_k_wake");
-            if (tick == 393) shot(mc, "astral_k_blade");
-            if (tick == 410) shot(mc, "astral_k_why");
-            if (tick == 450) shot(mc, "astral_k_oath");
-            if (tick == 470) shot(mc, "astral_k_sworn");
-            if (tick == 490) {
-                if (mc.screen != null) mc.screen.onClose();
-                opts.hideGui = true;
-            }
-            if (tick == 505) shot(mc, "astral_k_reforge1");
-            if (tick == 530) shot(mc, "astral_k_reforge2");
-            if (tick == 600) {
-                opts.hideGui = false;
-                shot(mc, "astral_woke");
-            }
-            if (tick == 720) mc.stop();
+            if (astralWoke >= 0 && tick == astralWoke + 15) shot(mc, "astral_woke");
+            if (tick == 1100) mc.stop();
             return;
         }
         if (DevAutoTest.DOJO) {
@@ -367,6 +371,8 @@ public final class DevAutoTestClient {
         g.renderTooltip(mc.font, stack, event.getWindow().getGuiScaledWidth() / 2 - 20, 24);
         com.soulless.client.ClientKeys.forceDetails = false;
     }
+
+    private static int astralArrived = -1, astralNear = -1, astralTalk = -1, astralWoke = -1;
 
     private static void shot(Minecraft mc, String name) {
         Screenshot.grab(mc.gameDirectory, "autotest_" + name + ".png", mc.getMainRenderTarget(),

@@ -491,6 +491,7 @@ public final class DevAutoTest {
     }
 
     private static net.minecraft.core.BlockPos astralBed;
+    private static int astralIn = -1, oathAt = -1;
 
     private static String inv(ServerPlayer p) {
         java.util.List<String> out = new java.util.ArrayList<>();
@@ -558,9 +559,11 @@ public final class DevAutoTest {
             astralLog(p, "sleep #2 (with blade) -> " + r.left().map(Object::toString).orElse("ok"));
         }
         if (tick == 300) astralLog(p, "DREAM");
-        if (tick == 330 && com.soulless.world.Astral.in(p)) p.teleportTo(0.5, 100, -0.2);
-        if (tick == 332) p.setYRot(180);
-        if (tick == 640) {
+        if (com.soulless.world.Astral.in(p) && astralIn < 0) astralIn = tick;
+        if (astralIn >= 0 && tick == astralIn + 30 && com.soulless.world.Astral.in(p) && oathAt < 0) p.teleportTo(0.5, 100, -0.2);
+        if (oathAt < 0 && tick > 300 && !com.soulless.world.Astral.in(p) && com.soulless.item.KatanaOath.sworn(p)) oathAt = tick + 20;
+        if (oathAt < 0 && tick == 1000) astralLog(p, "FAIL the oath was never given");
+        if (tick == oathAt) {
             astralLog(p, "WOKE");
             // the oath: an innocent cow takes nothing, the blow turns back, the blade loses 50
             var cow = net.minecraft.world.entity.EntityType.COW.create(level);
@@ -591,13 +594,13 @@ public final class DevAutoTest {
             p.onUpdateAbilities();
             cow.discard();
         }
-        if (tick == 660) {
+        if (oathAt > 0 && tick == oathAt + 20) {
             // the refusal, driven from the server
             flags.remove(com.soulless.item.KatanaOath.SWORN);
             flags.remove(com.soulless.item.KatanaOath.FREED);
             com.soulless.world.Astral.enter(p, null);
         }
-        if (tick == 680) {
+        if (oathAt > 0 && tick == oathAt + 40) {
             var k = p.serverLevel().getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, p.getBoundingBox().inflate(40)).stream().findFirst().orElse(null);
             if (k == null) {
                 astralLog(p, "FAIL no kitsune");
@@ -611,7 +614,7 @@ public final class DevAutoTest {
             com.soulless.npc.dialogue.DialogueManager.choose(p, 0);   // wake
             astralLog(p, "REFUSED woke");
         }
-        if (tick == 700) Soulless.LOGGER.info("[autotest] astral done");
+        if (oathAt > 0 && tick == oathAt + 60) Soulless.LOGGER.info("[autotest] astral done");
     }
 
     private static final java.util.List<LivingEntity> rendTargets = new java.util.ArrayList<>();

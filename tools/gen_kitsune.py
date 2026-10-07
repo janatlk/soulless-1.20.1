@@ -90,7 +90,7 @@ def build():
     bone("head", "neck", (0, 31, -18))
     box("skull", "head", "head", -7, 29, -27, 7, 40, -16)
     box("snout", "head", "snout", -3, 29, -33, 3, 34, -27)
-    box("nose", "head", "nose", -1.5, 32, -34, 1.5, 34.5, -33)
+    box("nose", "head", "nose", -1, 32.5, -33.6, 1, 34, -33)
     mirror_box("cheek", "head", "ruff", 7, 29, -24, 9, 34, -17)
     for side, sx in (("l", 1), ("r", -1)):
         # a big triangular fox ear, stepped: a wide base, a narrower middle, a red tip
@@ -160,7 +160,7 @@ def head_marks(x, y, z, f):
     ax = abs(x)
     if f == "north":
         if 3.4 <= ax <= 6.6 and 33.8 <= y <= 36.2:   # the eyes (under the lids)
-            return (PUPIL if abs(ax - 5) < 0.55 else EYE), True
+            return (PUPIL if abs(ax - 5) < 0.6 else EYE), True
         if 2.8 <= ax <= 7 and 36.4 <= y <= 37.6 + (ax - 2.8) * 0.5:   # a red stroke over each eye, rising outward
             return pick(RED, 0.55 + hash3(x, y, 2) * 0.2), True
         if 6.6 <= ax <= 7 and 32.5 <= y <= 36.5:   # trailing down the outer corner

@@ -104,13 +104,16 @@ public final class Astral {
         prepare(astral);
         var inv = p.getInventory();
         ItemStack blade = ItemStack.EMPTY;
+        int bladeSlot = -1;
         for (int i = 0; i < inv.getContainerSize(); i++) {
             if (inv.getItem(i).is(ModItems.BROKEN_KATANA.get())) {
                 blade = inv.removeItemNoUpdate(i);
+                bladeSlot = i;
                 break;
             }
         }
         CompoundTag d = new CompoundTag();
+        d.putInt("BladeSlot", bladeSlot);
         d.put("Inv", inv.save(new ListTag()));
         d.putString("Dim", p.level().dimension().location().toString());
         if (bed != null) d.put("Bed", NbtUtils.writeBlockPos(bed));
@@ -157,8 +160,16 @@ public final class Astral {
         if (to == null && d.contains("X")) to = new Vec3(d.getDouble("X"), d.getDouble("Y"), d.getDouble("Z"));
         if (to == null) to = Vec3.atBottomCenterOf(home.getSharedSpawnPos());
         p.teleportTo(home, to.x, to.y, to.z, yaw, 0);
+        // the blade goes back to the slot it was taken from (when that is still free), the rest wherever it fits
+        int bladeSlot = d.contains("BladeSlot") ? d.getInt("BladeSlot") : -1;
         for (ItemStack s : brought) {
-            if (!inv.add(s)) p.drop(s, false);
+            boolean blade = s.is(ModItems.BROKEN_KATANA.get()) || s.is(ModItems.SOUL_KATANA.get());
+            if (blade && bladeSlot >= 0 && inv.getItem(bladeSlot).isEmpty()) {
+                inv.setItem(bladeSlot, s);
+                bladeSlot = -1;
+            } else if (!inv.add(s)) {
+                p.drop(s, false);
+            }
         }
         p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 30, 0, false, false));
         // alone on the server: the night went by while they dreamt

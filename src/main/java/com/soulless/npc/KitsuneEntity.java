@@ -143,20 +143,26 @@ public class KitsuneEntity extends NpcEntity implements GeoEntity {
         }
         reforgeTicks++;
         if (reforgeTicks < REFORGED_AT) {
-            // light gathering around the sleeper's hands
-            double a = reforgeTicks * 0.45;
-            for (int i = 0; i < 3; i++) {
-                double ang = a + i * Math.PI * 2 / 3, rr = 1.6 - reforgeTicks / (double) REFORGED_AT * 1.2;
-                level.sendParticles(ParticleTypes.END_ROD, player.getX() + Math.cos(ang) * rr, player.getY() + 1 + reforgeTicks * 0.012,
-                        player.getZ() + Math.sin(ang) * rr, 1, 0, 0, 0, 0);
+            // light rises around her as she calls it up; small sparks gather at the blade in the sleeper's hands
+            double a = reforgeTicks * 0.3;
+            for (int i = 0; i < 2; i++) {
+                double ang = a + i * Math.PI;
+                level.sendParticles(ParticleTypes.END_ROD, getX() + Math.cos(ang) * 1.8, getY() + 0.3 + reforgeTicks * 0.04,
+                        getZ() + Math.sin(ang) * 1.8, 1, 0, 0.02, 0, 0);
             }
+            var look = player.getLookAngle();
+            double hx = player.getX() + look.x * 0.9, hy = player.getEyeY() - 0.55, hz = player.getZ() + look.z * 0.9;
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, hx, hy, hz, 2, 0.25, 0.15, 0.25, 0.02);
             if (reforgeTicks % 10 == 0) {
                 level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.5F,
                         0.8F + reforgeTicks / (float) REFORGED_AT);
             }
         } else if (reforgeTicks == REFORGED_AT) {
-            level.sendParticles(ParticleTypes.FLASH, player.getX(), player.getY() + 1, player.getZ(), 1, 0, 0, 0, 0);
-            level.sendParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + 1, player.getZ(), 60, 0.3, 0.5, 0.3, 0.25);
+            var look = player.getLookAngle();
+            double hx = player.getX() + look.x * 0.9, hy = player.getEyeY() - 0.5, hz = player.getZ() + look.z * 0.9;
+            level.sendParticles(ParticleTypes.FLASH, hx, hy, hz, 1, 0, 0, 0, 0);
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, hx, hy, hz, 25, 0.2, 0.2, 0.2, 0.3);
+            level.sendParticles(ParticleTypes.END_ROD, getX(), getY() + 2, getZ(), 40, 0.5, 0.5, 0.5, 0.2);
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 2, 1);
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 1, 1.4F);
             reforge(player);
