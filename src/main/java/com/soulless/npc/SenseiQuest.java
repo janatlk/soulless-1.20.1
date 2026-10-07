@@ -47,7 +47,8 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class SenseiQuest {
     public static final String STUDENT = "sensei.student", PARRY = "sensei.parry", CLEANSE = "sensei.cleanse",
-            CLEANSED = "sensei.cleansed", SHRINE = "sensei.shrine", BLADE = "sensei.blade", KILLS = "sensei.kills";
+            CLEANSED = "sensei.cleansed", SHRINE = "sensei.shrine", BLADE = "sensei.blade", KILLS = "sensei.kills",
+            HARAKIRI = "sensei.harakiri";
     public static final int CLEANSE_GOAL = 10;
     public static final TagKey<Structure> SHRINE_MAPS = TagKey.create(Registries.STRUCTURE, Soulless.id("abandoned_shrine"));
     public static final TagKey<Structure> DOJO_MAPS = TagKey.create(Registries.STRUCTURE, Soulless.id("sensei_dojo"));
@@ -65,8 +66,15 @@ public final class SenseiQuest {
         return p.getAbilities().instabuild || has(p, PARRY) || SenseiEntity.sparring(p);
     }
 
+    /** Harakiri (R) is taught by the sensei after the first fight with the Renegade (or creative). */
+    public static boolean knowsHarakiri(Player p) {
+        return p.getAbilities().instabuild || has(p, HARAKIRI);
+    }
+
+    /** What the player knows, for the HUD's "?" slots. */
     public static void syncParry(ServerPlayer p) {
         ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.PARRY_KNOWN, canParry(p)));
+        ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.RITUAL_KNOWN, knowsHarakiri(p)));
     }
 
     /** The sensei says something: in chat, or briefly over the hotbar. */
@@ -153,6 +161,13 @@ public final class SenseiQuest {
             ItemStack map = explorerMap(ctx.player.serverLevel(), ctx.npc.blockPosition(), SHRINE_MAPS, "item.soulless.map.shrine");
             if (map.isEmpty()) say(ctx.player, "dialogue.soulless.sensei.no_shrine", false);
             else give(ctx.player, map);
+        });
+        DialogueActions.register("soulless:teach_harakiri", j -> ctx -> {
+            ctx.setFlag("player", HARAKIRI, true);
+            syncParry(ctx.player);
+            com.soulless.Achievements.grant(ctx.player, "harakiri_learnt");
+            ctx.player.serverLevel().playSound(null, ctx.player.getX(), ctx.player.getY(), ctx.player.getZ(),
+                    SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8F, 0.9F);
         });
         DialogueActions.register("soulless:give_blade", j -> ctx -> {
             ctx.player.getInventory().clearOrCountMatchingItems(s -> s.is(ModItems.FAMILY_SCROLL.get()), 1,

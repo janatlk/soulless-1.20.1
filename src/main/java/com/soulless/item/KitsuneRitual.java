@@ -69,6 +69,10 @@ public final class KitsuneRitual {
             player.displayClientMessage(Component.translatable("message.soulless.training_no_ritual"), true);
             return;
         }
+        if (!com.soulless.npc.SenseiQuest.knowsHarakiri(player)) {
+            player.displayClientMessage(Component.translatable("message.soulless.harakiri_unknown"), true);
+            return;
+        }
         if (isActive(player) || player.getCooldowns().isOnCooldown(item)) return;
         if (!player.onGround() || player.isInWater()) {
             player.displayClientMessage(Component.translatable("message.soulless.ritual_ground"), true);

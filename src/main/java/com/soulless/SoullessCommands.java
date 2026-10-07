@@ -130,6 +130,21 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.literal("Sensei training reset"), false);
                             return 1;
                         })))
+                .then(Commands.literal("renegade")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> {
+                            com.soulless.boss.RenegadeEncounter.begin(ctx.getSource().getPlayerOrException());
+                            return 1;
+                        })
+                        .then(Commands.literal("reset").executes(ctx -> {
+                            var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(ctx.getSource().getPlayerOrException());
+                            flags.remove(com.soulless.boss.RenegadeEncounter.DUE);
+                            flags.remove(com.soulless.boss.RenegadeEncounter.DEFEATED);
+                            flags.remove(com.soulless.npc.SenseiQuest.HARAKIRI);
+                            com.soulless.npc.SenseiQuest.syncParry(ctx.getSource().getPlayerOrException());
+                            ctx.getSource().sendSuccess(() -> Component.literal("Renegade reset"), false);
+                            return 1;
+                        })))
                 .then(Commands.literal("astral")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> {

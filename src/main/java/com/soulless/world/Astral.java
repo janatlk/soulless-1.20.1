@@ -162,7 +162,9 @@ public final class Astral {
         }
         if (to == null && d.contains("X")) to = new Vec3(d.getDouble("X"), d.getDouble("Y"), d.getDouble("Z"));
         if (to == null) to = Vec3.atBottomCenterOf(home.getSharedSpawnPos());
+        p.fallDistance = 0;
         p.teleportTo(home, to.x, to.y, to.z, yaw, 0);
+        p.fallDistance = 0;
         // the blade goes back to the slot it was taken from (when that is still free), the rest wherever it fits
         int bladeSlot = d.contains("BladeSlot") ? d.getInt("BladeSlot") : -1;
         for (ItemStack s : brought) {

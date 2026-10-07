@@ -200,6 +200,19 @@ public final class DevAutoTestClient {
             if (tick == 1600) mc.stop();
             return;
         }
+        if (DevAutoTest.RENEGADE) {
+            opts.setCameraType(CameraType.FIRST_PERSON);
+            var him = mc.level.getEntitiesOfClass(com.soulless.boss.RenegadeEntity.class, mc.player.getBoundingBox().inflate(40)).stream().findFirst().orElse(null);
+            if (him != null) {
+                double dx = him.getX() - mc.player.getX(), dz = him.getZ() - mc.player.getZ();
+                double dy = him.getY() + 1.2 - mc.player.getEyeY();
+                mc.player.setYRot((float) (Math.toDegrees(Math.atan2(dz, dx)) - 90));
+                mc.player.setXRot((float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))));
+                if (tick % 6 == 0 && rgShots < 120) shot(mc, String.format("renegade_%04d", rgShots++));
+            }
+            if (tick == 3200) mc.stop();
+            return;
+        }
         if (DevAutoTest.DOJO) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             opts.hideGui = tick < 240;
@@ -403,6 +416,7 @@ public final class DevAutoTestClient {
         com.soulless.client.ClientKeys.forceDetails = false;
     }
 
+    private static int rgShots;
     private static int questSparShot = -1, questShrineShot = -1, questBookShot = -1;
     private static int astralArrived = -1, astralNear = -1, astralTalk = -1, astralWoke = -1;
 

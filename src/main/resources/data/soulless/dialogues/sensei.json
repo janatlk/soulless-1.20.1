@@ -304,11 +304,88 @@
       "text": "dialogue.soulless.sensei.after",
       "options": [
         {
+          "text": "dialogue.soulless.sensei.opt.forged",
+          "goto": "forged",
+          "if": [
+            {
+              "type": "flag",
+              "flag": "kitsune.oath"
+            },
+            {
+              "type": "flag",
+              "flag": "renegade.defeated",
+              "not": true
+            }
+          ]
+        },
+        {
+          "text": "dialogue.soulless.sensei.opt.renegade",
+          "goto": "renegade",
+          "if": [
+            {
+              "type": "flag",
+              "flag": "renegade.defeated"
+            },
+            {
+              "type": "flag",
+              "flag": "sensei.harakiri",
+              "not": true
+            }
+          ]
+        },
+        {
           "text": "dialogue.soulless.sensei.opt.fox_again",
-          "goto": "fox"
+          "goto": "fox",
+          "if": {
+            "type": "flag",
+            "flag": "kitsune.oath",
+            "not": true
+          }
         },
         {
           "text": "dialogue.soulless.sensei.opt.bye"
+        }
+      ]
+    },
+    "forged": {
+      "text": [
+        "dialogue.soulless.sensei.forged.1",
+        "dialogue.soulless.sensei.forged.2"
+      ],
+      "options": [
+        {
+          "text": "dialogue.soulless.sensei.opt.bye"
+        }
+      ]
+    },
+    "renegade": {
+      "text": [
+        "dialogue.soulless.sensei.renegade.1",
+        "dialogue.soulless.sensei.renegade.2",
+        "dialogue.soulless.sensei.renegade.3"
+      ],
+      "options": [
+        {
+          "text": "dialogue.soulless.sensei.opt.harakiri",
+          "goto": "harakiri"
+        }
+      ]
+    },
+    "harakiri": {
+      "text": [
+        "dialogue.soulless.sensei.harakiri.1",
+        "dialogue.soulless.sensei.harakiri.2",
+        "dialogue.soulless.sensei.harakiri.3",
+        "dialogue.soulless.sensei.harakiri.4"
+      ],
+      "do": [
+        {
+          "type": "soulless:teach_harakiri"
+        }
+      ],
+      "options": [
+        {
+          "text": "dialogue.soulless.sensei.opt.bye_honour"
         }
       ]
     }

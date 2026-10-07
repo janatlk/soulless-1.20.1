@@ -163,7 +163,7 @@ public final class KatanaParry {
         if (!(src.getEntity() instanceof LivingEntity attacker) || src.getDirectEntity() != attacker) return;
         if (src.is(DamageTypeTags.IS_EXPLOSION) || src.is(DamageTypeTags.BYPASSES_ARMOR) || src.is(DamageTypeTags.IS_FIRE)) return;
         // a swung strike: mobs with an attack animation swing right before they hit (players always do)
-        if (!(attacker instanceof Player) && !attacker.swinging) return;
+        if (!(attacker instanceof Player) && !attacker.swinging && !(attacker instanceof com.soulless.boss.RenegadeEntity)) return;
         event.setCanceled(true);
         success(player, attacker.position().add(0, attacker.getBbHeight() * 0.6, 0).lerp(player.getEyePosition(), 0.5), attacker);
     }

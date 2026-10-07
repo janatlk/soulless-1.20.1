@@ -52,6 +52,8 @@ public final class DevAutoTest {
     public static final boolean ASTRAL = ENABLED && System.getenv("SOULLESS_ASTRAL") != null;
     /** SOULLESS_QUEST=1: the sensei's training end to end - sparring, cleansing, the shrine and scroll, the blade, reforging, mending. */
     public static final boolean QUEST = ENABLED && System.getenv("SOULLESS_QUEST") != null;
+    /** SOULLESS_RENEGADE=1: the fight with the Renegade - every attack, a parry, the loss, the win, the harakiri lesson. */
+    public static final boolean RENEGADE = ENABLED && System.getenv("SOULLESS_RENEGADE") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -103,7 +105,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !DOJO && !FOX && !ASTRAL && !QUEST) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !DOJO && !FOX && !ASTRAL && !QUEST && !RENEGADE) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -245,6 +247,10 @@ public final class DevAutoTest {
         }
         if (QUEST) {
             questTick(p);
+            return;
+        }
+        if (RENEGADE) {
+            renegadeTick(p);
             return;
         }
         if (KATANA) {
@@ -810,6 +816,118 @@ public final class DevAutoTest {
         }
         if (t == 390) Soulless.LOGGER.info("[autotest] quest done");
     }
+
+    private static int rgPhase, rgPhaseAt, rgLastAttack = -2;
+
+    private static void rgLog(ServerPlayer p, String what) {
+        Soulless.LOGGER.info("[autotest] renegade t={} {} | dim={} hp={} flags={}", tick, what, p.level().dimension().location(),
+                p.getHealth(), com.soulless.npc.dialogue.DialogueContext.playerFlags(p));
+    }
+
+    private static void renegadeTick(ServerPlayer p) {
+        ServerLevel level = p.serverLevel();
+        var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
+        if (tick == 20) {
+            for (String f : new java.util.ArrayList<>(flags.getAllKeys())) flags.remove(f);
+            flags.putBoolean(com.soulless.item.KatanaOath.SWORN, true);
+            p.setGameMode(GameType.SURVIVAL);
+            p.getAbilities().invulnerable = false;
+            p.onUpdateAbilities();
+            p.getInventory().clearContent();
+            p.getInventory().setItem(0, new ItemStack(ModItems.SOUL_KATANA.get()));
+            p.getInventory().selected = 0;
+            flags.putBoolean(com.soulless.npc.SenseiQuest.PARRY, true);
+            p.setHealth(20);
+            com.soulless.npc.SenseiQuest.syncParry(p);
+            com.soulless.item.KitsuneRitual.tryStart(p);
+            rgLog(p, "R before the lesson: ritual active=" + com.soulless.item.KitsuneRitual.isActive(p));
+            com.soulless.boss.RenegadeEncounter.begin(p);
+        }
+        var him = com.soulless.boss.RenegadeEncounter.fighting(p);
+        if (tick % 100 == 0) rgLog(p, "state phase=" + rgPhase + " me=" + p.blockPosition().toShortString() + " him=" + (him == null ? "none" : him.blockPosition().toShortString()
+                + " hp=" + him.getHealth() + " alive=" + him.isAlive() + " attack=" + him.attackId()));
+        if (rgPhase == 0 && him != null && com.soulless.boss.RenegadeEncounter.in(p)) {
+            rgPhase = 1;
+            rgPhaseAt = tick;
+            him.script(0, 1, 2, 3, 4, 5, 6, 0);   // every attack once, then the iai again (parried)
+            rgLog(p, "PULLED into the dark at " + p.blockPosition().toShortString() + " below=" + p.level().getBlockState(p.blockPosition().below())
+                    + " centre=" + p.level().getBlockState(new net.minecraft.core.BlockPos(0, 99, 0)) + " onGround=" + p.onGround());
+        }
+        if (rgPhase == 1 && him != null) {
+            p.setHealth(20);   // keep the test going through every attack
+            p.getFoodData().setFoodLevel(20);
+            int a = him.attackId();
+            if (a != rgLastAttack) {
+                Soulless.LOGGER.info("[autotest] renegade t={} attack {} -> {}", tick, rgLastAttack, a);
+                rgLastAttack = a;
+            }
+            // keep the player facing him at a few blocks for the camera
+            if (tick % 5 == 0 && a != 6) {
+                net.minecraft.world.phys.Vec3 to = him.position().subtract(p.position());
+                if (to.horizontalDistance() > 7 && p.getY() > 90) p.teleportTo(him.getX() - to.normalize().x * 5, him.getY(), him.getZ() - to.normalize().z * 5);
+            }
+            // the last attack (the iai again): parried right before the draw cut lands
+            if (a == 0 && him.attackTick() == 33 && him.hasEffect(com.soulless.registry.ModEffects.STUN.get()) == false && rgParryTest) {
+                com.soulless.item.KatanaParry.tryStart(p);
+            }
+            if (a == 0 && him.attackTick() == 30 && rgIaiCount++ == 1) rgParryTest = true;
+            if (rgParryTest && him.hasEffect(com.soulless.registry.ModEffects.STUN.get()) && !rgParried) {
+                rgParried = true;
+                rgLog(p, "PARRIED the iai: he is stunned");
+            }
+            if (rgParried && tick - rgPhaseAt > 0 && !rgLowHp) {
+                // now lose: a blow that would kill leaves half a heart
+                rgLowHp = true;
+                rgPhase = 2;
+                rgPhaseAt = tick;
+            }
+            if (tick - rgPhaseAt > 3000) {
+                rgLog(p, "FAIL the script did not finish");
+                rgPhase = 9;
+            }
+        }
+        if (rgPhase == 2) {
+            if (tick == rgPhaseAt + 40 && him != null) {
+                p.setHealth(2);
+                p.hurt(level.damageSources().mobAttack(him), 6);
+                rgLog(p, "LOSS blow taken");
+            }
+            if (tick == rgPhaseAt + 140) {
+                rgLog(p, "LOSS back home, due=" + flags.getLong(com.soulless.boss.RenegadeEncounter.DUE));
+                p.setHealth(20);
+                com.soulless.boss.RenegadeEncounter.begin(p);
+                rgPhase = 3;
+                rgPhaseAt = tick;
+            }
+        }
+        if (rgPhase == 3 && him != null && com.soulless.boss.RenegadeEncounter.in(p) && tick > rgPhaseAt + 240) {
+            him.setHealth(30);
+            him.hurt(p.damageSources().playerAttack(p), 20);
+            rgLog(p, "WIN he kneels: defeated=" + him.defeated());
+            rgPhase = 4;
+            rgPhaseAt = tick;
+        }
+        if (rgPhase == 4 && tick == rgPhaseAt + 200) {
+            rgLog(p, "WIN back home");
+            var sensei = com.soulless.registry.ModEntities.SENSEI.get().create(level);
+            sensei.moveTo(p.getX(), p.getY(), p.getZ() - 2, 0, 0);
+            level.addFreshEntity(sensei);
+            flags.putBoolean(com.soulless.npc.SenseiQuest.BLADE, true);
+            flags.putBoolean("sensei.met", true);
+            com.soulless.npc.dialogue.DialogueManager.open(p, sensei);
+            boolean ok = com.soulless.npc.dialogue.DialogueManager.chooseText(p, "dialogue.soulless.sensei.opt.renegade")
+                    && com.soulless.npc.dialogue.DialogueManager.chooseText(p, "dialogue.soulless.sensei.opt.harakiri")
+                    && com.soulless.npc.dialogue.DialogueManager.chooseText(p, "dialogue.soulless.sensei.opt.bye_honour");
+            com.soulless.item.KitsuneRitual.tryStart(p);
+            rgLog(p, "LESSON dialogue=" + ok + " R works now: ritual active=" + com.soulless.item.KitsuneRitual.isActive(p));
+            sensei.discard();
+            Soulless.LOGGER.info("[autotest] renegade done");
+            rgPhase = 5;
+        }
+    }
+
+    private static boolean rgParryTest, rgParried, rgLowHp;
+    private static int rgIaiCount;
 
     private static final java.util.List<LivingEntity> rendTargets = new java.util.ArrayList<>();
 

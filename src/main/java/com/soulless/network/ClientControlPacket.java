@@ -12,6 +12,7 @@ public record ClientControlPacket(int action, boolean value) {
     public static final int SHOW_ZONES = 0;
     public static final int RESET_COOLDOWNS = 1;
     public static final int PARRY_KNOWN = 2;
+    public static final int RITUAL_KNOWN = 3;
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeByte(action);

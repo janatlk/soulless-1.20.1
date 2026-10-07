@@ -56,7 +56,13 @@ public final class AbilityHud implements IGuiOverlay {
     private static void katana(GuiGraphics g, Font font, Player player, com.soulless.item.SoulKatanaItem item, float partial, int width, int height) {
         int x = width / 2 + 91 + 8, y = height - SLOT - 2;
         float ritual = player.getCooldowns().getCooldownPercent(item, partial);
-        slot(g, font, x, y, Component.literal(ClientKeys.slamKeyName()), ritual, Mth.ceil(ritual * ClientState.ritualCooldownTotal / 20F), 0xFF4FB6FF);
+        if (!ClientState.ritualKnown) {
+            g.fill(x, y, x + SLOT, y + SLOT, 0x99000000);
+            g.fill(x, y + SLOT - 2, x + SLOT, y + SLOT, 0xFF555555);
+            g.drawString(font, "?", x + (SLOT - font.width("?")) / 2, y + 6, 0xFF888888, true);
+        } else {
+            slot(g, font, x, y, Component.literal(ClientKeys.slamKeyName()), ritual, Mth.ceil(ritual * ClientState.ritualCooldownTotal / 20F), 0xFF4FB6FF);
+        }
 
         int px = x + SLOT + 4;
         if (!ClientState.parryKnown) {
