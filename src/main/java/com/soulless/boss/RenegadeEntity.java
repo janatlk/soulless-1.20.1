@@ -243,6 +243,8 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
                 removeEffect(ModEffects.STUN.get());
                 forceAddEffect(new net.minecraft.world.effect.MobEffectInstance(ModEffects.STUN.get(), STUN, 0, false, false, true), null);
             }
+            // parried: the cuts he left hanging in the air are gone too
+            for (RedSlashEntity s : level.getEntitiesOfClass(RedSlashEntity.class, getBoundingBox().inflate(24), s -> s.from(this))) s.discard();
             endAttack();
             hide(false);
             play(A_STAGGER);
@@ -440,7 +442,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             swing(InteractionHand.MAIN_HAND);
             RedSlashEntity slash = ModEntities.RED_SLASH.get().create(level);
             if (slash != null) {
-                Vec3 at = position().add(Vec3.directionFromRotation(0, getYRot()).scale(1.2)).add(0, 1.1, 0);
+                Vec3 at = position().add(Vec3.directionFromRotation(0, getYRot()).scale(1.2));
                 slash.setup(this, p, at, getYRot(), k * 50 - 50, 10, 5);
                 level.addFreshEntity(slash);
             }

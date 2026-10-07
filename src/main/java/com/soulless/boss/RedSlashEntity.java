@@ -19,11 +19,14 @@ import java.util.UUID;
 
 /**
  * The red slash the Renegade leaves where he cut during his blinking steps: a glowing streak hanging in the air that
- * bites {@code delay} ticks later - whoever stands in its line takes the blow (parryable: it is his blow). Drawn by
- * client.RenegadeRenderer.Slash as a thin red blade of light.
+ * bites {@code delay} ticks later - whoever stands in its line takes the blow (parryable: it is his blow). It stands on
+ * the ground under the cut; drawn on the clients as the katana's own red smear (client.KatanaTrails) when it bites.
  */
 public class RedSlashEntity extends Entity {
     private static final EntityDataAccessor<Float> ROLL = SynchedEntityData.defineId(RedSlashEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> DELAY = SynchedEntityData.defineId(RedSlashEntity.class, EntityDataSerializers.INT);
+    /** The cut's line is this high over the ground it stands on. */
+    private static final double HEIGHT = 1.1;
     private static final double HALF_LENGTH = 1.4, REACH = 1.0;
 
     @Nullable private UUID owner, target;
@@ -41,8 +44,13 @@ public class RedSlashEntity extends Entity {
         target = at.getUUID();
         moveTo(pos.x, pos.y, pos.z, yaw, 0);
         entityData.set(ROLL, roll);
+        entityData.set(DELAY, delay);
         this.delay = delay;
         this.damage = damage;
+    }
+
+    public boolean from(RenegadeEntity r) {
+        return r.getUUID().equals(owner);
     }
 
     public float roll() {
@@ -52,40 +60,36 @@ public class RedSlashEntity extends Entity {
     @Override
     protected void defineSynchedData() {
         entityData.define(ROLL, 0F);
+        entityData.define(DELAY, 10);
     }
 
     @Override
     public void tick() {
         super.tick();
-        if (!(level() instanceof ServerLevel level)) return;
-        if (tickCount < delay && tickCount % 2 == 0) {
-            float yaw = getYRot() * Mth.DEG_TO_RAD;
-            for (int i = -6; i <= 6; i++) {
-                double s = i / 6.0 * HALF_LENGTH;
-                level.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX() + Math.cos(yaw) * s, getY() + Math.sin(Math.toRadians(roll())) * s * 0.5,
-                        getZ() + Math.sin(yaw) * s, 1, 0, 0, 0, 0);
+        if (level().isClientSide) {
+            // the bite: the katana's red smear, swept the way his cut went
+            if (tickCount == entityData.get(DELAY)) {
+                int kind = roll() < -20 ? 0 : 1;
+                com.soulless.client.KatanaTrails.add(this, kind, 2.0F);
+                com.soulless.client.KatanaTrails.whoosh(this, kind);
             }
+            return;
         }
+        if (!(level() instanceof ServerLevel level)) return;
         if (tickCount == delay) {
             Entity o = owner == null ? null : level.getEntity(owner);
             Player p = target == null ? null : level.getPlayerByUUID(target);
             if (o instanceof RenegadeEntity r && p != null && inLine(p)) r.strikeAt(p, p.position(), 1, damage);
-            float yaw = getYRot() * Mth.DEG_TO_RAD;
-            for (int i = -8; i <= 8; i++) {
-                double s = i / 8.0 * HALF_LENGTH;
-                level.sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), getX() + Math.cos(yaw) * s, getY() + Math.sin(Math.toRadians(roll())) * s * 0.5,
-                        getZ() + Math.sin(yaw) * s, 2, 0.05, 0.05, 0.05, 0.02);
-            }
             level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 0.7F, 1.6F);
         }
-        if (tickCount >= delay + 4) discard();
+        if (tickCount >= delay + 12) discard();   // long enough for the smear to fade on the clients
     }
 
     /** Is the player's body within reach of the slash's line? */
     private boolean inLine(Player p) {
         float yaw = getYRot() * Mth.DEG_TO_RAD;
         Vec3 along = new Vec3(Math.cos(yaw), 0, Math.sin(yaw));
-        Vec3 rel = p.position().add(0, p.getBbHeight() * 0.5, 0).subtract(position());
+        Vec3 rel = p.position().add(0, p.getBbHeight() * 0.5, 0).subtract(position().add(0, HEIGHT, 0));
         double a = rel.dot(along);
         Vec3 off = rel.subtract(along.scale(Mth.clamp(a, -HALF_LENGTH, HALF_LENGTH)));
         return off.length() <= REACH + 0.4;
