@@ -121,12 +121,16 @@ public final class RenegadeEncounter {
         }
         if (p.tickCount % 20 != 0) return;
         CompoundTag flags = DialogueContext.playerFlags(p);
+        if (flags.getBoolean(DEFEATED) || !KatanaOath.sworn(p)) return;
         long due = flags.getLong(DUE);
-        if (due == 0 || p.serverLevel().getGameTime() < due || flags.getBoolean(DEFEATED)) return;
+        if (due == 0) {   // sworn before he existed (or the schedule got lost): he sets out now
+            scheduleFirst(p);
+            return;
+        }
+        if (p.serverLevel().getGameTime() < due) return;
         // somewhere quiet: on the ground, awake, not in water, not just hurt, not in the astral
-        if (!p.onGround() || p.isSleeping() || p.isInWater() || p.isCreative() || p.isSpectator()
+        if (!p.onGround() || p.isSleeping() || p.isInWater() || p.isSpectator()
                 || com.soulless.world.Astral.in(p) || p.tickCount - p.getLastHurtByMobTimestamp() < 200) return;
-        if (!KatanaOath.sworn(p)) return;
         begin(p);
     }
 
