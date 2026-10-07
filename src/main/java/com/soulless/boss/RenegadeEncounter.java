@@ -62,6 +62,8 @@ public final class RenegadeEncounter {
         int stage;   // 0: being pulled in, 1: in the dark, talking and fighting, 2: over
         int t;
         boolean won;
+        /** When the player answered his last words (-1: not yet). */
+        int leaving = -1;
 
         Fight(UUID player) {
             this.player = player;
@@ -83,6 +85,13 @@ public final class RenegadeEncounter {
 
     public static void scheduleFirst(ServerPlayer p) {
         schedule(p, FIRST_DELAY);
+    }
+
+    /** He speaks in the dialogue window; {@code after} runs once the player answers (or closes it). */
+    private static void speak(ServerPlayer p, RenegadeEntity him, String answer, Runnable after, String... pages) {
+        java.util.List<Component> ps = new java.util.ArrayList<>();
+        for (String k : pages) ps.add(Component.translatable(k, p.getName()));
+        com.soulless.npc.dialogue.DialogueManager.speak(p, him, 0xB3202E, ps, Component.translatable(answer), after);
     }
 
     private static void line(ServerPlayer p, String key) {
@@ -153,7 +162,7 @@ public final class RenegadeEncounter {
                 }
                 him.moveTo(HIM.x, HIM.y, HIM.z, 0, 0);
                 dark.addFreshEntity(him);
-                him.setFoe(p, 150);
+                him.setFoe(p, 20 * 60 * 10);   // until the player answers him (the dialogue window)
                 f.him = him;
                 f.bar.addPlayer(p);
                 f.stage = 1;
@@ -172,28 +181,31 @@ public final class RenegadeEncounter {
                 return;
             }
             f.bar.setProgress(him.getHealth() / him.getMaxHealth());
-            if (f.t == 25) him.talk();
-            if (f.t == 30) line(p, "dialogue.soulless.renegade.intro1");
-            if (f.t == 80) line(p, "dialogue.soulless.renegade.intro2");
-            if (f.t == 130) line(p, "dialogue.soulless.renegade.intro3");
+            if (f.t == 25) {
+                him.talk();
+                speak(p, him, "dialogue.soulless.renegade.opt.draw", him::endIntro,
+                        "dialogue.soulless.renegade.intro1", "dialogue.soulless.renegade.intro2", "dialogue.soulless.renegade.intro3");
+            }
             if (him.defeated()) {
                 f.won = true;
                 f.stage = 2;
                 f.t = 0;
-                line(p, "dialogue.soulless.renegade.defeat1");
             }
             return;
         }
-        // stage 2: the fight is over - his last words, then back
+        // stage 2: the fight is over - his last words in the window (once he is down on his knee), then back
         if (f.won) {
-            if (f.t == 60) line(p, "dialogue.soulless.renegade.defeat2");
-            if (f.t == 110 && him != null) {
+            if (f.t == 25 && him != null) {
+                speak(p, him, "dialogue.soulless.renegade.opt.silent", () -> f.leaving = f.t,
+                        "dialogue.soulless.renegade.defeat1", "dialogue.soulless.renegade.defeat2");
+            }
+            if (f.leaving >= 0 && f.t == f.leaving + 10 && him != null) {
                 level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), him.getX(), him.getY() + 1, him.getZ(), 60, 0.5, 1, 0.5, 0);
                 level.playSound(null, him.getX(), him.getY(), him.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1, 0.5F);
                 him.discard();
             }
-            if (f.t >= 140) end(p, f, true);
-        } else if (f.t >= 50) {
+            if (f.leaving >= 0 && f.t >= f.leaving + 40 || f.t > 20 * 60 * 5) end(p, f, true);
+        } else if (f.leaving >= 0 && f.t >= f.leaving + 10 || f.t > 20 * 60 * 5) {
             end(p, f, false);
         }
     }
@@ -252,8 +264,12 @@ public final class RenegadeEncounter {
             f.stage = 2;
             f.won = false;
             f.t = 0;
-            if (f.him != null) f.him.talk();
-            line(p, "dialogue.soulless.renegade.win");
+            if (f.him != null) {
+                f.him.standDown();
+                speak(p, f.him, "dialogue.soulless.renegade.opt.silent", () -> f.leaving = f.t, "dialogue.soulless.renegade.win");
+            } else {
+                f.leaving = 0;
+            }
         }
     }
 

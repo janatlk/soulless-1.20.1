@@ -316,5 +316,7 @@
   "tooltip.soulless.quest.return": "Return to the sensei",
   "tooltip.soulless.quest.scroll": "Find the scroll in the abandoned shrine",
   "tooltip.soulless.quest.scroll_found": "Bring the scroll to the sensei",
-  "tooltip.soulless.quest.done": "Training complete"
+  "tooltip.soulless.quest.done": "Training complete",
+  "dialogue.soulless.renegade.opt.draw": "[Draw the blade]",
+  "dialogue.soulless.renegade.opt.silent": "[Say nothing]"
 }

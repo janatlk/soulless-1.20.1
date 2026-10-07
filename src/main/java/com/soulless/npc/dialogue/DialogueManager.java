@@ -40,8 +40,23 @@ public final class DialogueManager {
     private static final Gson GSON = new GsonBuilder().create();
     private static Map<ResourceLocation, Dialogue> dialogues = Map.of();
 
-    /** A conversation in progress: the options shown, by their index in the node's list. */
-    private record Session(int npcId, ResourceLocation dialogue, String node, int[] shown) {}
+    /** A conversation in progress: the options shown, by their index in the node's list. A speech (no dialogue file:
+     * someone who is not an NpcEntity speaks, see {@link #speak}) has {@code after} instead. */
+    private record Session(int npcId, @Nullable ResourceLocation dialogue, String node, int[] shown, @Nullable Runnable after) {
+        Session(int npcId, ResourceLocation dialogue, String node, int[] shown) {
+            this(npcId, dialogue, node, shown, null);
+        }
+    }
+
+    /**
+     * {@code speaker} says {@code pages} in the dialogue window, the player answers with the one {@code answer};
+     * {@code after} runs when the window goes (answered, closed, the player gone).
+     */
+    public static void speak(ServerPlayer player, Entity speaker, int accent, List<Component> pages, Component answer, Runnable after) {
+        end(player, true);
+        SESSIONS.put(player.getUUID(), new Session(speaker.getId(), null, "", new int[]{0}, after));
+        ModNetwork.sendToPlayer(player, new DialogueShowPacket(speaker.getId(), speaker.getDisplayName(), accent, pages, List.of(answer)));
+    }
 
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
 
@@ -87,6 +102,10 @@ public final class DialogueManager {
     public static void choose(ServerPlayer player, int index) {
         Session s = SESSIONS.get(player.getUUID());
         if (s == null) return;
+        if (s.after != null) {
+            end(player, true);
+            return;
+        }
         Entity e = player.level().getEntity(s.npcId);
         Dialogue d = dialogues.get(s.dialogue);
         if (index < 0 || !(e instanceof NpcEntity npc) || d == null || index >= s.shown.length) {
@@ -115,7 +134,11 @@ public final class DialogueManager {
     /** Chooses the shown option whose text is {@code textKey} (scripted runs: the dev autotest). False if none. */
     public static boolean chooseText(ServerPlayer player, String textKey) {
         Session s = SESSIONS.get(player.getUUID());
-        Dialogue d = s == null ? null : dialogues.get(s.dialogue);
+        if (s != null && s.after != null) {
+            end(player, true);
+            return true;
+        }
+        Dialogue d = s == null || s.dialogue == null ? null : dialogues.get(s.dialogue);
         if (d == null) return false;
         Dialogue.Node node = d.nodes.get(s.node);
         for (int i = 0; i < s.shown.length; i++) {
@@ -155,6 +178,7 @@ public final class DialogueManager {
         if (s == null) return;
         if (player.level().getEntity(s.npcId) instanceof NpcEntity npc) npc.stopTalking(player);
         if (tellClient) ModNetwork.sendToPlayer(player, DialogueShowPacket.close());
+        if (s.after != null) s.after.run();
     }
 
     public static boolean talking(ServerPlayer player) {
@@ -166,6 +190,10 @@ public final class DialogueManager {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player) || player.tickCount % 10 != 0) return;
         Session s = SESSIONS.get(player.getUUID());
         if (s == null) return;
+        if (s.after != null) {
+            if (!player.isAlive()) end(player, true);
+            return;
+        }
         Entity e = player.level().getEntity(s.npcId);
         if (!(e instanceof NpcEntity npc) || !npc.isAlive() || !player.isAlive() || player.distanceTo(npc) > MAX_DISTANCE) {
             end(player, true);

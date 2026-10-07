@@ -19,7 +19,7 @@ import net.minecraft.world.phys.Vec3;
  * pointing along its flight (client.RenegadeRenderer.Blade).
  */
 public class SpectralBladeEntity extends Projectile {
-    private static final float DAMAGE = 3;
+    private static final float DAMAGE = 5;
     private static final double SPEED = 1.05;
     private int slot;
     private boolean launched;

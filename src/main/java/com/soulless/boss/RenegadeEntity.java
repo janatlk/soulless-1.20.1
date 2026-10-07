@@ -49,9 +49,9 @@ import java.util.UUID;
  * A parry staggers him; at low health he goes down on one knee and the fight ends.
  */
 public class RenegadeEntity extends PathfinderMob implements GeoEntity {
-    public static final float MAX_HEALTH = 160;
+    public static final float MAX_HEALTH = 280;
     /** He kneels, beaten, at this much health; nothing takes him lower. */
-    private static final float DEFEAT_AT = 16;
+    private static final float DEFEAT_AT = 28;
 
     // animation ids (synced; the renderer picks the animation, a new start tick replays it)
     public static final int A_IDLE = 0, A_WALK = 1, A_TALK = 2, A_APPEAR = 3, A_IAI_READY = 4, A_IAI_STRIKE = 5,
@@ -103,6 +103,23 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
 
     @Override
     protected void registerGoals() {}
+
+    /** The intro is over (the player answered him): the fight begins. */
+    public void endIntro() {
+        if (intro > 1) intro = 1;
+    }
+
+    /** The fight is over without his defeat (the player has lost): he stops, lowers the blade and talks. */
+    public void standDown() {
+        calm = true;
+        endAttack();
+        getNavigation().stop();
+        talk();
+    }
+
+    private boolean calm;
+    /** The attacks not yet used this round: each comes once before any comes again. */
+    private final java.util.List<Attack> bag = new java.util.ArrayList<>();
 
     public void setFoe(ServerPlayer p, int introTicks) {
         foe = p.getUUID();
@@ -204,7 +221,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             fallDistance = 0;
         }
         Player p = foe();
-        if (p == null || !p.isAlive() || defeated) {
+        if (p == null || !p.isAlive() || defeated || calm) {
             getNavigation().stop();
             return;
         }
@@ -293,9 +310,12 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         if (!script.isEmpty()) {
             a = all[script.poll()];
         } else {
-            do {
-                a = all[random.nextInt(all.length)];
-            } while (a == lastAttack);
+            if (bag.isEmpty()) {
+                bag.addAll(java.util.List.of(all));
+                java.util.Collections.shuffle(bag, new java.util.Random(random.nextLong()));
+                if (bag.get(0) == lastAttack) java.util.Collections.swap(bag, 0, bag.size() - 1);
+            }
+            a = bag.remove(0);
         }
         // close in for the combo first if far
         attack = a;
@@ -384,7 +404,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             play(A_IAI_STRIKE);
         }
         if (t == 35) {
-            strike(p, 3.4, 110, 5);
+            strike(p, 3.4, 110, 8);
             slashArc(level, 2.2);
         }
         if (t >= 50) endAttack();
@@ -410,7 +430,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             RedSlashEntity slash = ModEntities.RED_SLASH.get().create(level);
             if (slash != null) {
                 Vec3 at = position().add(Vec3.directionFromRotation(0, getYRot()).scale(1.2)).add(0, 1.1, 0);
-                slash.setup(this, p, at, getYRot(), k * 50 - 50, 10, 3);
+                slash.setup(this, p, at, getYRot(), k * 50 - 50, 10, 5);
                 level.addFreshEntity(slash);
             }
             level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 0.8F, 1.3F);
@@ -436,7 +456,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), getX(), getY() + 1, getZ(), 3, 0.2, 0.4, 0.2, 0);
             if (blowsLeft == 0 && t == 18) blowsLeft = 1;
             if (blowsLeft > 0 && distanceTo(p) < 1.8) {
-                strike(p, 2.2, 120, 4);
+                strike(p, 2.2, 120, 7);
                 blowsLeft = 0;
             }
         }
@@ -460,7 +480,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             level.playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 1, 0.7F);
         }
         if (t == 23) {
-            strikeAt(p, mark, 2.9, 4);
+            strikeAt(p, mark, 2.9, 7);
             ring(level, mark, 2.9, com.soulless.registry.ModParticles.BLOOD_EMBER.get(), 48);
             level.sendParticles(com.soulless.registry.ModParticles.CRIMSON_SLASH.get(), mark.x, mark.y + 0.6, mark.z, 6, 1.4, 0.2, 1.4, 0);
             level.playSound(null, mark.x, mark.y, mark.z, SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.5F, 1.6F);
@@ -513,15 +533,15 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         }
         if (t > 3 && t < 30) face(p);
         if (t == 3 + 7) {
-            strike(p, 3.2, 80, 3);
+            strike(p, 3.2, 80, 5);
             slashArc(level, 1.8);
         }
         if (t == 3 + 15) {
-            strike(p, 3.2, 80, 3);
+            strike(p, 3.2, 80, 5);
             slashArc(level, 1.8);
         }
         if (t == 3 + 24) {
-            strike(p, 3.2, 60, 4);
+            strike(p, 3.2, 60, 7);
             level.sendParticles(com.soulless.registry.ModParticles.RED_SPARK.get(), getX(), getY() + 0.2, getZ(), 16, 0.6, 0.1, 0.6, 0.2);
         }
         if (t >= 3 + 34) endAttack();
@@ -547,7 +567,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         if (t == 20) setDeltaMovement(0, -1.6, 0);
         if (t == 24) {
             moveTo(mark.x, mark.y, mark.z, getYRot(), getXRot());
-            strikeAt(p, mark, 2.3, 5);
+            strikeAt(p, mark, 2.3, 8);
             ring(level, mark, 2.3, com.soulless.registry.ModParticles.BLOOD_EMBER.get(), 40);
             level.sendParticles(com.soulless.registry.ModParticles.CRIMSON_BURST.get(), mark.x, mark.y + 0.4, mark.z, 1, 0, 0, 0, 0);
             level.sendParticles(com.soulless.registry.ModParticles.RED_SPARK.get(), mark.x, mark.y + 0.2, mark.z, 20, 0.8, 0.1, 0.8, 0.3);

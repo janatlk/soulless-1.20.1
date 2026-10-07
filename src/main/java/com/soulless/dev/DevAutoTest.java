@@ -824,6 +824,8 @@ public final class DevAutoTest {
                 p.getHealth(), com.soulless.npc.dialogue.DialogueContext.playerFlags(p));
     }
 
+    private static int rgTalkAt = -1;
+
     private static void renegadeTick(ServerPlayer p) {
         ServerLevel level = p.serverLevel();
         var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
@@ -844,6 +846,15 @@ public final class DevAutoTest {
             com.soulless.boss.RenegadeEncounter.begin(p);
         }
         var him = com.soulless.boss.RenegadeEncounter.fighting(p);
+        // he speaks in the dialogue window: answer a second after it opens
+        if (com.soulless.npc.dialogue.DialogueManager.talking(p) && com.soulless.boss.RenegadeEncounter.in(p)) {
+            if (rgTalkAt < 0) rgTalkAt = tick;
+            if (tick - rgTalkAt >= 20) {
+                rgLog(p, "ANSWERED his words in the dialogue window");
+                com.soulless.npc.dialogue.DialogueManager.chooseText(p, "");
+                rgTalkAt = -1;
+            }
+        }
         if (tick % 100 == 0) rgLog(p, "state phase=" + rgPhase + " me=" + p.blockPosition().toShortString() + " him=" + (him == null ? "none" : him.blockPosition().toShortString()
                 + " hp=" + him.getHealth() + " alive=" + him.isAlive() + " attack=" + him.attackId()));
         if (rgPhase == 0 && him != null && com.soulless.boss.RenegadeEncounter.in(p)) {

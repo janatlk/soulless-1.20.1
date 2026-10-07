@@ -316,5 +316,7 @@
   "tooltip.soulless.quest.return": "Вернитесь к сенсею",
   "tooltip.soulless.quest.scroll": "Найдите свиток в заброшенном святилище",
   "tooltip.soulless.quest.scroll_found": "Отнесите свиток сенсею",
-  "tooltip.soulless.quest.done": "Обучение пройдено"
+  "tooltip.soulless.quest.done": "Обучение пройдено",
+  "dialogue.soulless.renegade.opt.draw": "[Обнажить клинок]",
+  "dialogue.soulless.renegade.opt.silent": "[Промолчать]"
 }
