@@ -71,8 +71,21 @@ public final class SenseiQuest {
         return p.getAbilities().instabuild || has(p, HARAKIRI);
     }
 
-    /** What the player knows, for the HUD's "?" slots. */
+    /** The training's step: 0 sparring, 1 ask what next, 2 cleansing, 3 back to the sensei, 4 the shrine, 5 done. */
+    public static final int SPAR = 0, ASK = 1, CLEANSING = 2, RETURN = 3, SCROLL = 4, DONE = 5;
+
+    public static int stage(Player p) {
+        if (has(p, BLADE)) return DONE;
+        if (has(p, SHRINE)) return SCROLL;
+        if (has(p, CLEANSED)) return RETURN;
+        if (has(p, CLEANSE)) return CLEANSING;
+        if (has(p, PARRY)) return ASK;
+        return SPAR;
+    }
+
+    /** What the player knows, for the HUD's "?" slots, and how far the training has gone, for the tooltips. */
     public static void syncParry(ServerPlayer p) {
+        ModNetwork.sendToPlayer(p, new com.soulless.network.QuestSyncPacket(stage(p), flags(p).getInt(KILLS)));
         ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.PARRY_KNOWN, canParry(p)));
         ModNetwork.sendToPlayer(p, new ClientControlPacket(ClientControlPacket.RITUAL_KNOWN, knowsHarakiri(p)));
     }
@@ -109,9 +122,11 @@ public final class SenseiQuest {
         CompoundTag f = flags(p);
         int kills = f.getInt(KILLS) + 1;
         f.putInt(KILLS, kills);
+        syncParry(p);
         p.displayClientMessage(Component.translatable("message.soulless.cleanse_count", kills, CLEANSE_GOAL).withStyle(ChatFormatting.GRAY), true);
         if (kills >= CLEANSE_GOAL) {
             f.putBoolean(CLEANSED, true);
+            syncParry(p);
             p.serverLevel().playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8F, 1);
             p.sendSystemMessage(Component.translatable("message.soulless.cleanse_done").withStyle(ChatFormatting.AQUA));
         }
@@ -121,6 +136,7 @@ public final class SenseiQuest {
     public static void onInnocentStruck(ServerPlayer p, LivingEntity target) {
         if (!cleansing(p) || !training(p) || !KatanaOath.innocent(target)) return;
         if (flags(p).getInt(KILLS) > 0) flags(p).putInt(KILLS, 0);
+        syncParry(p);
         p.displayClientMessage(Component.translatable("message.soulless.cleanse_reset").withStyle(ChatFormatting.RED), true);
     }
 
@@ -147,6 +163,7 @@ public final class SenseiQuest {
         DialogueActions.register("soulless:sensei_train", j -> ctx -> {
             ctx.setFlag("player", STUDENT, true);
             give(ctx.player, new ItemStack(ModItems.TRAINING_KATANA.get()));
+            syncParry(ctx.player);
         });
         DialogueActions.register("soulless:spar", j -> ctx -> {
             ctx.end();
@@ -155,9 +172,11 @@ public final class SenseiQuest {
         DialogueActions.register("soulless:cleanse", j -> ctx -> {
             ctx.setFlag("player", CLEANSE, true);
             flags(ctx.player).putInt(KILLS, 0);
+            syncParry(ctx.player);
         });
         DialogueActions.register("soulless:shrine_map", j -> ctx -> {
             ctx.setFlag("player", SHRINE, true);
+            syncParry(ctx.player);
             ItemStack map = explorerMap(ctx.player.serverLevel(), ctx.npc.blockPosition(), SHRINE_MAPS, "item.soulless.map.shrine");
             if (map.isEmpty()) say(ctx.player, "dialogue.soulless.sensei.no_shrine", false);
             else give(ctx.player, map);
@@ -174,6 +193,7 @@ public final class SenseiQuest {
                     ctx.player.inventoryMenu.getCraftSlots());
             ctx.setFlag("player", BLADE, true);
             give(ctx.player, new ItemStack(ModItems.BROKEN_KATANA.get()));
+            syncParry(ctx.player);
         });
     }
 

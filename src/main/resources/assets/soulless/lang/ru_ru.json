@@ -308,5 +308,13 @@
   "dialogue.soulless.sensei.harakiri.2": "Встань на колено, переверни клинок и вонзи его в себя (R). Это будет больно - три сердца, и может убить.",
   "dialogue.soulless.sensei.harakiri.3": "Но Кицунэ увидит твою жертву и на время даст тебе свою силу: быстрее клинок, меньше по тебе попадают.",
   "dialogue.soulless.sensei.harakiri.4": "Не делай этого без нужды. И никогда - ради гордости.",
-  "dialogue.soulless.sensei.opt.understood": "Понял."
+  "dialogue.soulless.sensei.opt.understood": "Понял.",
+  "tooltip.soulless.quest.title": "Обучение у сенсея:",
+  "tooltip.soulless.quest.spar": "Спарринг: отразите 5 ударов сенсея",
+  "tooltip.soulless.quest.ask": "Спросите сенсея, что дальше",
+  "tooltip.soulless.quest.cleanse": "Нечисть учебным клинком: %s/%s, не трогая невинных",
+  "tooltip.soulless.quest.return": "Вернитесь к сенсею",
+  "tooltip.soulless.quest.scroll": "Найдите свиток в заброшенном святилище",
+  "tooltip.soulless.quest.scroll_found": "Отнесите свиток сенсею",
+  "tooltip.soulless.quest.done": "Обучение пройдено"
 }

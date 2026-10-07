@@ -32,6 +32,8 @@ public final class ClientState {
     /** {@code /soulless zones}: draw ability hit zones around the local player. */
     /** The parry has been taught (or the sensei's sparring is on): SenseiQuest.syncParry. */
     public static boolean parryKnown;
+    /** The sensei's training (npc.SenseiQuest.stage) and the monsters slain for it: QuestSyncPacket, for tooltips. */
+    public static int questStage, questKills;
     /** Harakiri has been taught (SenseiQuest.syncParry). */
     public static boolean ritualKnown;
     public static boolean showZones;

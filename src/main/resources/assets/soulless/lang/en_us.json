@@ -308,5 +308,13 @@
   "dialogue.soulless.sensei.harakiri.2": "Kneel, turn the blade and drive it into yourself (R). It will hurt - three hearts, and it can kill.",
   "dialogue.soulless.sensei.harakiri.3": "But Kitsune will see your sacrifice and lend you her strength for a while: a faster blade, fewer blows landing on you.",
   "dialogue.soulless.sensei.harakiri.4": "Do not do it without need. And never for pride.",
-  "dialogue.soulless.sensei.opt.understood": "Understood."
+  "dialogue.soulless.sensei.opt.understood": "Understood.",
+  "tooltip.soulless.quest.title": "Training with the sensei:",
+  "tooltip.soulless.quest.spar": "Sparring: parry 5 of the sensei's blows",
+  "tooltip.soulless.quest.ask": "Ask the sensei what comes next",
+  "tooltip.soulless.quest.cleanse": "Monsters with the training blade: %s/%s, harming no innocent",
+  "tooltip.soulless.quest.return": "Return to the sensei",
+  "tooltip.soulless.quest.scroll": "Find the scroll in the abandoned shrine",
+  "tooltip.soulless.quest.scroll_found": "Bring the scroll to the sensei",
+  "tooltip.soulless.quest.done": "Training complete"
 }
