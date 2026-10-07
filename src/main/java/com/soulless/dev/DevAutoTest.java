@@ -370,6 +370,7 @@ public final class DevAutoTest {
     private static net.minecraft.world.entity.animal.Fox wildFox, redFox;
     private static net.minecraft.core.BlockPos foxBed;
     private static net.minecraft.world.phys.Vec3 sitAt;
+    private static net.minecraft.world.entity.monster.Zombie foxGuardTest;
 
     private static void foxLog(String what, Object... args) {
         Soulless.LOGGER.info("[autotest] fox t=" + tick + " " + what, args);
@@ -487,7 +488,25 @@ public final class DevAutoTest {
                     copy.targetSelector.getAvailableGoals().size(), copy.canPickUpLoot(), tag.getBoolean("OrderedToSit"));
             copy.discard();
         }
-        if (tick == 560) foxLog("done");
+        if (tick == 556) {
+            // guarding and fox sense: a zombie hurts the owner and hunts them
+            var zombie = net.minecraft.world.entity.EntityType.ZOMBIE.create(level);
+            zombie.moveTo(p.getX() + 6, p.getY(), p.getZ(), 0, 0);
+            level.addFreshEntity(zombie);
+            zombie.setTarget(p);
+            p.setLastHurtByMob(zombie);
+            foxGuardTest = zombie;
+        }
+        if (tick == 600 && foxGuardTest != null) {
+            foxLog("GUARD fox target={} zombie glowing={} zombie hp={}", f.getTarget() == foxGuardTest, foxGuardTest.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING),
+                    foxGuardTest.getHealth());
+            foxGuardTest.discard();
+        }
+        if (tick == 610) {
+            boolean ownerHurts = f.hurt(p.damageSources().playerAttack(p), 3);
+            foxLog("KILLABLE owner hit hurts={} hp={}", ownerHurts, f.getHealth());
+            foxLog("done");
+        }
     }
 
     private static net.minecraft.core.BlockPos astralBed;
@@ -560,7 +579,10 @@ public final class DevAutoTest {
         }
         if (tick == 300) astralLog(p, "DREAM");
         if (com.soulless.world.Astral.in(p) && astralIn < 0) astralIn = tick;
-        if (astralIn >= 0 && tick == astralIn + 30 && com.soulless.world.Astral.in(p) && oathAt < 0) p.teleportTo(0.5, 100, -0.2);
+        if (astralIn >= 0 && tick == astralIn + 5 && com.soulless.world.Astral.in(p) && oathAt < 0) {
+            p.teleportTo(p.serverLevel(), 0.5, 100, 4.5, 180, 14);   // Kitsune in full view
+        }
+        if (astralIn >= 0 && tick == astralIn + 70 && com.soulless.world.Astral.in(p) && oathAt < 0) p.teleportTo(0.5, 100, -0.2);
         if (oathAt < 0 && tick > 300 && !com.soulless.world.Astral.in(p) && com.soulless.item.KatanaOath.sworn(p)) oathAt = tick + 20;
         if (oathAt < 0 && tick == 1000) astralLog(p, "FAIL the oath was never given");
         if (tick == oathAt) {

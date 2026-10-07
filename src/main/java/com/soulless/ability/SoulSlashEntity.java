@@ -124,7 +124,7 @@ public class SoulSlashEntity extends Entity {
         Vec3 across = across(dir);
         Vec3 up = across.cross(dir);
         AABB box = getBoundingBox().inflate(HALF_WIDTH + 1, HEIGHT, HALF_WIDTH + 1).expandTowards(v.scale(-1));
-        for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator())) {
+        for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator() && !com.soulless.pet.TamedFox.isPetOf(e, player))) {
             if (struck.contains(t.getId()) || t.isAlliedTo(player) || (t instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
             Vec3 rel = t.position().add(0, t.getBbHeight() / 2, 0).subtract(position());
             double side = rel.dot(across), along = rel.dot(dir), rise = rel.dot(up);

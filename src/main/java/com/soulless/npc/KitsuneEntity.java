@@ -144,15 +144,16 @@ public class KitsuneEntity extends NpcEntity implements GeoEntity {
         reforgeTicks++;
         if (reforgeTicks < REFORGED_AT) {
             // light rises around her as she calls it up; small sparks gather at the blade in the sleeper's hands
-            double a = reforgeTicks * 0.3;
-            for (int i = 0; i < 2; i++) {
-                double ang = a + i * Math.PI;
+            if (reforgeTicks % 3 == 0) {
+                double ang = reforgeTicks * 0.3;
                 level.sendParticles(ParticleTypes.END_ROD, getX() + Math.cos(ang) * 1.8, getY() + 0.3 + reforgeTicks * 0.04,
                         getZ() + Math.sin(ang) * 1.8, 1, 0, 0.02, 0, 0);
             }
-            var look = player.getLookAngle();
-            double hx = player.getX() + look.x * 0.9, hy = player.getEyeY() - 0.55, hz = player.getZ() + look.z * 0.9;
-            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, hx, hy, hz, 2, 0.25, 0.15, 0.25, 0.02);
+            if (reforgeTicks % 4 == 0) {
+                var look = player.getLookAngle();
+                double hx = player.getX() + look.x * 1.4, hy = player.getEyeY() - 0.7, hz = player.getZ() + look.z * 1.4;
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, hx, hy, hz, 1, 0.15, 0.1, 0.15, 0.01);
+            }
             if (reforgeTicks % 10 == 0) {
                 level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.5F,
                         0.8F + reforgeTicks / (float) REFORGED_AT);
@@ -161,8 +162,8 @@ public class KitsuneEntity extends NpcEntity implements GeoEntity {
             var look = player.getLookAngle();
             double hx = player.getX() + look.x * 0.9, hy = player.getEyeY() - 0.5, hz = player.getZ() + look.z * 0.9;
             level.sendParticles(ParticleTypes.FLASH, hx, hy, hz, 1, 0, 0, 0, 0);
-            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, hx, hy, hz, 25, 0.2, 0.2, 0.2, 0.3);
-            level.sendParticles(ParticleTypes.END_ROD, getX(), getY() + 2, getZ(), 40, 0.5, 0.5, 0.5, 0.2);
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, hx, hy, hz, 8, 0.15, 0.15, 0.15, 0.2);
+            level.sendParticles(ParticleTypes.END_ROD, getX(), getY() + 2, getZ(), 14, 0.4, 0.4, 0.4, 0.12);
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 2, 1);
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 1, 1.4F);
             reforge(player);
@@ -202,6 +203,10 @@ public class KitsuneEntity extends NpcEntity implements GeoEntity {
             for (int i = 0; i < 4; i++) {
                 double ang = a + i * Math.PI / 2;
                 level.sendParticles(SEAL, getX() + Math.cos(ang) * 2.8, getY() + 0.1, getZ() + Math.sin(ang) * 2.8, 1, 0, 0, 0, 0);
+            }
+            if (random.nextInt(4) == 0) {
+                level.sendParticles(ParticleTypes.END_ROD, getX() + random.nextGaussian() * 0.9, getY() + 0.4 + random.nextDouble() * 0.8,
+                        getZ() + random.nextGaussian() * 0.9, 0, 0, 1, 0, 0.015);
             }
             if (random.nextInt(6) == 0) {
                 level.sendParticles(ParticleTypes.WITCH, getX() + random.nextGaussian() * 1.2, getY() + 0.6 + random.nextDouble(),

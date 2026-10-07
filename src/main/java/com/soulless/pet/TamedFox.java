@@ -49,14 +49,21 @@ import java.util.UUID;
  * <li>right click by the owner: sit / follow (a sitting fox stays where it is);</li>
  * <li>when a bed is near and so is the owner, it climbs onto the bed and sleeps there, curled up - on the owner's
  * own bed while they sleep; it gets up when the owner walks away;</li>
- * <li>sweet berries heal it; its owner's blows (sweeps, abilities) never hurt it; it hunts nothing, flees nobody,
- * never despawns, picks nothing up.</li>
+ * <li>sweet berries heal it; it can be killed (by its owner too), but the owner's sweeping cuts and area abilities
+ * pass it by; it flees nobody, never despawns, picks nothing up;</li>
+ * <li>it guards its owner: it goes for whatever hurts them and joins in on monsters they fight (never creepers,
+ * never players);</li>
+ * <li>fox sense: monsters closing in on the owner (targeting them, within 16 blocks) glow for a moment, and the fox
+ * gives a sharp yip when a new one appears.</li>
  * </ul>
  */
 public class TamedFox extends Fox {
     private static final EntityDataAccessor<Boolean> LYING = SynchedEntityData.defineId(TamedFox.class, EntityDataSerializers.BOOLEAN);
 
     @Nullable private UUID owner;
+    /** Set while the goals are made (in the super constructor), so no initializer here. */
+    private Goal guard;
+    private int senseCooldown;
     private boolean orderedToSit;
 
     public TamedFox(EntityType<? extends TamedFox> type, Level level) {
@@ -66,7 +73,12 @@ public class TamedFox extends Fox {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Fox.createAttributes().add(Attributes.MAX_HEALTH, 20);
+        return Fox.createAttributes().add(Attributes.MAX_HEALTH, 20).add(Attributes.ATTACK_DAMAGE, 4);
+    }
+
+    /** Is {@code e} a fox tamed by {@code player}? (Area attacks of its owner pass it by.) */
+    public static boolean isPetOf(net.minecraft.world.entity.Entity e, Player player) {
+        return e instanceof TamedFox f && f.isOwner(player);
     }
 
     @Override
@@ -82,16 +94,20 @@ public class TamedFox extends Fox {
         targetSelector.removeAllGoals(g -> true);
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new SitGoal());
-        goalSelector.addGoal(2, new LieOnBedGoal());
-        goalSelector.addGoal(3, new FollowOwnerGoal());
+        goalSelector.addGoal(2, new net.minecraft.world.entity.ai.goal.MeleeAttackGoal(this, 1.35, true));
+        goalSelector.addGoal(3, new LieOnBedGoal());
+        goalSelector.addGoal(4, new FollowOwnerGoal());
+        guard = new GuardGoal();
+        targetSelector.addGoal(1, guard);
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
     }
 
-    /** The wild fox's hunting comes back on spawn / load: a pet hunts nothing. */
+    /** The wild fox's hunting comes back on spawn / load: a pet hunts nothing - it only guards its owner. */
     private void noHunting() {
         targetSelector.removeAllGoals(g -> true);
+        if (guard != null) targetSelector.addGoal(1, guard);
         setTarget(null);
     }
 
@@ -162,7 +178,6 @@ public class TamedFox extends Fox {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
-        if (source.getEntity() instanceof Player p && isOwner(p)) return false;
         boolean hurt = super.hurt(source, amount);
         if (hurt && !level().isClientSide) setLying(false);
         return hurt;
@@ -207,7 +222,78 @@ public class TamedFox extends Fox {
         noHunting();
     }
 
+    // ---- fox sense
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (level().isClientSide || tickCount % 20 != 0) return;
+        if (senseCooldown > 0) senseCooldown -= 20;
+        Player o = getOwner();
+        if (o == null || distanceToSqr(o) > 24 * 24) return;
+        boolean fresh = false;
+        net.minecraft.world.entity.Mob first = null;
+        for (net.minecraft.world.entity.Mob m : level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, o.getBoundingBox().inflate(16),
+                m -> m instanceof net.minecraft.world.entity.monster.Enemy && m.getTarget() == o && m.isAlive())) {
+            if (!m.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING)) fresh = true;
+            m.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 40, 0, false, false));
+            if (first == null) first = m;
+        }
+        if (fresh && senseCooldown <= 0) {
+            senseCooldown = 200;
+            playSound(SoundEvents.FOX_SCREECH, 0.7F, 1.2F);
+            getLookControl().setLookAt(first, 30, 30);
+        }
+    }
+
     // ---- goals
+
+    /** Go for whatever hurts the owner; join in on monsters the owner fights. Never creepers, players or other pets. */
+    private final class GuardGoal extends net.minecraft.world.entity.ai.goal.target.TargetGoal {
+        private int seenHurtBy, seenHurt;
+        @Nullable private net.minecraft.world.entity.LivingEntity found;
+
+        GuardGoal() {
+            super(TamedFox.this, false);
+            setFlags(EnumSet.of(Flag.TARGET));
+        }
+
+        private boolean fair(net.minecraft.world.entity.LivingEntity e, Player o) {
+            return e.isAlive() && e != o && !(e instanceof Player) && !(e instanceof net.minecraft.world.entity.monster.Creeper)
+                    && !(e instanceof TamedFox) && distanceToSqr(e) < 20 * 20;
+        }
+
+        @Override
+        public boolean canUse() {
+            Player o = getOwner();
+            if (o == null || orderedToSit) return false;
+            var by = o.getLastHurtByMob();
+            if (by != null && o.getLastHurtByMobTimestamp() != seenHurtBy && fair(by, o)) {
+                seenHurtBy = o.getLastHurtByMobTimestamp();
+                found = by;
+                return true;
+            }
+            var hit = o.getLastHurtMob();
+            if (hit instanceof net.minecraft.world.entity.monster.Enemy && o.getLastHurtMobTimestamp() != seenHurt && fair(hit, o)) {
+                seenHurt = o.getLastHurtMobTimestamp();
+                found = hit;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return !orderedToSit && super.canContinueToUse();
+        }
+
+        @Override
+        public void start() {
+            mob.setTarget(found);
+            setLying(false);
+            super.start();
+        }
+    }
 
     /** Ordered to sit: sit and stay. */
     private final class SitGoal extends Goal {

@@ -119,20 +119,25 @@ public final class DevAutoTestClient {
                 }
                 if (tick == s) shot(mc, "fox_" + s);
             }
-            if (tick == 580) mc.stop();
+            if (tick == 600) shot(mc, "fox_guard");
+            if (tick == 640) mc.stop();
             return;
         }
         if (DevAutoTest.ASTRAL) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             if (tick == 150) shot(mc, "astral_bed");
             boolean dreaming = mc.level.dimension() == com.soulless.world.Astral.LEVEL;
-            var k = dreaming ? mc.level.getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, mc.player.getBoundingBox().inflate(30))
-                    .stream().findFirst().orElse(null) : null;
+            var k = dreaming ? mc.level.getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, mc.player.getBoundingBox().inflate(30),
+                    e -> e.getType() == com.soulless.registry.ModEntities.KITSUNE.get()).stream().findFirst().orElse(null) : null;
             if (dreaming && astralArrived < 0) {
                 astralArrived = tick;
                 astralTalk = -1;
             }
-            if (astralArrived >= 0 && tick == astralArrived + 15) shot(mc, "astral_arrive");
+            if (astralArrived >= 0 && tick == astralArrived + 50) {
+                mc.player.setYRot(180);
+                mc.player.setXRot(14);
+            }
+            if (astralArrived >= 0 && tick == astralArrived + 55) shot(mc, "astral_spirit");
             // close to her (the server moves the player there): look down at her, take a picture, talk
             if (k != null && astralTalk < 0 && mc.player.distanceTo(k) < 5) {
                 mc.player.setYRot(180);

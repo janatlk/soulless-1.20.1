@@ -220,6 +220,7 @@ public final class KatanaCombat {
         float ench = EnchantmentHelper.getDamageBonus(stack, t.getMobType());
         float damage = (base * (0.2F + charge * charge * 0.8F) + ench * charge) * mult;
         float hpBefore = t.getHealth();
+        if (!primary && com.soulless.pet.TamedFox.isPetOf(t, player)) return;   // a side cut passes one's own fox by
         if (KatanaOath.stops(player, t, primary, damage)) return;
         if (!t.hurt(player.damageSources().playerAttack(player), damage)) return;
         float kb = knockback + EnchantmentHelper.getKnockbackBonus(player) * 0.5F;

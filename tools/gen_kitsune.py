@@ -254,13 +254,18 @@ def pack_and_paint():
 # A pose: bone -> {"rot": (rx, ry, rz) model space, "pos": (0, dy, dz), "scale": (sx, sy, sz)}
 OPEN = {"scale": (1, 0.05, 1)}   # eyelids squashed up: eyes open
 
-LYING_BODY = {"body": {"pos": (0, -15, 0)},
-              "leg_fl": {"rot": (84, 0, 0)}, "leg_fr": {"rot": (84, 0, 0)},
-              "leg_bl": {"rot": (82, 0, -10)}, "leg_br": {"rot": (82, 0, 10)}}
+#: how far the body sinks to lie down (model pixels): set per model before the animations are made
+DROP = -15
+
+
+def lying_body():
+    return {"body": {"pos": (0, DROP, 0)},
+            "leg_fl": {"rot": (84, 0, 0)}, "leg_fr": {"rot": (84, 0, 0)},
+            "leg_bl": {"rot": (82, 0, -10)}, "leg_br": {"rot": (82, 0, 10)}}
 
 
 def sleep_pose():
-    p = dict(LYING_BODY)
+    p = lying_body()
     p.update({
         "neck": {"rot": (-34, -38, 0)}, "head": {"rot": (-14, -38, -12)},
         "ear_l": {"rot": (-20, 0, 10)}, "ear_r": {"rot": (-20, 0, -10)},
@@ -270,13 +275,50 @@ def sleep_pose():
 
 
 def awake_pose():
-    p = dict(LYING_BODY)
+    p = lying_body()
     p.update({
         "neck": {"rot": (18, 0, 0)}, "head": {"rot": (-6, 0, 0)},
         "lid_l": OPEN, "lid_r": OPEN,
         "tail0": {"rot": (26, 34, 0)}, "tail1": {"rot": (4, 34, 0)}, "tail2": {"rot": (0, 28, 0)}, "tail3": {"rot": (0, 22, 0)},
     })
     return p
+
+
+def sit_pose():
+    """Sitting up: the body tipped back onto the haunches, front legs straight down, hind legs folded under."""
+    return {
+        "body": {"rot": (35, 0, 0)},
+        "leg_fl": {"rot": (-35, 0, 0)}, "leg_fr": {"rot": (-35, 0, 0)},
+        "leg_bl": {"rot": (55, 0, -8)}, "leg_br": {"rot": (55, 0, 8)},
+        "neck": {"rot": (-20, 0, 0)}, "head": {"rot": (0, 0, 0)},
+        "lid_l": OPEN, "lid_r": OPEN,
+        "tail0": {"rot": (-35, 0, 0)},
+    }
+
+
+def merge(base, extra):
+    out = dict(base)
+    out.update(extra)
+    return out
+
+
+def keyframes(frames):
+    """[(time, pose)] -> bone channels keyed by time (bones a pose leaves out sit at rest then)."""
+    bones = sorted(set().union(*(set(pose) for _, pose in frames)))
+    out = {}
+    for b in bones:
+        chans = {}
+        for ch in ("rot", "pos", "scale"):
+            if not any(ch in pose.get(b, {}) for _, pose in frames):
+                continue
+            rest = (1, 1, 1) if ch == "scale" else (0, 0, 0)
+            key = {"rot": "rotation", "pos": "position", "scale": "scale"}[ch]
+            chans[key] = {}
+            for t, pose in frames:
+                v = pose.get(b, {}).get(ch, rest)
+                chans[key][str(t)] = to_file_rot(v) if ch == "rot" else ([0, r(v[1]), r(v[2])] if ch == "pos" else [r(x) for x in v])
+        out[b] = chans
+    return out
 
 
 def stand_pose():
@@ -315,7 +357,7 @@ def animations():
         return bones
 
     def breathe(depth, rate):
-        return {"body": {"position": [0, f"-15 + math.sin({t} * {rate}) * {depth}", 0],
+        return {"body": {"position": [0, f"{DROP} + math.sin({t} * {rate}) * {depth}", 0],
                          "scale": [f"1 + math.sin({t} * {rate}) * 0.012", f"1 + math.sin({t} * {rate}) * 0.018", 1]}}
 
     # sleeping, curled up: slow breaths, the tail tip twitching now and then
@@ -340,31 +382,18 @@ def animations():
         awake[f"lid_{side}"] = {"scale": [1, blink, 1]}
     out["animation.kitsune.idle"] = (True, 9.0, awake)
 
-    # the reforging: she rises to her feet, lifts her head to the sky, tail high - and holds it
-    st = stand_pose()
-    rise = {}
-    for b in set(ap) | set(st):
-        a_tr, s_tr = ap.get(b, {}), st.get(b, {})
-        chans = {}
-        if "rot" in a_tr or "rot" in s_tr:
-            ra, rs = a_tr.get("rot", (0, 0, 0)), s_tr.get("rot", (0, 0, 0))
-            chans["rotation"] = {"0.0": to_file_rot(ra), "1.2": to_file_rot(rs)}
-        if "pos" in a_tr or "pos" in s_tr:
-            pa, ps = a_tr.get("pos", (0, 0, 0)), s_tr.get("pos", (0, 0, 0))
-            chans["position"] = {"0.0": [0, r(pa[1]), r(pa[2])], "1.2": [0, r(ps[1]), r(ps[2])]}
-        if "scale" in a_tr or "scale" in s_tr:
-            chans["scale"] = {"0.0": list(a_tr.get("scale", (1, 1, 1))), "1.2": list(s_tr.get("scale", (1, 1, 1)))}
-        rise[b] = chans
-    # head raised to the sky in the middle, then down to the player
-    rise["neck"]["rotation"] = {"0.0": to_file_rot(ap["neck"]["rot"]), "1.2": to_file_rot(st["neck"]["rot"]),
-                                "2.0": to_file_rot((52, 0, 0)), "3.2": to_file_rot((52, 0, 0)), "4.0": to_file_rot(st["neck"]["rot"])}
-    rise["head"]["rotation"] = {"0.0": to_file_rot(ap["head"]["rot"]), "1.2": to_file_rot(st["head"]["rot"]),
-                                "2.0": to_file_rot((26, 0, 0)), "3.2": to_file_rot((26, 0, 0)), "4.0": to_file_rot(st["head"]["rot"])}
-    out["animation.kitsune.reforge"] = ("hold_on_last_frame", 4.0, rise)
+    # the reforging: she sits up, bows her head to the sleeper and touches the blade with her nose just as it is
+    # made whole (2.5 s = KitsuneEntity.REFORGED_AT), her tail sweeping round; then she lifts her head, tail high
+    sit = sit_pose()
+    bow = merge(sit, {"neck": {"rot": (-58, 0, 0)}, "head": {"rot": (-22, 0, 0)}, "tail0": {"rot": (-30, 25, 0)}})
+    touch = merge(bow, {"tail0": {"rot": (-30, -25, 0)}})
+    proud = merge(sit, {"neck": {"rot": (-8, 0, 0)}, "head": {"rot": (22, 0, 0)}, "tail0": {"rot": (-72, 0, 0)}})
+    out["animation.kitsune.reforge"] = ("hold_on_last_frame", 4.25,
+                                        keyframes([(0.0, ap), (0.9, sit), (1.7, bow), (2.5, touch), (3.3, proud), (4.2, proud)]))
     return out
 
 
-def write_anims():
+def write_anims(model="kitsune"):
     anims = {}
     for name, (loop, length, bones) in animations().items():
         bb = {}
@@ -376,7 +405,7 @@ def write_anims():
                 else:
                     bb[bname][ch] = val
         anims[name] = {"loop": loop, "animation_length": length, "bones": bb}
-    p = ASSETS / "animations/entity/kitsune.animation.json"
+    p = ASSETS / f"animations/entity/{model}.animation.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({"format_version": "1.8.0", "animations": anims}, indent=1))
 
@@ -471,6 +500,46 @@ def preview(base, out):
     Image.fromarray(np.clip(np.concatenate(rows, axis=0), 0, 255).astype(np.uint8)).save(out)
 
 
+# ------------------------------------------------------------------ the plain variant: a vanilla white fox
+# The same animations on the vanilla fox's shape and texture (minecraft:textures/entity/fox/snow_fox.png, 48x32, box
+# UV), for comparison. Geometry from FoxModel.createBodyLayer, turned into this file's space (y up, ground at 0):
+# the body and the tail are boxes standing up, laid down by their bones' rest rotations.
+PLAIN_BONES = [
+    # name, parent, pivot, rest rotation (model space), cubes [(lo, hi, box uv)]
+    ("root", None, (0, 0, 0), None, []),
+    ("body", "root", (0, 8, 0), None, []),
+    ("body_rot", "body", (0, 8, -6), (-90, 0, 0), [((-3, -7, -9.5), (3, 4, -3.5), (24, 15))]),
+    ("neck", "body", (0, 7.5, -3), None, []),
+    ("head", "neck", (0, 7.5, -3), None, [((-4, 3.5, -8), (4, 9.5, -2), (1, 5)), ((-2, 3.49, -11), (2, 5.49, -8), (6, 18))]),
+    ("ear_r", "head", (-3, 9.5, -6.5), None, [((-4, 9.5, -7), (-2, 11.5, -6), (8, 1))]),
+    ("ear_l", "head", (3, 9.5, -6.5), None, [((2, 9.5, -7), (4, 11.5, -6), (15, 1))]),
+    ("leg_fl", "body", (2, 6.5, 0), None, [((1, 0, -1), (3, 6, 1), (4, 24))]),
+    ("leg_fr", "body", (-2, 6.5, 0), None, [((-3, 0, -1), (-1, 6, 1), (13, 24))]),
+    ("leg_bl", "body", (2, 6.5, 7), None, [((1, 0, 6), (3, 6, 8), (4, 24))]),
+    ("leg_br", "body", (-2, 6.5, 7), None, [((-3, 0, 6), (-1, 6, 8), (13, 24))]),
+    ("tail0", "body", (0, 7, 9), (-87, 0, 0), [((-2, -2, 8), (2, 7, 13), (30, 0))]),
+]
+
+
+def write_plain_geo():
+    bones = []
+    for name, parent, piv, rest, cubes in PLAIN_BONES:
+        out = {"name": name, "pivot": [r(-piv[0]), r(piv[1]), r(piv[2])]}
+        if parent:
+            out["parent"] = parent
+        if rest:
+            out["rotation"] = to_file_rot(rest)
+        if cubes:
+            out["cubes"] = [{"origin": [r(-hi[0]), r(lo[1]), r(lo[2])], "size": [r(h - l) for l, h in zip(lo, hi)], "uv": list(uv)}
+                            for lo, hi, uv in cubes]
+        bones.append(out)
+    geo = {"format_version": "1.12.0", "minecraft:geometry": [{
+        "description": {"identifier": "geometry.kitsune_plain", "texture_width": 48, "texture_height": 32,
+                        "visible_bounds_width": 3, "visible_bounds_height": 2, "visible_bounds_offset": [0, 0.5, 0]},
+        "bones": bones}]}
+    (ASSETS / "geo/entity/kitsune_plain.geo.json").write_text(json.dumps(geo, indent=1))
+
+
 def main():
     build()
     base, gm, tex_h = pack_and_paint()
@@ -479,6 +548,12 @@ def main():
     Image.fromarray(np.clip(gm, 0, 255).astype(np.uint8), "RGBA").save(t / "kitsune_glowmask.png")
     write_geo(tex_h)
     write_anims()
+    # the plain variant: a vanilla fox lies down by sinking just 4 pixels
+    global DROP
+    DROP = -4
+    write_plain_geo()
+    write_anims("kitsune_plain")
+    DROP = -15
     if "--preview" in sys.argv:
         preview(base, sys.argv[sys.argv.index("--preview") + 1])
     print(f"kitsune cubes={len(CUBES)} bones={len(BONES)} texture={TEX_W}x{tex_h}")

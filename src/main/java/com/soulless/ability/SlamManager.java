@@ -187,7 +187,7 @@ public final class SlamManager {
 
 
         AABB box = new AABB(center, center).inflate(RADIUS, 3.0, RADIUS);
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator())) {
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator() && !com.soulless.pet.TamedFox.isPetOf(e, player))) {
             if (target.isAlliedTo(player) || (target instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
             if (!inBlast(center, target)) continue;
             target.invulnerableTime = 0;

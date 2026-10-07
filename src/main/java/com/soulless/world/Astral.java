@@ -188,16 +188,18 @@ public final class Astral {
                 }
             }
         }
-        if (astral.getEntitiesOfClass(KitsuneEntity.class, new AABB(centre).inflate(64)).isEmpty()) {
-            KitsuneEntity k = ModEntities.KITSUNE.get().create(astral);
-            if (k != null) {
-                k.moveTo(KITSUNE.x, KITSUNE.y, KITSUNE.z, 0, 0);   // facing south, toward where the sleeper arrives
-                k.setYHeadRot(0);
-                k.setYBodyRot(0);
-                k.setHome(BlockPos.containing(KITSUNE));
-                astral.addFreshEntity(k);
-            }
-        }
+        spawnKitsune(astral, ModEntities.KITSUNE.get(), KITSUNE);
+    }
+
+    private static void spawnKitsune(ServerLevel astral, EntityType<KitsuneEntity> type, Vec3 at) {
+        if (!astral.getEntities(type, new AABB(BlockPos.containing(at)).inflate(64), e -> true).isEmpty()) return;
+        KitsuneEntity k = type.create(astral);
+        if (k == null) return;
+        k.moveTo(at.x, at.y, at.z, 0, 0);   // facing south, toward where the sleeper arrives
+        k.setYHeadRot(0);
+        k.setYBodyRot(0);
+        k.setHome(BlockPos.containing(at));
+        astral.addFreshEntity(k);
     }
 
     // ---- nothing hurts, nothing changes in the dream
