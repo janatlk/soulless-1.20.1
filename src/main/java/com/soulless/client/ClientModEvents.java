@@ -52,6 +52,7 @@ public final class ClientModEvents {
         event.registerEntityRenderer(com.soulless.registry.ModEntities.KITSUNE.get(), KitsuneRenderer::new);
         event.registerEntityRenderer(com.soulless.registry.ModEntities.RENEGADE.get(), RenegadeRenderer::new);
         event.registerEntityRenderer(com.soulless.registry.ModEntities.RED_SLASH.get(), net.minecraft.client.renderer.entity.NoopRenderer::new);
+        event.registerEntityRenderer(com.soulless.registry.ModEntities.CHAIN_SEAT.get(), ChainSeatRenderer::new);
         event.registerEntityRenderer(com.soulless.registry.ModEntities.SPECTRAL_BLADE.get(), RenegadeRenderer.Blade::new);
         // talking characters
         event.registerEntityRenderer(com.soulless.registry.ModEntities.SENSEI.get(), ctx -> new NpcRenderer<>(ctx, false,

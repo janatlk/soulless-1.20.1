@@ -67,6 +67,10 @@ public final class ModEntities {
             () -> EntityType.Builder.<com.soulless.boss.RedSlashEntity>of(com.soulless.boss.RedSlashEntity::new, MobCategory.MISC)
                     .sized(0.5F, 0.5F).fireImmune().clientTrackingRange(8).build("red_slash"));
 
+    public static final RegistryObject<EntityType<com.soulless.boss.ChainSeatEntity>> CHAIN_SEAT = ENTITIES.register("chain_seat",
+            () -> EntityType.Builder.<com.soulless.boss.ChainSeatEntity>of(com.soulless.boss.ChainSeatEntity::new, MobCategory.MISC)
+                    .sized(0.6F, 0.2F).fireImmune().clientTrackingRange(8).build("chain_seat"));
+
     public static final RegistryObject<EntityType<com.soulless.boss.SpectralBladeEntity>> SPECTRAL_BLADE = ENTITIES.register("spectral_blade",
             () -> EntityType.Builder.<com.soulless.boss.SpectralBladeEntity>of(com.soulless.boss.SpectralBladeEntity::new, MobCategory.MISC)
                     .sized(0.4F, 0.4F).fireImmune().clientTrackingRange(8).updateInterval(1).build("spectral_blade"));

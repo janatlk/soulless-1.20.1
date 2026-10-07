@@ -284,7 +284,7 @@
   "chat.soulless.renegade_says": "[???] %s",
   "message.soulless.harakiri_unknown": "You don't know yet what this blade does with R. Ask the sensei",
   "message.soulless.renegade_won": "The Renegade is beaten. The sensei should hear of this.",
-  "message.soulless.renegade_lost": "You come to your senses. He will be back.",
+  "message.soulless.renegade_lost": "You wake in a cold sweat. He will come again when you sleep.",
   "advancement.soulless.renegade_beaten": "The Student's Shadow",
   "advancement.soulless.renegade_beaten.desc": "Defeat the Renegade in the dark astral",
   "advancement.soulless.harakiri_learnt": "The Last Lesson",
@@ -318,5 +318,11 @@
   "tooltip.soulless.quest.scroll_found": "Bring the scroll to the sensei",
   "tooltip.soulless.quest.done": "Training complete",
   "dialogue.soulless.renegade.opt.draw": "[Draw the blade]",
-  "dialogue.soulless.renegade.opt.silent": "[Say nothing]"
+  "dialogue.soulless.renegade.opt.silent": "[Say nothing]",
+  "dialogue.soulless.renegade.seize1": "At last, mine... What?! It burns! This blade... won't have me.",
+  "dialogue.soulless.renegade.seize2": "No matter. I'll come to you in your sleep, %1$s. Again and again - until it is mine.",
+  "dialogue.soulless.renegade.dream_call": "Asleep?.. I promised I would come.",
+  "dialogue.soulless.renegade.again1": "You again. Again that blade that obeys you.",
+  "dialogue.soulless.renegade.again2": "No one comes to help in a dream. Defend yourself.",
+  "message.soulless.renegade_chained": "The chains hold fast."
 }

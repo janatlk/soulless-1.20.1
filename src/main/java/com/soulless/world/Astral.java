@@ -85,6 +85,7 @@ public final class Astral {
     }
 
     private static void tryDream(ServerPlayer p) {
+        if (com.soulless.boss.RenegadeEncounter.dreamDue(p)) return;   // he comes into this sleep instead
         var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
         // the oath refused, there is no way back; once Kitsune is free she no longer dwells in the dream
         if (flags.getBoolean(KatanaOath.REFUSED) || flags.getBoolean(KatanaOath.FREED)) return;

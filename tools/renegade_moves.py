@@ -402,6 +402,43 @@ def stagger(t):
     return add(p, head=(0, 10 * sh, 4 * sh))
 
 
+# ------------------------------------------------------------------ the loss: he takes the blade from the chained player
+# (RenegadeEncounter: he arrives 1.7 blocks before the seated player; takes it at 0.75 s, it burns him from 1.6 s, he
+# drops it at 2.0 s; his words come at 3.5 s, then talk)
+LOWERED = P(GUARD, grip=0.0, arm_r=(16, 0, 10), fore_r=(24, 0, 0), blade=(-0.35, -0.4, -0.85), edge=(0, -1, 0),
+            arm_l=(10, 0, -6), fore_l=(20, 0, 0))
+REACH = P(LOWERED, hips=(0.2, -3.0, -0.6), waist=(-26, -10, 0), chest=(-14, -6, 0), head=(18, 0, 0),
+          hand_l=(2.6, 12.5, -11.5), reach_l=1.0, pole_l=(0.8, -0.2, 0.6),
+          foot_l=(3.2, 0, -5.5), foot_r=(-3.0, 0, 3.5), knee_l=(0.4, 0, -1), knee_r=(-0.3, -0.3, -1))
+RAISE = P(REACH, hips=(0.2, -0.6, 0.4), waist=(6, -6, 0), chest=(10, -8, 0), head=(26, 10, 0),
+          hand_l=(4.5, 27.0, -5.5), pole_l=(0.9, -0.3, 0.2), foot_l=(3.2, 0, -3.0), foot_r=(-3.0, 0, 3.0))
+JOLT = P(RAISE, chest=(-4, 14, 8), head=(-4, -24, 8), hand_l=(9.5, 22.0, -2.0), waist=(0, 6, 0))
+CLUTCH = P(LOWERED, hips=(0.2, -2.0, 1.6), waist=(-12, 8, 0), chest=(-18, 10, 0), head=(-6, -8, 0),
+           hand_l=(1.5, 17.0, -4.5), reach_l=1.0, pole_l=(0.9, -0.4, 0.2),
+           foot_l=(3.2, 0, 1.6), foot_r=(-3.0, 0, 4.6))
+SEIZE_T = Track([
+    (0.0, LOWERED),
+    (0.35, P(REACH, hand_l=(4.0, 14.0, -7.0), waist=(-14, -8, 0), chest=(-8, -4, 0), hips=(0.2, -1.6, -0.2)), "io"),
+    (0.75, REACH, "out3"),                                   # the hand closes on it
+    (0.9, add(REACH, hand_l=(0.4, 0.6, 1.0)), "io"),          # pulled free
+    (1.4, RAISE, "io"),                                       # held up to the light: his at last
+    (1.6, JOLT, "out3"),                                      # it burns
+    (2.0, P(JOLT, hand_l=(8.0, 15.0, -3.0), chest=(-10, 12, 6)), "io"),      # flung down - it falls
+    (2.4, CLUTCH, "out3"),                                    # the hand to his chest, bent over it
+    (3.0, add(CLUTCH, chest=(2, 0, 0), head=(4, 0, 0)), "io"),
+    (3.5, P(SHOULDER, head=(2, -4, -3)), "io"),               # straightens, the blade back on his shoulder
+])
+
+
+def seize(t):
+    p = SEIZE_T(t)
+    laugh = bump(t, 1.0, 1.55) * math.sin(t * 2 * math.pi * 7)
+    shake = bump(t, 1.6, 2.05) * math.sin(t * 2 * math.pi * 13)
+    breath = bump(t, 2.3, 3.2) * math.sin(t * 2 * math.pi * 2.2)
+    p = add(p, chest=(2.5 * laugh - 2 * breath, 0, 0), head=(3 * laugh, 0, 0), hand_l=(1.2 * shake, 1.0 * shake, 0))
+    return p
+
+
 # ------------------------------------------------------------------ the list: name -> (loop, length, fn, snap)
 WALK_SPEED = 18.0   # px/s the walk is made for (RenegadeEntity scales it to his real speed)
 
@@ -428,4 +465,5 @@ def moves():
         "stagger": (False, 1.1, stagger, 1.5),
         "defeat": ("hold_on_last_frame", 1.2, defeat, 1.2),
         "defeat_breath": (True, 2.4, defeat_breath, 0.8),
+        "seize": (False, 3.5, seize, 1.2),
     }

@@ -1,5 +1,7 @@
 package com.soulless.boss;
 
+import net.minecraft.world.item.ItemStack;
+
 import com.soulless.Soulless;
 import com.soulless.item.KatanaOath;
 import com.soulless.npc.dialogue.DialogueContext;
@@ -48,6 +50,10 @@ public final class RenegadeEncounter {
     public static final ResourceKey<Level> LEVEL = ResourceKey.create(Registries.DIMENSION, Soulless.id("dark_astral"));
     /** Player flags: the time he is due (game time), and the fight won. */
     public static final String DUE = "renegade.due", DEFEATED = "renegade.defeated";
+    /** Player flag: he has beaten the player once - from now on he comes in their sleep, until he is beaten. */
+    public static final String DREAM = "renegade.dream";
+    /** Player data: the katana he holds while it burns him (given back if anything goes wrong in between). */
+    private static final String HELD = "soulless_renegade_held";
     private static final int FIRST_DELAY = 2400, RETRY_DELAY = 6000;
     private static final int FLOOR_Y = 99, FLOOR_RADIUS = com.soulless.world.RenegadeArena.RADIUS;
     private static final Vec3 ARRIVE = new Vec3(0.5, FLOOR_Y + 1, 8.5), HIM = new Vec3(0.5, FLOOR_Y + 1, -6.5);
@@ -64,6 +70,11 @@ public final class RenegadeEncounter {
         boolean won;
         /** When the player answered his last words (-1: not yet). */
         int leaving = -1;
+        /** He came in a dream (a rematch): other words at the start. */
+        boolean dream;
+        @Nullable ChainSeatEntity seat;
+        /** Where the katana was in the player's inventory (-1: he has not got it). */
+        int heldSlot = -1;
 
         Fight(UUID player) {
             this.player = player;
@@ -87,6 +98,93 @@ public final class RenegadeEncounter {
         schedule(p, FIRST_DELAY);
     }
 
+    /** Ticks of the loss scene (from the blow that would have killed): when he takes the blade, when it burns him,
+     * when he drops it, when he speaks (the animation seize: the reach at 0.75 s after he arrives, the burn at 1.6 s,
+     * the drop at 2.0 s). */
+    private static final int SEIZE_AT = 14, TAKE = SEIZE_AT + 15, BURN = SEIZE_AT + 32, DROP = SEIZE_AT + 40, WORDS = SEIZE_AT + 70;
+
+    /** Down: chains burst out of the floor and pull the player to the ground, sitting. */
+    private static void chain(ServerPlayer p, Fight f) {
+        f.him.standDown();
+        ServerLevel level = p.serverLevel();
+        ChainSeatEntity seat = ModEntities.CHAIN_SEAT.get().create(level);
+        if (seat != null) {
+            seat.moveTo(p.getX(), FLOOR_Y + 1, p.getZ(), p.getYRot(), 0);
+            level.addFreshEntity(seat);
+            p.stopRiding();
+            p.startRiding(seat, true);
+            f.seat = seat;
+        }
+        com.soulless.effect.Stun.force(p, WORDS + 40, f.him);
+        level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.CHAIN_PLACE, SoundSource.HOSTILE, 1.5F, 0.6F);
+        level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 0.4F, 0.5F);
+        level.sendParticles(com.soulless.registry.ModParticles.DARK_SMOKE.get(), p.getX(), FLOOR_Y + 1.1, p.getZ(), 30, 1.2, 0.1, 1.2, 0);
+    }
+
+    private static void lossTick(ServerPlayer p, Fight f, @Nullable RenegadeEntity him, ServerLevel level) {
+        if (f.seat != null && p.getVehicle() != f.seat && f.seat.isAlive()) p.startRiding(f.seat, true);
+        // over the game's own "press Shift to dismount": there is no getting up
+        if (f.seat != null && f.t % 20 == 1 && f.t < WORDS) {
+            p.displayClientMessage(Component.translatable("message.soulless.renegade_chained").withStyle(ChatFormatting.DARK_RED), true);
+        }
+        if (him != null && him.isAlive()) {
+            if (f.t == SEIZE_AT) him.seize(p);
+            if (f.t == TAKE) take(p, f, him);
+            if (f.t >= BURN && f.t < DROP && f.heldSlot >= 0) {
+                // the oath burns the hand that is not its keeper's
+                Vec3 hand = him.position().add(0, 1.6, 0).add(Vec3.directionFromRotation(0, him.getYRot()).scale(0.4));
+                level.sendParticles(com.soulless.registry.ModParticles.SOUL_EMBER.get(), hand.x, hand.y, hand.z, 6, 0.15, 0.25, 0.15, 0.03);
+                if (f.t == BURN) {
+                    level.playSound(null, him.getX(), him.getY(), him.getZ(), SoundEvents.FIRE_EXTINGUISH, SoundSource.HOSTILE, 1, 0.7F);
+                    level.playSound(null, him.getX(), him.getY(), him.getZ(), SoundEvents.PLAYER_HURT_ON_FIRE, SoundSource.HOSTILE, 1, 0.6F);
+                }
+            }
+            if (f.t == DROP) {
+                him.setHolding(false);
+                giveBack(p);
+                f.heldSlot = -1;
+                level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.CHAIN_FALL, SoundSource.PLAYERS, 1, 1.4F);
+                level.sendParticles(com.soulless.registry.ModParticles.SOUL_EMBER.get(), p.getX(), p.getY() + 0.4, p.getZ(), 12, 0.3, 0.1, 0.3, 0.02);
+            }
+            if (f.t == WORDS) {
+                speak(p, him, "dialogue.soulless.renegade.opt.silent", () -> f.leaving = f.t,
+                        "dialogue.soulless.renegade.seize1", "dialogue.soulless.renegade.seize2");
+            }
+        } else if (f.leaving < 0) {
+            f.leaving = f.t;
+        }
+        if (f.leaving >= 0 && f.t >= f.leaving + 10 || f.t > 20 * 60 * 5) end(p, f, false);
+    }
+
+    /** He takes the Legendary Katana out of the player's hands (kept in their data until it is given back). */
+    private static void take(ServerPlayer p, Fight f, RenegadeEntity him) {
+        var inv = p.getInventory();
+        int slot = inv.getItem(inv.selected).is(com.soulless.registry.ModItems.SOUL_KATANA.get()) ? inv.selected : -1;
+        for (int i = 0; slot < 0 && i < inv.getContainerSize(); i++) {
+            if (inv.getItem(i).is(com.soulless.registry.ModItems.SOUL_KATANA.get())) slot = i;
+        }
+        if (slot < 0) return;   // nothing to take: he reaches into empty hands
+        ItemStack blade = inv.removeItemNoUpdate(slot);
+        CompoundTag held = blade.save(new CompoundTag());
+        held.putInt("Slot", slot);
+        p.getPersistentData().put(HELD, held);
+        f.heldSlot = slot;
+        him.setHolding(true);
+        p.serverLevel().playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ARMOR_EQUIP_IRON, SoundSource.HOSTILE, 1, 0.8F);
+    }
+
+    /** The katana he held goes back where it was (or anywhere free, or at the player's feet). */
+    private static void giveBack(ServerPlayer p) {
+        if (!p.getPersistentData().contains(HELD)) return;
+        CompoundTag held = p.getPersistentData().getCompound(HELD);
+        p.getPersistentData().remove(HELD);
+        ItemStack blade = ItemStack.of(held);
+        int slot = held.getInt("Slot");
+        var inv = p.getInventory();
+        if (slot >= 0 && slot < inv.getContainerSize() && inv.getItem(slot).isEmpty()) inv.setItem(slot, blade);
+        else if (!inv.add(blade)) p.drop(blade, false);
+    }
+
     /** He speaks in the dialogue window; {@code after} runs once the player answers (or closes it). */
     private static void speak(ServerPlayer p, RenegadeEntity him, String answer, Runnable after, String... pages) {
         java.util.List<Component> ps = new java.util.ArrayList<>();
@@ -96,6 +194,28 @@ public final class RenegadeEncounter {
 
     private static void line(ServerPlayer p, String key) {
         p.sendSystemMessage(Component.translatable("chat.soulless.renegade_says", Component.translatable(key)).withStyle(ChatFormatting.DARK_RED));
+    }
+
+    /** He is to come into the player's next sleep. */
+    public static boolean dreamDue(ServerPlayer p) {
+        CompoundTag f = DialogueContext.playerFlags(p);
+        return f.getBoolean(DREAM) && !f.getBoolean(DEFEATED) && !FIGHTS.containsKey(p.getUUID());
+    }
+
+    /** Into the dark from a bed: he is already waiting. */
+    public static void beginDream(ServerPlayer p) {
+        if (FIGHTS.containsKey(p.getUUID()) || in(p) || com.soulless.world.Astral.in(p)) return;
+        net.minecraft.core.BlockPos bed = p.getSleepingPos().orElse(p.blockPosition());
+        p.stopSleepInBed(true, true);
+        Vec3 wake = Vec3.atBottomCenterOf(bed).add(0, 0.6, 0);
+        begin(p);
+        Fight f = FIGHTS.get(p.getUUID());
+        if (f == null) return;
+        p.getPersistentData().getCompound(TAG).putDouble("X", wake.x);
+        p.getPersistentData().getCompound(TAG).putDouble("Y", wake.y);
+        p.getPersistentData().getCompound(TAG).putDouble("Z", wake.z);
+        f.dream = true;
+        f.t = 55;   // no slow gathering of smoke: sleep is already dark
     }
 
     /** Start the meeting now (also /soulless renegade). */
@@ -109,7 +229,7 @@ public final class RenegadeEncounter {
         p.getPersistentData().put(TAG, d);
         DialogueContext.playerFlags(p).remove(DUE);
         FIGHTS.put(p.getUUID(), new Fight(p.getUUID()));
-        line(p, "dialogue.soulless.renegade.call");
+        line(p, DialogueContext.playerFlags(p).getBoolean(DREAM) ? "dialogue.soulless.renegade.dream_call" : "dialogue.soulless.renegade.call");
         p.serverLevel().playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.HOSTILE, 1, 0.6F);
     }
 
@@ -121,13 +241,19 @@ public final class RenegadeEncounter {
             fightTick(p, f);
             return;
         }
+        giveBack(p);
         if (in(p)) {   // stranded here with no fight (a crash, a relog): back home
             leave(p);
             return;
         }
+        // beaten once, he comes in sleep: before the dream of Kitsune could
+        if (p.isSleeping() && p.getSleepTimer() == 50 && dreamDue(p)) {
+            beginDream(p);
+            return;
+        }
         if (p.tickCount % 20 != 0) return;
         CompoundTag flags = DialogueContext.playerFlags(p);
-        if (flags.getBoolean(DEFEATED) || !KatanaOath.sworn(p)) return;
+        if (flags.getBoolean(DEFEATED) || flags.getBoolean(DREAM) || !KatanaOath.sworn(p)) return;
         long due = flags.getLong(DUE);
         if (due == 0) {   // sworn before he existed (or the schedule got lost): he sets out now
             scheduleFirst(p);
@@ -183,8 +309,13 @@ public final class RenegadeEncounter {
             f.bar.setProgress(him.getHealth() / him.getMaxHealth());
             if (f.t == 25) {
                 him.talk();
-                speak(p, him, "dialogue.soulless.renegade.opt.draw", him::endIntro,
-                        "dialogue.soulless.renegade.intro1", "dialogue.soulless.renegade.intro2", "dialogue.soulless.renegade.intro3");
+                if (f.dream) {
+                    speak(p, him, "dialogue.soulless.renegade.opt.draw", him::endIntro,
+                            "dialogue.soulless.renegade.again1", "dialogue.soulless.renegade.again2");
+                } else {
+                    speak(p, him, "dialogue.soulless.renegade.opt.draw", him::endIntro,
+                            "dialogue.soulless.renegade.intro1", "dialogue.soulless.renegade.intro2", "dialogue.soulless.renegade.intro3");
+                }
             }
             if (him.defeated()) {
                 f.won = true;
@@ -205,8 +336,8 @@ public final class RenegadeEncounter {
                 him.discard();
             }
             if (f.leaving >= 0 && f.t >= f.leaving + 40 || f.t > 20 * 60 * 5) end(p, f, true);
-        } else if (f.leaving >= 0 && f.t >= f.leaving + 10 || f.t > 20 * 60 * 5) {
-            end(p, f, false);
+        } else {
+            lossTick(p, f, him, level);
         }
     }
 
@@ -216,13 +347,18 @@ public final class RenegadeEncounter {
                 f.stage, f.him == null ? -1 : f.him.getHealth());
         FIGHTS.remove(p.getUUID());
         f.bar.removeAllPlayers();
+        if (f.seat != null) f.seat.release();
+        if (f.him != null) f.him.setHolding(false);
+        giveBack(p);
         if (f.him != null && f.him.isAlive()) f.him.discard();
         CompoundTag flags = DialogueContext.playerFlags(p);
         if (won) {
             flags.putBoolean(DEFEATED, true);
             com.soulless.Achievements.grant(p, "renegade_beaten");
         } else {
-            schedule(p, RETRY_DELAY);
+            // from now on he comes in the player's sleep
+            flags.putBoolean(DREAM, true);
+            flags.remove(DUE);
         }
         leave(p);
         p.sendSystemMessage(Component.translatable(won ? "message.soulless.renegade_won" : "message.soulless.renegade_lost")
@@ -258,12 +394,8 @@ public final class RenegadeEncounter {
             f.stage = 2;
             f.won = false;
             f.t = 0;
-            if (f.him != null) {
-                f.him.standDown();
-                speak(p, f.him, "dialogue.soulless.renegade.opt.silent", () -> f.leaving = f.t, "dialogue.soulless.renegade.win");
-            } else {
-                f.leaving = 0;
-            }
+            if (f.him == null) f.leaving = 0;
+            else chain(p, f);
         }
     }
 

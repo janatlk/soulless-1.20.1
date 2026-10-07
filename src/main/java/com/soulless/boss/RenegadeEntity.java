@@ -56,14 +56,16 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     // animation ids (synced; the renderer picks the animation, a new start tick replays it)
     public static final int A_IDLE = 0, A_WALK = 1, A_TALK = 2, A_APPEAR = 3, A_IAI_READY = 4, A_IAI_STRIKE = 5,
             A_STEP1 = 6, A_STEP2 = 7, A_STEP3 = 8, A_THRUST = 9, A_WHIRL = 10, A_SUMMON = 11, A_COMBO = 12, A_DROP = 13,
-            A_STAGGER = 14, A_DEFEAT = 15, A_WALK_BACK = 16, A_STRAFE_L = 17, A_STRAFE_R = 18;
+            A_STAGGER = 14, A_DEFEAT = 15, A_WALK_BACK = 16, A_STRAFE_L = 17, A_STRAFE_R = 18, A_SEIZE = 19;
     public static final String[] ANIMS = {"idle", "walk", "talk", "appear", "iai_ready", "iai_strike", "step_cut1", "step_cut2",
-            "step_cut3", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat", "walk_back", "strafe_l", "strafe_r"};
+            "step_cut3", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat", "walk_back", "strafe_l", "strafe_r", "seize"};
     /** How fast (blocks a tick) each stepping animation is made for: played faster or slower to match his real speed. */
     private static final double STEP_SPEED = 16.7 / 16 / 20, STRAFE_SPEED = 15.0 / 16 / 20;
     private static final EntityDataAccessor<Integer> ANIM = SynchedEntityData.defineId(RenegadeEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> ANIM_AT = SynchedEntityData.defineId(RenegadeEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> HIDDEN = SynchedEntityData.defineId(RenegadeEntity.class, EntityDataSerializers.BOOLEAN);
+    /** He has the player's katana in his left hand (the loss: he takes it, it burns him, he drops it). */
+    private static final EntityDataAccessor<Boolean> HOLDING = SynchedEntityData.defineId(RenegadeEntity.class, EntityDataSerializers.BOOLEAN);
 
     private enum Attack { IAI, STEPS, THRUST, WHIRL, BLADES, COMBO, DROP }
 
@@ -99,6 +101,7 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         entityData.define(ANIM, A_IDLE);
         entityData.define(ANIM_AT, 0);
         entityData.define(HIDDEN, false);
+        entityData.define(HOLDING, false);
     }
 
     @Override
@@ -148,6 +151,28 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
         return entityData.get(ANIM_AT);
     }
 
+    public boolean holding() {
+        return entityData.get(HOLDING);
+    }
+
+    public void setHolding(boolean h) {
+        entityData.set(HOLDING, h);
+    }
+
+    /** The player is down and chained: he comes up close and reaches for the blade (animation seize, then talk). */
+    public void seize(Player p) {
+        calm = true;
+        endAttack();
+        getNavigation().stop();
+        if (level() instanceof ServerLevel level) {
+            Vec3 to = position().subtract(p.position());
+            to = to.horizontalDistanceSqr() < 1e-4 ? new Vec3(0, 0, 1) : new Vec3(to.x, 0, to.z).normalize();
+            blink(level, p.position().add(to.scale(1.7)));
+        }
+        face(p);
+        play(A_SEIZE);
+    }
+
     public boolean hidden() {
         return entityData.get(HIDDEN);
     }
@@ -164,10 +189,10 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
     // ---- a preview statue (/soulless preview renegade <animation>): stands still and replays one animation
 
     /** Animation lengths in ticks (tools/gen_renegade.py) - how long to wait before replaying a one-shot one. */
-    private static final int[] LENGTH = {80, 12, 50, 25, 30, 18, 8, 8, 24, 38, 32, 48, 34, 38, 22, 60, 12, 12, 12};
+    private static final int[] LENGTH = {80, 12, 50, 25, 30, 18, 8, 8, 24, 38, 32, 48, 34, 38, 22, 60, 12, 12, 12, 70};
     /** Whole attacks for the preview: the iai (ready, then the draw) and the three steps. */
     public static final String[] PREVIEWS = {"idle", "walk", "walk_back", "strafe_l", "strafe_r", "talk", "appear", "iai",
-            "steps", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat"};
+            "steps", "thrust", "whirl", "summon", "combo", "drop", "stagger", "defeat", "seize"};
     private String preview = "";
     private int previewStep;
 
@@ -682,6 +707,8 @@ public class RenegadeEntity extends PathfinderMob implements GeoEntity {
             String name = "animation.renegade." + ANIMS[a];
             if (a == A_DEFEAT) {
                 event.setAnimation(RawAnimation.begin().thenPlay(name).thenLoop("animation.renegade.defeat_breath"));
+            } else if (a == A_SEIZE) {
+                event.setAnimation(RawAnimation.begin().thenPlay(name).thenLoop("animation.renegade.talk"));
             } else {
                 event.setAnimation(loop ? RawAnimation.begin().thenLoop(name) : RawAnimation.begin().thenPlayAndHold(name));
             }

@@ -898,25 +898,62 @@ public final class DevAutoTest {
             }
         }
         if (rgPhase == 2) {
-            if (tick == rgPhaseAt + 40 && him != null) {
+            int at = rgPhaseAt + 40;
+            boolean katanaInInv = p.getInventory().contains(new ItemStack(ModItems.SOUL_KATANA.get()));
+            if (tick == at && him != null) {
                 p.setHealth(2);
                 p.hurt(level.damageSources().mobAttack(him), 6);
                 rgLog(p, "LOSS blow taken");
             }
-            if (tick == rgPhaseAt + 140) {
-                rgLog(p, "LOSS back home, due=" + flags.getLong(com.soulless.boss.RenegadeEncounter.DUE));
+            if (tick == at + 10) rgLog(p, "LOSS chained: riding " + (p.getVehicle() == null ? "nothing" : p.getVehicle().getType().toShortString())
+                    + " pose=" + p.getPose() + " stunned=" + com.soulless.effect.Stun.isStunned(p));
+            if (tick == at + 12 && p.getVehicle() != null) {
+                p.stopRiding();
+                rgLog(p, "LOSS tried to get up: still riding=" + (p.getVehicle() != null));
+            }
+            if (tick == at + 36) rgLog(p, "LOSS taken: he holds it=" + (him != null && him.holding()) + " katana in inventory=" + katanaInInv);
+            if (tick == at + 60) rgLog(p, "LOSS dropped: he holds it=" + (him != null && him.holding()) + " katana back in inventory=" + katanaInInv);
+            if (tick > at + 60 && !com.soulless.boss.RenegadeEncounter.in(p) && com.soulless.boss.RenegadeEncounter.fighting(p) == null) {
+                rgLog(p, "LOSS back home: riding=" + (p.getVehicle() != null) + " katana=" + katanaInInv + " dream flag="
+                        + flags.getBoolean(com.soulless.boss.RenegadeEncounter.DREAM) + " due=" + flags.getLong(com.soulless.boss.RenegadeEncounter.DUE));
                 p.setHealth(20);
-                com.soulless.boss.RenegadeEncounter.begin(p);
+                rgPhase = 6;
+                rgPhaseAt = tick;
+            }
+            if (tick > at + 600) {
+                rgLog(p, "FAIL the loss scene did not end");
+                rgPhase = 9;
+            }
+        }
+        if (rgPhase == 6) {
+            // a night later: into bed - he should come into the dream
+            if (tick == rgPhaseAt + 20) {
+                level.setDayTime(18000);   // night: in the day the game wakes sleepers at once
+                net.minecraft.core.BlockPos bed = p.blockPosition();
+                level.setBlock(bed, net.minecraft.world.level.block.Blocks.RED_BED.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.HEAD), 3);
+                p.startSleeping(bed);
+                rgLog(p, "SLEEP in bed at " + bed.toShortString() + " sleeping=" + p.isSleeping());
+            }
+            if (com.soulless.boss.RenegadeEncounter.in(p)) {
+                rgLog(p, "DREAM he came into the sleep: in the dark astral");
                 rgPhase = 3;
                 rgPhaseAt = tick;
             }
+            if (tick > rgPhaseAt + 400) {
+                rgLog(p, "FAIL he did not come into the dream");
+                rgPhase = 9;
+            }
         }
+        if (rgPhase == 3) p.setHealth(20);   // the rematch is for the win: no losing it by accident
         if (rgPhase == 3 && him != null && com.soulless.boss.RenegadeEncounter.in(p) && tick > rgPhaseAt + 240) {
-            him.setHealth(30);
-            him.hurt(p.damageSources().playerAttack(p), 20);
-            rgLog(p, "WIN he kneels: defeated=" + him.defeated());
-            rgPhase = 4;
-            rgPhaseAt = tick;
+            him.setHealth(45);
+            him.hurt(p.damageSources().playerAttack(p), 20);   // he may slip aside (10%): again next tick
+            if (him.defeated()) {
+                rgLog(p, "WIN he kneels: defeated=" + him.defeated());
+                rgPhase = 4;
+                rgPhaseAt = tick;
+            }
         }
         if (rgPhase == 4 && tick == rgPhaseAt + 200) {
             rgLog(p, "WIN back home");

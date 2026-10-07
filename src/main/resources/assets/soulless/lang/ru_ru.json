@@ -284,7 +284,7 @@
   "chat.soulless.renegade_says": "[???] %s",
   "message.soulless.harakiri_unknown": "Вы ещё не знаете, что этот клинок умеет на R. Спросите сенсея",
   "message.soulless.renegade_won": "Отступник повержен. Сенсей должен узнать об этом.",
-  "message.soulless.renegade_lost": "Вы приходите в себя. Он вернётся.",
+  "message.soulless.renegade_lost": "Вы просыпаетесь в холодном поту. Он придёт снова, когда вы уснёте.",
   "advancement.soulless.renegade_beaten": "Тень ученика",
   "advancement.soulless.renegade_beaten.desc": "Одолейте Отступника в тёмном астрале",
   "advancement.soulless.harakiri_learnt": "Последний урок",
@@ -318,5 +318,11 @@
   "tooltip.soulless.quest.scroll_found": "Отнесите свиток сенсею",
   "tooltip.soulless.quest.done": "Обучение пройдено",
   "dialogue.soulless.renegade.opt.draw": "[Обнажить клинок]",
-  "dialogue.soulless.renegade.opt.silent": "[Промолчать]"
+  "dialogue.soulless.renegade.opt.silent": "[Промолчать]",
+  "dialogue.soulless.renegade.seize1": "Наконец-то он мой... Что?! Он жжёт! Этот клинок... не признаёт меня.",
+  "dialogue.soulless.renegade.seize2": "Ничего. Я приду к тебе во сне, %1$s. Снова и снова - пока он не станет моим.",
+  "dialogue.soulless.renegade.dream_call": "Спишь?.. Я же обещал, что приду.",
+  "dialogue.soulless.renegade.again1": "Снова ты. Снова этот клинок, который тебя слушается.",
+  "dialogue.soulless.renegade.again2": "Во сне никто не придёт тебе на помощь. Защищайся.",
+  "message.soulless.renegade_chained": "Цепи держат намертво."
 }

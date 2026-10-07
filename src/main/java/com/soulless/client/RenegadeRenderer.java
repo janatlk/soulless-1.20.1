@@ -25,6 +25,7 @@ public class RenegadeRenderer extends GeoEntityRenderer<RenegadeEntity> {
     public RenegadeRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new Model());
         addRenderLayer(new AutoGlowingGeoLayer<>(this));
+        addRenderLayer(new Seized(this));
         shadowRadius = 0.5F;
     }
 
@@ -37,6 +38,34 @@ public class RenegadeRenderer extends GeoEntityRenderer<RenegadeEntity> {
     @Override
     protected float getDeathMaxRotation(RenegadeEntity animatable) {
         return 0;
+    }
+
+    /** The player's katana in his left hand while he holds it (the loss). */
+    static class Seized extends software.bernie.geckolib.renderer.layer.BlockAndItemGeoLayer<RenegadeEntity> {
+        private final ItemStack katana = new ItemStack(com.soulless.registry.ModItems.SOUL_KATANA.get());
+
+        Seized(RenegadeRenderer r) {
+            super(r);
+        }
+
+        @Override
+        protected ItemStack getStackForBone(software.bernie.geckolib.cache.object.GeoBone bone, RenegadeEntity e) {
+            return e.holding() && bone.getName().equals("forearm_l") ? katana : null;
+        }
+
+        @Override
+        protected ItemDisplayContext getTransformTypeForStack(software.bernie.geckolib.cache.object.GeoBone bone, ItemStack stack, RenegadeEntity e) {
+            return ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
+        }
+
+        @Override
+        protected void renderStackForBone(PoseStack pose, software.bernie.geckolib.cache.object.GeoBone bone, ItemStack stack, RenegadeEntity e,
+                                          MultiBufferSource buffers, float partialTick, int light, int overlay) {
+            // from the elbow down to the fist, then held like a player holds it
+            pose.translate(0, -0.37, 0);
+            pose.mulPose(Axis.XP.rotationDegrees(-90));
+            super.renderStackForBone(pose, bone, stack, e, buffers, partialTick, LightTexture.FULL_BRIGHT, overlay);
+        }
     }
 
     /** His head follows the foe on top of the animation's own head movement (the default would overwrite it). */
