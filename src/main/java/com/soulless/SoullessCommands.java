@@ -109,6 +109,27 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.altar"), true);
                             return 1;
                         }))
+                .then(Commands.literal("shrine")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> {
+                            var p = ctx.getSource().getPlayerOrException();
+                            net.minecraft.core.BlockPos o = p.blockPosition().offset(-6, -1, 3);
+                            com.soulless.world.AbandonedShrinePiece.buildAt(p.serverLevel(), o);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Shrine built at " + o.toShortString()), true);
+                            return 1;
+                        }))
+                .then(Commands.literal("sensei")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.literal("reset").executes(ctx -> {
+                            var p = ctx.getSource().getPlayerOrException();
+                            var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
+                            for (String f : new String[]{"sensei.met", com.soulless.npc.SenseiQuest.STUDENT, com.soulless.npc.SenseiQuest.PARRY,
+                                    com.soulless.npc.SenseiQuest.CLEANSE, com.soulless.npc.SenseiQuest.CLEANSED, com.soulless.npc.SenseiQuest.SHRINE,
+                                    com.soulless.npc.SenseiQuest.BLADE, com.soulless.npc.SenseiQuest.KILLS}) flags.remove(f);
+                            com.soulless.npc.SenseiQuest.syncParry(p);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Sensei training reset"), false);
+                            return 1;
+                        })))
                 .then(Commands.literal("astral")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> {

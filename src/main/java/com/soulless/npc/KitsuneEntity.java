@@ -114,13 +114,17 @@ public class KitsuneEntity extends NpcEntity implements GeoEntity {
 
     // ---- the oath and the reforging (dialogue actions)
 
-    /** Dialogue actions of her conversation: soulless:oath, soulless:refuse, soulless:wake. Registered at setup. */
+    /** Dialogue actions of her conversation: soulless:oath, soulless:refuse, soulless:reforge, soulless:wake. */
     public static void registerDialogueActions() {
         DialogueActions.register("soulless:oath", j -> ctx -> {
             ctx.setFlag("player", KatanaOath.SWORN, true);
             if (ctx.npc instanceof KitsuneEntity k) k.startReforge(ctx.player);
         });
         DialogueActions.register("soulless:refuse", j -> ctx -> ctx.setFlag("player", KatanaOath.REFUSED, true));
+        // the oath already given, a blade broken again: reforged with no new oath
+        DialogueActions.register("soulless:reforge", j -> ctx -> {
+            if (ctx.npc instanceof KitsuneEntity k) k.startReforge(ctx.player);
+        });
         DialogueActions.register("soulless:wake", j -> ctx -> {
             ctx.end();
             Astral.leave(ctx.player);

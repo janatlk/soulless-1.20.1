@@ -59,7 +59,11 @@ public final class AbilityHud implements IGuiOverlay {
         slot(g, font, x, y, Component.literal(ClientKeys.slamKeyName()), ritual, Mth.ceil(ritual * ClientState.ritualCooldownTotal / 20F), 0xFF4FB6FF);
 
         int px = x + SLOT + 4;
-        {
+        if (!ClientState.parryKnown) {
+            g.fill(px, y, px + SLOT, y + SLOT, 0x99000000);
+            g.fill(px, y + SLOT - 2, px + SLOT, y + SLOT, 0xFF555555);
+            g.drawString(font, "?", px + (SLOT - font.width("?")) / 2, y + 6, 0xFF888888, true);
+        } else {
             float since = ClientState.gameTime() + partial - ClientState.parryStart;
             int window = com.soulless.item.KatanaParry.WINDOW_FROM + com.soulless.item.KatanaParry.WINDOW;
             float cd = !ClientState.parryCaught && since < com.soulless.item.KatanaParry.WHIFF_COOLDOWN

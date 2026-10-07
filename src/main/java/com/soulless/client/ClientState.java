@@ -30,6 +30,8 @@ public final class ClientState {
     public static boolean rendReleaseSent;
 
     /** {@code /soulless zones}: draw ability hit zones around the local player. */
+    /** The parry has been taught (or the sensei's sparring is on): SenseiQuest.syncParry. */
+    public static boolean parryKnown;
     public static boolean showZones;
     /** Katana HUD: the ritual's current cooldown length (ticks), the local parry's start and whether it caught something. */
     public static int ritualCooldownTotal = com.soulless.item.KitsuneRitual.COOLDOWN_TICKS;

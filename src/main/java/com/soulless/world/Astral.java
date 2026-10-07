@@ -45,7 +45,8 @@ import java.util.List;
  * invisible floor to walk on (barrier blocks), Kitsune lying at the middle.
  * <ul>
  * <li>Getting there: sleep under a roof with the Broken Legendary Katana on you while your tamed white fox sleeps
- * beside the bed (within 4 blocks). Without the blade: "you feel you've forgotten something".</li>
+ * beside the bed (within 4 blocks). Without the blade: "you feel you've forgotten something". The first time, for the
+ * oath; after it, whenever the katana has broken again, to have it reforged (until Kitsune is set free).</li>
  * <li>Only the blade comes along; everything else is kept (player data) and given back on waking. In the dream nobody
  * hungers or gets hurt, nothing can be built or broken; falling off the floor puts you back.</li>
  * <li>Waking: back beside the bed; alone on the server, the night has passed.</li>
@@ -84,7 +85,9 @@ public final class Astral {
     }
 
     private static void tryDream(ServerPlayer p) {
-        if (KatanaOath.chose(p)) return;
+        var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
+        // the oath refused, there is no way back; once Kitsune is free she no longer dwells in the dream
+        if (flags.getBoolean(KatanaOath.REFUSED) || flags.getBoolean(KatanaOath.FREED)) return;
         BlockPos bed = p.getSleepingPos().orElse(null);
         if (bed == null) return;
         Level level = p.level();

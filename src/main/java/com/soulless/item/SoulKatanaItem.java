@@ -31,20 +31,30 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     public SoulKatanaItem(Properties properties) {
-        super(SoulForgedTier.INSTANCE, DAMAGE_MODIFIER, ATTACK_SPEED_MODIFIER, properties);
+        this(properties, DAMAGE_MODIFIER);
+    }
+
+    protected SoulKatanaItem(Properties properties, int damageModifier) {
+        super(SoulForgedTier.INSTANCE, damageModifier, ATTACK_SPEED_MODIFIER, properties);
+    }
+
+    /** The sensei's wooden Training Katana: the same moves, no magic (no harakiri, no blessing, no oath). */
+    public boolean isTraining() {
+        return false;
     }
 
     /** Never worn away to nothing by any path: it stops one short, and {@link #inventoryTick} breaks it in two. */
     @Override
     public <T extends net.minecraft.world.entity.LivingEntity> int damageItem(ItemStack stack, int amount, T entity, Consumer<T> onBroken) {
+        if (isTraining()) return amount;
         return Math.max(0, Math.min(amount, stack.getMaxDamage() - 1 - stack.getDamageValue()));
     }
 
     @Override
     public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slot, boolean selected) {
-        if (!level.isClientSide && entity instanceof net.minecraft.server.level.ServerPlayer p && stack.isDamageableItem()
+        if (!isTraining() && !level.isClientSide && entity instanceof net.minecraft.server.level.ServerPlayer p && stack.isDamageableItem()
                 && stack.getDamageValue() >= stack.getMaxDamage() - 1 && p.getInventory().getItem(slot) == stack) {
-            p.getInventory().setItem(slot, KatanaOath.shatter(p));
+            p.getInventory().setItem(slot, KatanaOath.shatter(p, stack));
         }
     }
 
@@ -134,6 +144,6 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
 
     @Override
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-        consumer.accept(new KatanaClientExtensions());
+        consumer.accept(new KatanaClientExtensions(isTraining()));
     }
 }

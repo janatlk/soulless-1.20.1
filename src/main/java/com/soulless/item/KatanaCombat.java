@@ -222,6 +222,7 @@ public final class KatanaCombat {
         float hpBefore = t.getHealth();
         if (!primary && com.soulless.pet.TamedFox.isPetOf(t, player)) return;   // a side cut passes one's own fox by
         if (KatanaOath.stops(player, t, primary, damage)) return;
+        if (primary) com.soulless.npc.SenseiQuest.onInnocentStruck(player, t);
         if (!t.hurt(player.damageSources().playerAttack(player), damage)) return;
         float kb = knockback + EnchantmentHelper.getKnockbackBonus(player) * 0.5F;
         t.knockback(kb, -push.x, -push.z);

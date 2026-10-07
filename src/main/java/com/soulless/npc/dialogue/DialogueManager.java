@@ -112,6 +112,21 @@ public final class DialogueManager {
         show(ctx, d, option.next());
     }
 
+    /** Chooses the shown option whose text is {@code textKey} (scripted runs: the dev autotest). False if none. */
+    public static boolean chooseText(ServerPlayer player, String textKey) {
+        Session s = SESSIONS.get(player.getUUID());
+        Dialogue d = s == null ? null : dialogues.get(s.dialogue);
+        if (d == null) return false;
+        Dialogue.Node node = d.nodes.get(s.node);
+        for (int i = 0; i < s.shown.length; i++) {
+            if (node.options().get(s.shown[i]).text().equals(textKey)) {
+                choose(player, i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static void show(DialogueContext ctx, Dialogue d, String nodeId) {
         Dialogue.Node node = d.nodes.get(nodeId);
         for (DialogueActions.Action a : node.onShow()) a.run(ctx);

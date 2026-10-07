@@ -65,6 +65,10 @@ public final class KitsuneRitual {
 
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem item) || !player.isAlive() || player.isSpectator()) return;
+        if (item.isTraining()) {
+            player.displayClientMessage(Component.translatable("message.soulless.training_no_ritual"), true);
+            return;
+        }
         if (isActive(player) || player.getCooldowns().isOnCooldown(item)) return;
         if (!player.onGround() || player.isInWater()) {
             player.displayClientMessage(Component.translatable("message.soulless.ritual_ground"), true);

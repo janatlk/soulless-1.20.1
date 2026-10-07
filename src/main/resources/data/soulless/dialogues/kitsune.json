@@ -2,6 +2,19 @@
   "accent": "#E3A64A",
   "start": [
     {
+      "if": [
+        {
+          "type": "flag",
+          "flag": "kitsune.oath"
+        },
+        {
+          "type": "has_item",
+          "item": "soulless:broken_katana"
+        }
+      ],
+      "node": "mend"
+    },
+    {
       "if": {
         "type": "flag",
         "flag": "kitsune.oath"
@@ -171,6 +184,26 @@
               "type": "soulless:wake"
             }
           ]
+        }
+      ]
+    },
+    "mend": {
+      "text": [
+        "dialogue.soulless.kitsune.mend.1",
+        "dialogue.soulless.kitsune.mend.2"
+      ],
+      "options": [
+        {
+          "text": "dialogue.soulless.kitsune.opt.mend",
+          "goto": "mended"
+        }
+      ]
+    },
+    "mended": {
+      "text": "dialogue.soulless.kitsune.mended",
+      "do": [
+        {
+          "type": "soulless:reforge"
         }
       ]
     }

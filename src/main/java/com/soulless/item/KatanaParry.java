@@ -77,10 +77,20 @@ public final class KatanaParry {
     /** How many blows the current window has caught (three at once earns an advancement). */
     private static final Map<UUID, Integer> CAUGHT_COUNT = new HashMap<>();
     private static final Map<UUID, Long> BONUS_UNTIL = new HashMap<>();
+    /** Every blow or projectile a player has parried (the sensei's sparring counts with it). */
+    private static final Map<UUID, Integer> TOTAL = new HashMap<>();
+
+    public static int caughtTotal(Player player) {
+        return TOTAL.getOrDefault(player.getUUID(), 0);
+    }
 
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem) || !player.isAlive() || player.isSpectator()) return;
         if (KitsuneRitual.isActive(player) || KatanaCombat.isCutting(player)) return;
+        if (!com.soulless.npc.SenseiQuest.canParry(player)) {
+            player.displayClientMessage(Component.translatable("message.soulless.parry_unknown"), true);
+            return;
+        }
         long now = player.level().getGameTime();
         Long last = STARTED.get(player.getUUID());
         if (last != null && now - last < WHIFF_COOLDOWN && !CAUGHT.contains(player.getUUID())) return;
@@ -165,6 +175,7 @@ public final class KatanaParry {
     private static void success(ServerPlayer player, Vec3 at, Entity attacker) {
         boolean first = CAUGHT.add(player.getUUID());
         int count = CAUGHT_COUNT.merge(player.getUUID(), 1, Integer::sum);
+        TOTAL.merge(player.getUUID(), 1, Integer::sum);
         com.soulless.Achievements.grant(player, "first_parry");
         if (count >= 3) com.soulless.Achievements.grant(player, "triple_parry");
         com.soulless.CombatTrial.onParry(player);
@@ -177,7 +188,8 @@ public final class KatanaParry {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(), SoundSource.PLAYERS, 0.5F, 1.3F);
         // the Kitsune smiles on a clean parry: a few seconds of her blessing (a longer one already running is kept)
         MobEffectInstance blessing = player.getEffect(ModEffects.KITSUNE_BLESSING.get());
-        if (blessing == null || blessing.getDuration() < BLESSING_TICKS) {
+        boolean wooden = player.getMainHandItem().getItem() instanceof SoulKatanaItem k && k.isTraining();
+        if (!wooden && (blessing == null || blessing.getDuration() < BLESSING_TICKS)) {
             player.addEffect(new MobEffectInstance(ModEffects.KITSUNE_BLESSING.get(), BLESSING_TICKS, 0, false, true, true));
         }
         if (attacker instanceof LivingEntity l && !isBoss(l)) {

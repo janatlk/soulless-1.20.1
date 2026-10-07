@@ -50,7 +50,7 @@ public final class KatanaOath {
      * (the main target of a cut, the thrust's target), not a side target caught in the arc.
      */
     public static boolean stops(ServerPlayer player, LivingEntity target, boolean primary, float damage) {
-        if (!sworn(player) || !innocent(target)) return false;
+        if (!player.getMainHandItem().is(ModItems.SOUL_KATANA.get()) || !sworn(player) || !innocent(target)) return false;
         if (!primary) return true;
         boolean freed = DialogueContext.playerFlags(player).getBoolean(FREED);
         if (!freed) player.hurt(ModDamageTypes.oath(player.level()), damage);
@@ -65,21 +65,34 @@ public final class KatanaOath {
     /** Wears the katana in the main hand; at the end of its durability it does not vanish - it breaks in two. */
     public static void wear(ServerPlayer player, int amount) {
         ItemStack stack = player.getMainHandItem();
-        if (!(stack.getItem() instanceof SoulKatanaItem)) return;
+        if (!(stack.getItem() instanceof SoulKatanaItem k)) return;
         if (player.getAbilities().instabuild) return;
+        if (k.isTraining()) {
+            stack.hurtAndBreak(amount, player, p -> p.broadcastBreakEvent(InteractionHand.MAIN_HAND));
+            return;
+        }
         int damage = stack.getDamageValue() + amount;
         if (damage >= stack.getMaxDamage() - 1) {
-            player.setItemInHand(InteractionHand.MAIN_HAND, shatter(player));
+            player.setItemInHand(InteractionHand.MAIN_HAND, shatter(player, stack));
         } else {
             stack.setDamageValue(damage);
         }
     }
 
-    /** The katana breaks: the Broken Legendary Katana takes its place (sound, message). */
-    public static ItemStack shatter(ServerPlayer player) {
+    /**
+     * The katana breaks: the Broken Legendary Katana takes its place (sound, message). It keeps the katana's
+     * enchantments and name - with Mending it can grow whole again once Kitsune is free (BrokenKatanaItem).
+     */
+    public static ItemStack shatter(ServerPlayer player, ItemStack katana) {
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 1, 0.7F);
         player.displayClientMessage(Component.translatable("message.soulless.katana_shattered").withStyle(ChatFormatting.GRAY), true);
-        return new ItemStack(ModItems.BROKEN_KATANA.get());
+        ItemStack broken = new ItemStack(ModItems.BROKEN_KATANA.get());
+        if (katana.hasTag()) {
+            var tag = katana.getTag().copy();
+            tag.remove("Damage");
+            broken.setTag(tag);
+        }
+        return broken;
     }
 
     private KatanaOath() {}

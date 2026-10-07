@@ -174,6 +174,32 @@ public final class DevAutoTestClient {
             if (tick == 1100) mc.stop();
             return;
         }
+        if (DevAutoTest.QUEST) {
+            opts.setCameraType(CameraType.FIRST_PERSON);
+            var sensei = mc.level.getEntitiesOfClass(com.soulless.npc.SenseiEntity.class, mc.player.getBoundingBox().inflate(6)).stream().findFirst().orElse(null);
+            if (sensei != null && com.soulless.client.ClientState.parryKnown && questSparShot < 0) questSparShot = tick + 45;
+            if (tick == questSparShot) shot(mc, "quest_spar");
+            if (tick == questSparShot + 60) shot(mc, "quest_spar2");
+            boolean chestNear = false;
+            var pos = mc.player.blockPosition();
+            for (var bp : net.minecraft.core.BlockPos.betweenClosed(pos.offset(-12, -3, -16), pos.offset(4, 6, 2))) {
+                if (mc.level.getBlockState(bp).is(net.minecraft.world.level.block.Blocks.CHEST)) {
+                    chestNear = true;
+                    break;
+                }
+            }
+            if (chestNear && questShrineShot < 0) questShrineShot = tick + 30;
+            if (tick == questShrineShot) shot(mc, "quest_shrine");
+            boolean scroll = mc.player.getInventory().contains(new net.minecraft.world.item.ItemStack(com.soulless.registry.ModItems.FAMILY_SCROLL.get()));
+            if (scroll && questBookShot < 0) {
+                questBookShot = tick + 50;
+            }
+            if (tick == questBookShot - 10) com.soulless.client.FamilyScrollScreen.open();
+            if (tick == questBookShot) shot(mc, "quest_scroll");
+            if (tick == questBookShot + 5 && mc.screen != null) mc.screen.onClose();
+            if (tick == 1600) mc.stop();
+            return;
+        }
         if (DevAutoTest.DOJO) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             opts.hideGui = tick < 240;
@@ -377,6 +403,7 @@ public final class DevAutoTestClient {
         com.soulless.client.ClientKeys.forceDetails = false;
     }
 
+    private static int questSparShot = -1, questShrineShot = -1, questBookShot = -1;
     private static int astralArrived = -1, astralNear = -1, astralTalk = -1, astralWoke = -1;
 
     private static void shot(Minecraft mc, String name) {

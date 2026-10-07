@@ -19,5 +19,10 @@ public final class ModStructures {
     public static final RegistryObject<StructurePieceType> SENSEI_DOJO_PIECE = PIECES.register("sensei_dojo",
             () -> (StructurePieceType) SenseiDojoPiece::new);
 
+    public static final RegistryObject<StructureType<com.soulless.world.AbandonedShrineStructure>> ABANDONED_SHRINE = TYPES.register("abandoned_shrine",
+            () -> () -> com.soulless.world.AbandonedShrineStructure.CODEC);
+    public static final RegistryObject<StructurePieceType> ABANDONED_SHRINE_PIECE = PIECES.register("abandoned_shrine",
+            () -> (StructurePieceType) com.soulless.world.AbandonedShrinePiece::new);
+
     private ModStructures() {}
 }

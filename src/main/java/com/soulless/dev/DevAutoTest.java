@@ -50,6 +50,8 @@ public final class DevAutoTest {
     public static final boolean FOX = ENABLED && System.getenv("SOULLESS_FOX") != null;
     /** SOULLESS_ASTRAL=1: the dream - sleeping with the fox, Kitsune, the oath and the reforging, the refusal. */
     public static final boolean ASTRAL = ENABLED && System.getenv("SOULLESS_ASTRAL") != null;
+    /** SOULLESS_QUEST=1: the sensei's training end to end - sparring, cleansing, the shrine and scroll, the blade, reforging, mending. */
+    public static final boolean QUEST = ENABLED && System.getenv("SOULLESS_QUEST") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -101,7 +103,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !DOJO && !FOX && !ASTRAL) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !DOJO && !FOX && !ASTRAL && !QUEST) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -239,6 +241,10 @@ public final class DevAutoTest {
         }
         if (ASTRAL) {
             astralTick(p);
+            return;
+        }
+        if (QUEST) {
+            questTick(p);
             return;
         }
         if (KATANA) {
@@ -637,6 +643,172 @@ public final class DevAutoTest {
             astralLog(p, "REFUSED woke");
         }
         if (oathAt > 0 && tick == oathAt + 60) Soulless.LOGGER.info("[autotest] astral done");
+    }
+
+    private static com.soulless.npc.SenseiEntity questSensei;
+    private static int strikesSeen, learnedAt = -1;
+    private static net.minecraft.core.BlockPos shrineAt;
+
+    private static void questLog(ServerPlayer p, String what) {
+        Soulless.LOGGER.info("[autotest] quest t={} {} | inv={} flags={}", tick, what, inv(p), com.soulless.npc.dialogue.DialogueContext.playerFlags(p));
+    }
+
+    private static boolean pick(ServerPlayer p, String key) {
+        boolean ok = com.soulless.npc.dialogue.DialogueManager.chooseText(p, key);
+        if (!ok) Soulless.LOGGER.info("[autotest] quest t={} FAIL option not shown: {}", tick, key);
+        return ok;
+    }
+
+    private static void holdItem(ServerPlayer p, net.minecraft.world.item.Item item) {
+        for (int i = 0; i < 9; i++) {
+            if (p.getInventory().getItem(i).is(item)) {
+                p.getInventory().selected = i;
+                return;
+            }
+        }
+    }
+
+    private static void questTick(ServerPlayer p) {
+        ServerLevel level = p.serverLevel();
+        double x = ARENA_X, z = ARENA_Z, y = p.getY();
+        var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
+        String S = "dialogue.soulless.sensei.opt.";
+        if (tick == 20) {
+            level.getEntitiesOfClass(net.minecraft.world.entity.Entity.class, p.getBoundingBox().inflate(80),
+                    e -> !(e instanceof ServerPlayer)).forEach(net.minecraft.world.entity.Entity::discard);
+            for (String f : new java.util.ArrayList<>(flags.getAllKeys())) flags.remove(f);
+            p.setGameMode(GameType.SURVIVAL);
+            p.getAbilities().invulnerable = false;
+            p.onUpdateAbilities();
+            p.getInventory().clearContent();
+            p.setHealth(20);
+            level.setDayTime(6000);
+            questSensei = com.soulless.registry.ModEntities.SENSEI.get().create(level);
+            questSensei.moveTo(x, y, z - 2.5, 0, 0);
+            questSensei.setHome(questSensei.blockPosition());
+            level.addFreshEntity(questSensei);
+            p.teleportTo(level, x, y, z, 180, 5);
+            com.soulless.npc.SenseiQuest.syncParry(p);
+        }
+        if (tick == 25) questLog(p, "START canParry=" + com.soulless.npc.SenseiQuest.canParry(p));
+        if (tick == 30) {
+            com.soulless.npc.dialogue.DialogueManager.open(p, questSensei);
+            pick(p, S + "learn");
+            pick(p, S + "spar_now");
+            holdItem(p, com.soulless.registry.ModItems.TRAINING_KATANA.get());
+            com.soulless.item.KatanaParry.tryStart(p);   // not taught yet - but in the sparring it works
+            pick(p, S + "begin");
+            com.soulless.item.KitsuneRitual.tryStart(p);
+            questLog(p, "SPAR begun; harakiri with the wooden blade active=" + com.soulless.item.KitsuneRitual.isActive(p)
+                    + " held=" + p.getMainHandItem().getItem());
+        }
+        // the sparring: parry when his blow is 4 ticks off - except the second one, to see a miss
+        if (learnedAt < 0 && tick > 30 && questSensei.ticksToStrike() == 4) {
+            strikesSeen++;
+            if (strikesSeen != 2) com.soulless.item.KatanaParry.tryStart(p);
+            Soulless.LOGGER.info("[autotest] quest t={} strike #{} parry={} hp={}", tick, strikesSeen, strikesSeen != 2, p.getHealth());
+        }
+        if (learnedAt < 0 && flags.getBoolean(com.soulless.npc.SenseiQuest.PARRY)) {
+            learnedAt = tick;
+            questLog(p, "PARRY LEARNT after " + strikesSeen + " strikes, hp=" + p.getHealth());
+        }
+        if (learnedAt < 0) {
+            if (tick == 1200) questLog(p, "FAIL never learnt");
+            return;
+        }
+        int t = tick - learnedAt;
+        if (t == 20) {
+            com.soulless.npc.dialogue.DialogueManager.open(p, questSensei);
+            pick(p, S + "next");
+            pick(p, S + "understood");
+            questLog(p, "CLEANSE given");
+        }
+        if (t == 30) {
+            holdItem(p, com.soulless.registry.ModItems.TRAINING_KATANA.get());
+            for (int i = 0; i < 3; i++) {
+                var zombie = net.minecraft.world.entity.EntityType.ZOMBIE.create(level);
+                zombie.moveTo(x + 3, y, z + 3, 0, 0);
+                level.addFreshEntity(zombie);
+                zombie.hurt(p.damageSources().playerAttack(p), 500);
+            }
+            questLog(p, "after 3 kills");
+            var cow = net.minecraft.world.entity.EntityType.COW.create(level);
+            cow.moveTo(x + 3, y, z + 3, 0, 0);
+            level.addFreshEntity(cow);
+            com.soulless.npc.SenseiQuest.onInnocentStruck(p, cow);
+            cow.discard();
+            questLog(p, "after striking a cow");
+            for (int i = 0; i < 10; i++) {
+                var zombie = net.minecraft.world.entity.EntityType.ZOMBIE.create(level);
+                zombie.moveTo(x + 3, y, z + 3, 0, 0);
+                level.addFreshEntity(zombie);
+                zombie.hurt(p.damageSources().playerAttack(p), 500);
+            }
+            questLog(p, "CLEANSED after 10 more");
+        }
+        if (t == 40) {
+            shrineAt = net.minecraft.core.BlockPos.containing(x + 8, y - 1, z - 6);
+            com.soulless.world.AbandonedShrinePiece.buildAt(level, shrineAt);
+            var chest = level.getBlockEntity(shrineAt.offset(6, 2, 2));
+            String in = "no chest";
+            if (chest instanceof net.minecraft.world.level.block.entity.ChestBlockEntity c) {
+                java.util.List<String> items = new java.util.ArrayList<>();
+                for (int i = 0; i < c.getContainerSize(); i++) if (!c.getItem(i).isEmpty()) items.add(c.getItem(i).getItem().toString());
+                in = items.toString();
+                for (int i = 0; i < c.getContainerSize(); i++) {
+                    if (c.getItem(i).is(com.soulless.registry.ModItems.FAMILY_SCROLL.get())) p.getInventory().add(c.removeItem(i, 1));
+                }
+            }
+            questLog(p, "SHRINE chest had " + in);
+            p.teleportTo(level, x + 14.5, y + 1, z + 12, 200, 15);   // a look at the shrine
+        }
+        if (t == 140) {
+            p.teleportTo(level, x, y, z, 180, 5);
+            com.soulless.npc.dialogue.DialogueManager.open(p, questSensei);
+            pick(p, S + "cleansed");
+            pick(p, S + "understood");
+            questLog(p, "SHRINE map asked");
+            com.soulless.npc.dialogue.DialogueManager.open(p, questSensei);
+            pick(p, S + "scroll");
+            pick(p, S + "listen");
+            pick(p, S + "fox");
+            pick(p, S + "bye_honour");
+            questLog(p, "BLADE given");
+            com.soulless.npc.dialogue.DialogueManager.open(p, questSensei);
+            questLog(p, "AFTER greeting shown");
+            com.soulless.npc.dialogue.DialogueManager.end(p, true);
+        }
+        if (t == 160) {
+            // the oath already given, the blade broken again: Kitsune reforges it with no new oath
+            flags.putBoolean(com.soulless.item.KatanaOath.SWORN, true);
+            com.soulless.world.Astral.enter(p, null);
+        }
+        if (t == 190) {
+            var k = p.serverLevel().getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, p.getBoundingBox().inflate(40)).stream().findFirst().orElse(null);
+            if (k == null) {
+                questLog(p, "FAIL no kitsune");
+                return;
+            }
+            p.teleportTo(0.5, 100, -0.2);
+            com.soulless.npc.dialogue.DialogueManager.open(p, k);
+            pick(p, "dialogue.soulless.kitsune.opt.mend");
+            questLog(p, "REFORGE again started in " + p.level().dimension().location());
+        }
+        if (t == 300) questLog(p, "REFORGED back in " + p.level().dimension().location());
+        if (t == 310) {
+            // Kitsune free: Mending makes a broken blade whole from the experience its bearer picks up
+            flags.putBoolean(com.soulless.item.KatanaOath.FREED, true);
+            ItemStack broken = new ItemStack(com.soulless.registry.ModItems.BROKEN_KATANA.get());
+            broken.enchant(net.minecraft.world.item.enchantment.Enchantments.MENDING, 1);
+            p.getInventory().setItem(p.getInventory().selected, broken);
+            for (int i = 0; i < 8; i++) level.addFreshEntity(new net.minecraft.world.entity.ExperienceOrb(level, p.getX(), p.getY() + 0.5, p.getZ(), 50));
+        }
+        if (t == 380) {
+            ItemStack h = p.getMainHandItem();
+            questLog(p, "MENDING held=" + h.getItem() + " damage=" + h.getDamageValue() + "/" + h.getMaxDamage()
+                    + " mending=" + net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(net.minecraft.world.item.enchantment.Enchantments.MENDING, h));
+        }
+        if (t == 390) Soulless.LOGGER.info("[autotest] quest done");
     }
 
     private static final java.util.List<LivingEntity> rendTargets = new java.util.ArrayList<>();

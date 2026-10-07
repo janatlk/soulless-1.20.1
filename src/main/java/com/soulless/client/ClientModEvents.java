@@ -63,6 +63,7 @@ public final class ClientModEvents {
     public static void onModels(ModelEvent.RegisterAdditional event) {
         event.register(SoulForgedRenderer.ICON_MODEL);
         event.register(KatanaRenderer.ICON_MODEL);
+        event.register(KatanaRenderer.TRAINING_ICON_MODEL);
     }
 
     @SubscribeEvent
