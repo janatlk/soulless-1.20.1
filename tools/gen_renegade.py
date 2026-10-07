@@ -20,7 +20,9 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "src/main/resources/assets/soulless"
-TEX_W = 128
+TEX_W = 256
+sys.path.insert(0, str(ROOT / "tools"))
+import gen_katana as gk   # noqa: E402  - his katana is the Legendary Katana's model, smaller and recoloured
 
 
 def hexc(h, a=255):
@@ -50,15 +52,17 @@ R = {
     "steel": ramp("1a1820", "2a2733", "3c3848", "54506a", "6f6a8a"),
     "wrap": ramp("0d0b10", "1b1520", "2a1f2e"),
 }
-EYE = hexc("ff2a3a")
+EYE = hexc("fbf6ff")
 EDGE = hexc("ff3b4a")
 
 
 class Cube:
-    def __init__(self, name, bone, mat, lo, hi):
-        self.name, self.bone, self.mat = name, bone, mat
+    def __init__(self, name, bone, mat, lo, hi, rot=None, pivot=None, src=None, density=1):
+        self.name, self.bone, self.mat, self.density = name, bone, mat, density
         self.lo = tuple(min(a, b) for a, b in zip(lo, hi))
         self.hi = tuple(max(a, b) for a, b in zip(lo, hi))
+        self.rot, self.pivot = rot, list(pivot or [0, 0, 0])
+        self.src = src   # a cube of the Legendary Katana's model, painted by gen_katana at its own resolution
         self.uv = {}
 
     @property
@@ -73,8 +77,8 @@ def bone(name, parent, pivot, rest=None):
     BONES[name] = {"name": name, "parent": parent, "pivot": [float(v) for v in pivot], "rest": rest}
 
 
-def box(name, b, mat, lo, hi):
-    CUBES.append(Cube(name, b, mat, lo, hi))
+def box(name, b, mat, lo, hi, density=1):
+    CUBES.append(Cube(name, b, mat, lo, hi, density=density))
 
 
 def mirror(lo, hi):
@@ -85,7 +89,6 @@ def mirror(lo, hi):
 def build():
     bone("root", None, (0, 0, 0))
     bone("waist", "root", (0, 12, 0))
-    box("hips", "waist", "hakama", (-4.5, 9.5, -2.5), (4.5, 13, 2.5))
     bone("saya", "waist", (4.9, 11.6, -1.5), rest=(18, 0, 0))   # the sheath at the left hip, tip dropping behind
     box("saya", "saya", "saya", (4.3, 11, -3.2), (5.5, 12.2, 12.5))
     bone("chest", "waist", (0, 12, 0))
@@ -95,8 +98,12 @@ def build():
     bone("scarf_tail", "chest", (1.8, 23, 2.4))
     box("scarf_tail", "scarf_tail", "scarf", (0.6, 12.5, 2.4), (3.2, 23, 3.1))
     bone("head", "chest", (0, 24, 0))
-    box("head", "head", "face", (-4, 24, -4), (4, 32, 4))
-    box("hood", "head", "hood", (-4.6, 23.6, -4.6), (4.6, 32.8, 4.6))
+    box("head", "head", "face", (-4, 24, -4), (4, 32, 4), density=2)
+    box("topknot", "head", "hair", (-1, 32, 0.6), (1, 34.2, 2.8), density=2)
+    box("topknot_tie", "head", "scarf", (-1.15, 32, 0.45), (1.15, 32.6, 2.95), density=2)
+    bone("band_tail", "head", (0, 30, 4))   # the headband's two loose ends, streaming behind
+    box("band_tail_a", "band_tail", "scarf", (-1.1, 25.8, 4), (-0.4, 30.1, 4.3), density=2)
+    box("band_tail_b", "band_tail", "scarf", (0.4, 26.8, 4), (1.1, 30.1, 4.3), density=2)
     for side, s in (("r", -1), ("l", 1)):
         def m(lo, hi):
             return (lo, hi) if s > 0 else mirror(lo, hi)
@@ -106,16 +113,73 @@ def build():
         box(f"forearm_{side}", f"forearm_{side}", "wrap", *m((4.25, 11, -1.75), (7.75, 16.5, 1.75)))
         box(f"hand_{side}", f"forearm_{side}", "skin", *m((4.25, 9.6, -1.75), (7.75, 11, 1.75)))
         bone(f"leg_{side}", "root", (2.2 * s, 12, 0))
-        box(f"thigh_{side}", f"leg_{side}", "hakama", *m((-0.2, 5.6, -2.6), (4.6, 12, 2.6)))
+        box(f"thigh_{side}", f"leg_{side}", "hakama", *m((0.2, 6, -2), (4.2, 12, 2)))
         bone(f"shin_{side}", f"leg_{side}", (2.2 * s, 6, 0))
-        box(f"shin_{side}", f"shin_{side}", "hakama", *m((0.2, 1.1, -2.1), (4.2, 6.2, 2.1)))
-        box(f"foot_{side}", f"shin_{side}", "tabi", *m((0.2, 0, -3), (4.2, 1.2, 2)))
-    # the katana, out of the right fist: grip and pommel behind, the guard, then the blade forward
-    bone("katana", "forearm_r", (-6, 10.3, 0))
-    box("tsuka", "katana", "tsuka", (-6.6, 9.7, -2.2), (-5.4, 10.9, 3.8))
-    box("tsuba", "katana", "tsuba", (-7.4, 8.9, -3), (-4.6, 11.7, -2.2))
-    bone("blade", "katana", (-6, 10.3, -3))   # its own bone: scaled away while the blade is in the sheath
-    box("blade", "blade", "blade", (-6.3, 9.5, -23.5), (-5.7, 11.1, -3))
+        box(f"shin_{side}", f"shin_{side}", "shin", *m((0.2, 0, -2), (4.2, 6, 2)))
+    # the katana, out of the right fist: the Legendary Katana's own model, scaled down and turned so the blade runs
+    # forward (-z) with the edge down; the blade, its back and collar sit on their own bone, scaled away in the sheath
+    bone("katana", "forearm_r", FIST)
+    bone("katana_model", "katana", FIST, rest=KATANA_TURN)
+    bone("blade", "katana_model", FIST)
+    gk.CUBES.clear()
+    gk.BONES.clear()
+    gk.build()
+    for c in gk.CUBES:
+        lo = tuple(FIST[i] + KS * (c.lo[i] - GRIP[i]) for i in range(3))
+        hi = tuple(FIST[i] + KS * (c.hi[i] - GRIP[i]) for i in range(3))
+        piv = [FIST[i] + KS * (c.pivot[i] - GRIP[i]) for i in range(3)]
+        on_blade = c.mat in ("blade", "mune") or c.name == "habaki"
+        CUBES.append(Cube("k_" + c.name, "blade" if on_blade else "katana_model", "katana", lo, hi, c.rot, piv, src=c))
+
+
+FIST = (-6, 10.3, 0)          # the middle of the right fist: the katana's bone pivot
+GRIP = (0.1, -4.0, 0.0)        # where on the Legendary Katana's grip (its own model space) the fist closes
+KS = 0.5                       # shorter than the Legendary Katana in a player's hand
+
+
+def katana_turn():
+    """The rest rotation (model space, applied x, y, z) turning the katana model (blade +y, edge +x) so the blade
+    runs forward (-z) with the edge down (-y)."""
+    want = {(0, 1, 0): (0, 0, -1), (1, 0, 0): (0, -1, 0)}
+    for rx in range(0, 360, 90):
+        for ry in range(0, 360, 90):
+            for rz in range(0, 360, 90):
+                m = rotmat(rx, ry, rz)
+                if all(np.allclose(m @ np.array(a, float), b, atol=1e-6) for a, b in want.items()):
+                    return (rx, ry, rz)
+    raise ValueError("no turn")
+
+
+# recolouring the Legendary Katana: blackened steel with a crimson temper line and edge, blood-dark metal fittings,
+# a black and crimson wrap
+RENEGADE_STEEL = {"mune": hexc("16151b"), "shinogi": hexc("3a3844"), "shinogi_ji": hexc("1d1c24"), "ji": hexc("26252f"),
+                  "nioi": hexc("ff2a40"), "ha": hexc("6a1622"), "edge": hexc("ff4a5c")}
+
+
+def katana_paint(c, f, W, H):
+    saved = dict(gk.STEEL)
+    gk.STEEL.update(RENEGADE_STEEL)
+    try:
+        img = gk.paint(c, f, W, H)
+    finally:
+        gk.STEEL.clear()
+        gk.STEEL.update(saved)
+    glow = np.zeros((H, W), bool)
+    for j in range(H):
+        for i in range(W):
+            r, g, b, a = img[j, i]
+            if a <= 0:
+                continue
+            lum = (r * 0.3 + g * 0.55 + b * 0.15) / 255
+            if c.mat == "blade" and r > 150 and g < 110:
+                glow[j, i] = True   # the temper line and the edge burn red
+            elif c.mat == "gold" or (r > 120 and g > 90 and b < 90) or (c.mat in ("tsuba", "lacquer") and r > b + 12):
+                img[j, i] = pick(R["trim"], lum * 1.4)   # gold becomes dark blood metal
+            elif c.mat == "tsuka" and b > r:
+                img[j, i] = pick(R["wrap"], lum * 2.2) if (i + j) % 5 else pick(R["trim"], 0.4)   # violet silk -> black and crimson
+            elif c.mat == "tsuka":
+                img[j, i] = np.array([96, 88, 84, 255], np.float32) * (0.7 + lum * 0.3)   # the ray skin, greyed
+    return img, glow
 
 
 # ------------------------------------------------------------------ texture
@@ -136,6 +200,64 @@ def face_point(c, f, u, v):
         "east": (x1, y, z1 - u * (z1 - z0)), "west": (x0, y, z0 + u * (z1 - z0)),
         "up": (x0 + u * (x1 - x0), y1, z0 + v * (z1 - z0)), "down": (x0 + u * (x1 - x0), y0, z0 + v * (z1 - z0)),
     }[f]
+
+
+# His face, 16 x 16 (the head is painted at twice the resolution). Rows from the top; columns from his left (the
+# viewer's right... the north face runs from +x to -x). H hair, h hair highlight, R headband, r its shadow, S skin,
+# s skin shadow, d deep shadow (sockets, sunken cheeks), B brow, W eye white, P pupil, X scar, N nose shadow, M mouth,
+# m lip shadow, G stubble.
+FACE = [
+    "HHHhHHHHHHHHhHHH",
+    "HHHHHHhHHHHHHHHH",
+    "HhHHHHHHHHHhHHHH",
+    "RRRRRRRRRRRRRRRR",
+    "rRRRRRRRRRRRRRRr",
+    "HSSSSSSSSSSSSSSH",
+    "HSBBBSSSSSSBBBSH",
+    "HSSBBBSSSSBBBXSH",
+    "HSdWPdSSSSdPWXsH",
+    "HSsddSSNNSSddXsH",
+    "HdSSSSSNNSSSSXdH",
+    "HdSSSSNNNNSSSSdH",
+    "HSdSSSSSSSSSSdSH",
+    "HSSdSMMMMMMSdSSH",
+    "HHSGGSmmmmSGGSHH",
+    "HHHSGGGGGGGGSHHH",
+]
+HAIR = ramp("08070b", "0f0d14", "18151f", "241f2c")
+SKIN = ramp("6f5444", "86675a", "9c7b6a", "ad8b78")
+
+
+def face_pixel(ch, n):
+    if ch in "Hh":
+        return pick(HAIR, 0.35 + (0.4 if ch == "h" else 0) + n * 0.15), False
+    if ch == "R":
+        return pick(R["trim"], 0.6 + n * 0.1), False
+    if ch == "r":
+        return pick(R["trim"], 0.25), False
+    if ch == "S":
+        return pick(SKIN, 0.55 + n * 0.12), False
+    if ch == "s":
+        return pick(SKIN, 0.3 + n * 0.1), False
+    if ch == "d":
+        return pick(SKIN, 0.05), False
+    if ch == "B":
+        return pick(HAIR, 0.1), False
+    if ch == "W":
+        return hexc("e9e4dc"), False
+    if ch == "P":
+        return hexc("1a1210"), False
+    if ch == "X":
+        return hexc("b9786e"), False
+    if ch == "N":
+        return pick(SKIN, 0.22), False
+    if ch == "M":
+        return hexc("2a1517"), False
+    if ch == "m":
+        return pick(SKIN, 0.18), False
+    if ch == "G":
+        return pick(SKIN, 0.12 + n * 0.08), False
+    return hexc("ff00ff"), False
 
 
 def paint(c, f, W, H):
@@ -180,19 +302,34 @@ def paint(c, f, W, H):
             elif m == "skin":
                 col = pick(R["skin"], 0.5 + lt + n * 0.1)
             elif m == "face":
-                col = pick(R["skin"], 0.35 + lt + n * 0.1)   # in the hood's shadow
+                band = 29.6 <= y <= 30.6
                 if f == "north":
-                    ax = abs(x)
-                    if 1.2 <= ax <= 3.0 and 28 <= y <= 29.2:
-                        col, g = EYE.copy(), True
-                    elif y < 27.5:
-                        col = pick(R["cloth"], 0.35 + n * 0.1)   # the half mask over mouth and nose
-                        if abs(y - 26.5) < 0.3 and ax < 3.2:
-                            col = pick(R["trim"], 0.5)
-                    elif y > 30.5:
-                        col = pick(R["cloth"], 0.15)   # hair under the hood
+                    col, g = face_pixel(FACE[j][i], n)
+                elif f == "up":
+                    col = pick(HAIR, 0.3 + n * 0.2 + (0.25 if (i + j) % 7 == 0 else 0))
+                elif f == "down":
+                    col = pick(SKIN, 0.3)
+                elif band:
+                    col = pick(R["trim"], 0.55 + lt + n * 0.1)
+                elif f in ("east", "west"):
+                    # hair over the top and down the back; skin and an ear toward the face
+                    front = (z < -1.2)
+                    if y > 30.6 or not front:
+                        col = pick(HAIR, 0.3 + n * 0.2 + (0.2 if hash3(i, j, 0, 9) > 0.85 else 0))
+                    else:
+                        col = pick(SKIN, 0.45 + lt + n * 0.1)
+                        if -1.2 > z > -2.2 and 26.5 < y < 28.5:
+                            col = pick(SKIN, 0.25)   # the ear
                 else:
-                    col = pick(R["cloth"], 0.2 + n * 0.1)
+                    col = pick(HAIR, 0.3 + n * 0.2 + (0.2 if hash3(i, j, 0, 9) > 0.85 else 0))
+            elif m == "hair":
+                col = pick(HAIR, 0.35 + lt + n * 0.2)
+            elif m == "shin":
+                col = pick(R["hakama"], 0.5 + lt + n * 0.12)
+                if side and (i % 3 == 0):
+                    col = pick(R["hakama"], 0.25 + lt)
+                if y < 1.2:
+                    col = pick(R["wrap"], 0.4 + lt)   # dark tabi
             elif m == "hood":
                 col = pick(R["cloth"], 0.42 + lt + n * 0.12)
                 if f == "north" and abs(x) < 3.6 and 24.5 < y < 30.8:
@@ -228,8 +365,12 @@ def pack_and_paint():
     faces = []
     for c in CUBES:
         for f in FACES:
+            if c.src is not None:
+                a, b = gk.face_dims(c.src, f)
+                faces.append((c, f, max(1, round(a * c.src.density)), max(1, round(b * c.src.density))))
+                continue
             a, b = face_dims(c, f)
-            faces.append((c, f, max(1, math.ceil(a - 1e-6)), max(1, math.ceil(b - 1e-6))))
+            faces.append((c, f, max(1, math.ceil(a * c.density - 1e-6)), max(1, math.ceil(b * c.density - 1e-6))))
     faces.sort(key=lambda t: (-t[3], -t[2]))
     x = y = row_h = 0
     for c, f, W, H in faces:
@@ -243,7 +384,7 @@ def pack_and_paint():
     glow = np.zeros((tex_h, TEX_W), bool)
     for c, f, W, H in faces:
         u, v, _, _ = c.uv[f]
-        img, g = paint(c, f, W, H)
+        img, g = katana_paint(c.src, f, W, H) if c.src is not None else paint(c, f, W, H)
         base[v:v + H, u:u + W] = img
         glow[v:v + H, u:u + W] = g
     gm = base.copy()
@@ -480,9 +621,14 @@ def write_geo(tex_h):
             out["parent"] = b["parent"]
         if b["rest"]:
             out["rotation"] = to_file_rot(b["rest"])
-        cubes = [{"origin": [r(-c.hi[0]), r(c.lo[1]), r(c.lo[2])], "size": [r(s) for s in c.size],
+        cubes = []
+        for c in by_bone.get(b["name"], []):
+            cd = {"origin": [r(-c.hi[0]), r(c.lo[1]), r(c.lo[2])], "size": [r(s) for s in c.size],
                   "uv": {f: {"uv": [u, v], "uv_size": [W, H]} for f, (u, v, W, H) in c.uv.items()}}
-                 for c in by_bone.get(b["name"], [])]
+            if c.rot:
+                cd["pivot"] = [r(-c.pivot[0]), r(c.pivot[1]), r(c.pivot[2])]
+                cd["rotation"] = to_file_rot(c.rot)
+            cubes.append(cd)
         if cubes:
             out["cubes"] = cubes
         bones.append(out)
@@ -523,10 +669,15 @@ def render(base, pose, yaw, scale=5, sub=2):
     V = rotmat(12, yaw, 0)
     normals = {"north": (0, 0, -1), "south": (0, 0, 1), "east": (1, 0, 0), "west": (-1, 0, 0), "up": (0, 1, 0), "down": (0, -1, 0)}
     for c in CUBES:
+        cr = rotmat(*c.rot) if c.rot else None
+        cp = np.array(c.pivot, float)
         for f in FACES:
             u0, v0, W, H = c.uv[f]
             ctr = np.array(face_point(c, f, 0.5, 0.5))
-            ends = posed(np.array([ctr, ctr + np.array(normals[f])]), c.bone, pose)
+            local = np.array([ctr, ctr + np.array(normals[f])])
+            if cr is not None:
+                local = (cr @ (local - cp).T).T + cp
+            ends = posed(local, c.bone, pose)
             nrm = V @ (ends[1] - ends[0])
             if nrm[2] > 0.05:
                 continue
@@ -535,6 +686,8 @@ def render(base, pose, yaw, scale=5, sub=2):
             vs = (np.arange(H * sub) + 0.5) / (H * sub)
             uu, vv = np.meshgrid(us, vs)
             pts = np.array([face_point(c, f, a, b) for a, b in zip(uu.ravel(), vv.ravel())])
+            if cr is not None:
+                pts = (cr @ (pts - cp).T).T + cp
             pts = (V @ posed(pts, c.bone, pose).T).T
             tex = base[v0 + np.minimum((vv.ravel() * H).astype(int), H - 1), u0 + np.minimum((uu.ravel() * W).astype(int), W - 1)]
             px = (Wp / 2 - pts[:, 0] * scale).astype(int)
@@ -553,9 +706,14 @@ def render(base, pose, yaw, scale=5, sub=2):
 
 def aim_blades():
     """Turn each pose's katana bone (rx, ry) so the blade points along BLADE[pose] whatever the arm does."""
-    for name, pose in POSES.items():
-        if name not in BLADE:
-            continue
+    for name in POSES:
+        if name in BLADE:
+            aim_one(name)
+
+
+def aim_one(name):
+    pose = POSES[name]
+    if name in BLADE:
         pose.pop("katana", None)
         p0 = np.array(BONES["katana"]["pivot"])
         cols = [posed(np.array([p0, p0 + e]), "forearm_r", pose) for e in np.eye(3)]
@@ -565,6 +723,62 @@ def aim_blades():
         a = math.degrees(math.asin(max(-1, min(1, v[1]))))
         b = math.degrees(math.atan2(-v[0], -v[2]))
         pose["katana"] = {"rot": (round(a, 1), round(b, 1), 0)}
+
+
+TWO_HANDED = ("guard", "jodan", "kesa_end", "gyaku_end", "crouch", "hang", "dive_end")
+
+
+def hand_left(pose):
+    """Where the left hand is (the middle of the fist) in model space."""
+    return posed(np.array([[6.0, 10.3, 0.0]]), "forearm_l", pose)[0]
+
+
+def reach_left_hands():
+    """For two-handed poses: both hands on the grip. The left fist closes on the grip just behind the right one: a
+    search over the left shoulder's three turns and elbow (bending only the natural way), letting the right arm come
+    a little toward the middle and the chest turn a little when the grip is out of the left hand's reach; the blade
+    is aimed again after."""
+    rng = np.random.default_rng(3)
+    for name in TWO_HANDED:
+        pose = POSES[name]
+        r0 = np.array(pose.get("arm_r", {}).get("rot", (0, 0, 0)), float)
+        c0 = np.array(pose.get("chest", {}).get("rot", (0, 0, 0)), float)
+        x0 = np.concatenate([np.array(pose.get("arm_l", {}).get("rot", (0, 0, 0)), float),
+                             [float(pose.get("forearm_l", {}).get("rot", (0, 0, 0))[0])], [0.0, 0.0]])
+
+        def apply(x):
+            pose["arm_l"] = {"rot": tuple(x[:3])}
+            pose["forearm_l"] = {"rot": (min(150.0, max(0.0, x[3])), 0, 0)}
+            pose["arm_r"] = {"rot": (r0[0], r0[1], r0[2] + x[4])}
+            pose["chest"] = {"rot": (c0[0], c0[1] + x[5], c0[2])}
+            aim_one(name)
+
+        def cost(x):
+            apply(x)
+            target = posed(np.array([[FIST[0], FIST[1], FIST[2] + 2.9]]), "katana", pose)[0]
+            return float(np.sum((hand_left(pose) - target) ** 2)) + 0.002 * (x[4] ** 2 + x[5] ** 2)
+
+        best_x, best = x0, cost(x0)
+        for attempt in range(6):
+            x = x0.copy() if attempt == 0 else np.concatenate([[rng.uniform(-30, 180), rng.uniform(-60, 60), rng.uniform(-90, 60),
+                                                               rng.uniform(0, 120)], [0.0, 0.0]])
+            cur = cost(x)
+            step = 30.0
+            for _ in range(1500):
+                x2 = x + rng.normal(0, step, 6) * np.array([1, 0.6, 1, 1, 0.5, 0.4])
+                c2 = cost(x2)
+                if c2 < cur:
+                    cur, x = c2, x2
+                else:
+                    step = max(1.0, step * 0.995)
+            if cur < best:
+                best, best_x = cur, x
+        apply(best_x)
+        for k in ("arm_l", "arm_r", "chest"):
+            pose[k] = {"rot": tuple(round(float(v), 1) for v in pose[k]["rot"])}
+        pose["forearm_l"] = {"rot": (round(float(pose["forearm_l"]["rot"][0]), 1), 0, 0)}
+        off = math.sqrt(float(np.sum((hand_left(pose) - posed(np.array([[FIST[0], FIST[1], FIST[2] + 2.9]]), "katana", pose)[0]) ** 2)))
+        print(f"  left hand -> grip in {name}: {off:.2f} px off (right arm {best_x[4]:+.0f}, chest {best_x[5]:+.0f})")
 
 
 def preview(base, out, names=None, yaw=-35):
@@ -586,6 +800,17 @@ def preview(base, out, names=None, yaw=-35):
     Image.fromarray(np.concatenate(rows, axis=0)).save(out)
 
 
+def head_closeup(base, out):
+    """The head up close: front, three-quarter, side."""
+    heads = []
+    for yaw in (0, -35, -90):
+        t = render(base, POSES["stand"], yaw, scale=26, sub=3)
+        h, w = t.shape[:2]
+        cy = int(h * 0.86 - 28 * 26)
+        heads.append(t[max(0, cy - 190):cy + 190, w // 2 - 190:w // 2 + 190])
+    Image.fromarray(np.clip(np.concatenate(heads, axis=1), 0, 255).astype(np.uint8)).save(out)
+
+
 def sheet(base, out):
     """The model for review: the loose stance and the guard, from the front, three-quarter, side and back."""
     from PIL import ImageDraw
@@ -600,9 +825,15 @@ def sheet(base, out):
     Image.fromarray(np.concatenate(rows, axis=0)).save(out)
 
 
+KATANA_TURN = None
+
+
 def main():
+    global KATANA_TURN
+    KATANA_TURN = katana_turn()
     build()
     aim_blades()
+    reach_left_hands()
     base, gm, tex_h = pack_and_paint()
     t = ASSETS / "textures/entity"
     Image.fromarray(np.clip(base, 0, 255).astype(np.uint8), "RGBA").save(t / "renegade.png")
@@ -611,6 +842,7 @@ def main():
     write_anims()
     if "--sheet" in sys.argv:
         sheet(base, sys.argv[sys.argv.index("--sheet") + 1])
+        head_closeup(base, sys.argv[sys.argv.index("--sheet") + 1].replace(".png", "_head.png"))
     if "--preview" in sys.argv:
         yaw = float(sys.argv[sys.argv.index("--yaw") + 1]) if "--yaw" in sys.argv else -35
         preview(base, sys.argv[sys.argv.index("--preview") + 1], yaw=yaw)
