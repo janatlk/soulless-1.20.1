@@ -154,6 +154,28 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.literal("Renegade reset"), false);
                             return 1;
                         })))
+                .then(Commands.literal("katana")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.literal("reset").executes(ctx -> {
+                            // the whole Legendary Katana branch from the start: sensei, Kitsune's oath, the Renegade
+                            var p = ctx.getSource().getPlayerOrException();
+                            var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
+                            for (String k : new java.util.ArrayList<>(flags.getAllKeys())) {
+                                if (k.startsWith("sensei.") || k.startsWith("kitsune.") || k.startsWith("renegade.")) flags.remove(k);
+                            }
+                            if (com.soulless.world.Astral.in(p)) com.soulless.world.Astral.leave(p);
+                            var inv = p.getInventory();
+                            for (int i = 0; i < inv.getContainerSize(); i++) {
+                                var it = inv.getItem(i).getItem();
+                                if (it == com.soulless.registry.ModItems.SOUL_KATANA.get() || it == com.soulless.registry.ModItems.BROKEN_KATANA.get()
+                                        || it == com.soulless.registry.ModItems.TRAINING_KATANA.get() || it == com.soulless.registry.ModItems.FAMILY_SCROLL.get()) {
+                                    inv.setItem(i, net.minecraft.world.item.ItemStack.EMPTY);
+                                }
+                            }
+                            com.soulless.npc.SenseiQuest.syncParry(p);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Legendary Katana branch reset"), false);
+                            return 1;
+                        })))
                 .then(Commands.literal("astral")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> {

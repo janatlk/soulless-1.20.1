@@ -182,6 +182,7 @@ public final class Astral {
         if (home.dimension() == Level.OVERWORLD && p.server.getPlayerCount() == 1 && !home.isDay()) {
             home.setDayTime((home.getDayTime() / 24000 + 1) * 24000);
         }
+        com.soulless.boss.RenegadeEncounter.woke(p);
     }
 
     /** The floor and Kitsune, made the first time anyone dreams. */

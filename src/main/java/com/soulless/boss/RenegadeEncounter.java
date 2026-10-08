@@ -54,7 +54,8 @@ public final class RenegadeEncounter {
     public static final String DREAM = "renegade.dream";
     /** Player data: the katana he holds while it burns him (given back if anything goes wrong in between). */
     private static final String HELD = "soulless_renegade_held";
-    private static final int FIRST_DELAY = 2400, RETRY_DELAY = 6000;
+    private static final long PENDING = -1;
+    private static final int FIRST_DELAY = 200, RETRY_DELAY = 6000;
     private static final int FLOOR_Y = 99, FLOOR_RADIUS = com.soulless.world.RenegadeArena.RADIUS;
     private static final Vec3 ARRIVE = new Vec3(0.5, FLOOR_Y + 1, 8.5), HIM = new Vec3(0.5, FLOOR_Y + 1, -6.5);
     private static final String TAG = "soulless_renegade";
@@ -94,8 +95,15 @@ public final class RenegadeEncounter {
         f.putLong(DUE, p.serverLevel().getGameTime() + delay);
     }
 
+    /** The oath given: he does not come yet - he waits for the player to wake from that dream (see {@link #woke}). */
     public static void scheduleFirst(ServerPlayer p) {
-        schedule(p, FIRST_DELAY);
+        CompoundTag f = DialogueContext.playerFlags(p);
+        if (!f.getBoolean(DEFEATED)) f.putLong(DUE, PENDING);
+    }
+
+    /** Woken from the astral: if the oath was just given, he sets out now - the first coming is part of the story. */
+    public static void woke(ServerPlayer p) {
+        if (DialogueContext.playerFlags(p).getLong(DUE) == PENDING) schedule(p, FIRST_DELAY);
     }
 
     /** Ticks of the loss scene (from the blow that would have killed): when he takes the blade, when it burns him,
@@ -255,10 +263,7 @@ public final class RenegadeEncounter {
         CompoundTag flags = DialogueContext.playerFlags(p);
         if (flags.getBoolean(DEFEATED) || flags.getBoolean(DREAM) || !KatanaOath.sworn(p)) return;
         long due = flags.getLong(DUE);
-        if (due == 0) {   // sworn before he existed (or the schedule got lost): he sets out now
-            scheduleFirst(p);
-            return;
-        }
+        if (due <= 0) return;   // not set out yet: only the oath's waking sends him
         if (p.serverLevel().getGameTime() < due) return;
         // somewhere quiet: on the ground, awake, not in water, not just hurt, not in the astral
         if (!p.onGround() || p.isSleeping() || p.isInWater() || p.isSpectator()
