@@ -148,6 +148,7 @@ public final class SoullessCommands {
                             var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(ctx.getSource().getPlayerOrException());
                             flags.remove(com.soulless.boss.RenegadeEncounter.DUE);
                             flags.remove(com.soulless.boss.RenegadeEncounter.DEFEATED);
+                            flags.remove(com.soulless.boss.RenegadeEncounter.DREAM);   // no more coming in sleep
                             flags.remove(com.soulless.npc.SenseiQuest.HARAKIRI);
                             com.soulless.npc.SenseiQuest.syncParry(ctx.getSource().getPlayerOrException());
                             ctx.getSource().sendSuccess(() -> Component.literal("Renegade reset"), false);

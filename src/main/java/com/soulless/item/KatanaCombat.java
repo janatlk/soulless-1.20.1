@@ -223,6 +223,9 @@ public final class KatanaCombat {
         if (!primary && com.soulless.pet.TamedFox.isPetOf(t, player)) return;   // a side cut passes one's own fox by
         if (KatanaOath.stops(player, t, primary, damage)) return;
         if (primary) com.soulless.npc.SenseiQuest.onInnocentStruck(player, t);
+        // each cut is a blow of its own: the hurt-immunity left by the last one (half a second) would swallow a quick
+        // second cut - the riposte's gyaku after a parry did no damage
+        t.invulnerableTime = 0;
         if (!t.hurt(player.damageSources().playerAttack(player), damage)) return;
         float kb = knockback + EnchantmentHelper.getKnockbackBonus(player) * 0.5F;
         t.knockback(kb, -push.x, -push.z);
