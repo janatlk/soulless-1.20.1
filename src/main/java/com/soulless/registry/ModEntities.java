@@ -74,7 +74,7 @@ public final class ModEntities {
     /** The Leviathan of the Abyss (boss.LeviathanEntity): 40 blocks long, its box only the head and neck for now. */
     public static final RegistryObject<EntityType<com.soulless.boss.LeviathanEntity>> LEVIATHAN = ENTITIES.register("leviathan",
             () -> EntityType.Builder.<com.soulless.boss.LeviathanEntity>of(com.soulless.boss.LeviathanEntity::new, MobCategory.MONSTER)
-                    .sized(4.0F, 3.5F).fireImmune().clientTrackingRange(16).build("leviathan"));
+                    .sized(4.0F, 3.5F).fireImmune().clientTrackingRange(16).updateInterval(1).build("leviathan"));
 
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {

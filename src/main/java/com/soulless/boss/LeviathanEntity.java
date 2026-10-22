@@ -120,6 +120,9 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         if (!level().isClientSide) swim();
         layBody();
         if (level().isClientSide) {
+            // the body always faces where it swims (no mob body lag on the client)
+            yBodyRot = getYRot();
+            yHeadRot = getYRot();
             turnO = turn;
             turn = Mth.lerp(0.15F, turn, Mth.wrapDegrees(getYRot() - yRotO));
         }
