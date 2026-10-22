@@ -174,9 +174,61 @@
       const dark = window.__blackBelly;
       put(128 * S + x, y, dark ? [(26 + 14 * t) * k, (28 + 14 * t) * k, (36 + 16 * t) * k] : [(70 + 30 * t) * k, (76 + 30 * t) * k, (52 + 20 * t) * k]);
     }
+    if (window.__hdDetails) details(img, put);
     g.putImageData(img, 0, 0);
     tex.fromDataURL(c.toDataURL());
     return name;
+  };
+
+  // the small parts redrawn in the same lit, painterly manner (HD coordinates)
+  const details = (img, put) => {
+    const clear = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) img.data[(y * N + x) * 4 + 3] = 0; };
+    // GUM (416,128 96x96): glossy deep-blue flesh in ridges, wet highlights on every crest
+    for (let y = 0; y < 96; y++) for (let x = 0; x < 96; x++) {
+      const ph = (y + Math.sin(x * 0.15) * 3) / 10 * Math.PI * 2;
+      const ny = Math.cos(ph) * 0.6, nz = Math.sqrt(1 - ny * ny);
+      const dif = light(0, ny, nz), sp = spec(0, ny, nz, 30) * 200, t = fbm(x * 2, y * 2);
+      const k = 0.35 + 0.8 * dif;
+      put(416 + x, 128 + y, [(30 + 30 * t) * k + sp * 0.7, (70 + 40 * t) * k + sp * 0.9, (130 + 50 * t) * k + sp]);
+    }
+    // EYE (384,160 32x32): a compound eye - four amber domes in a black socket, each with a hot core and a glint
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+      const cx = x < 16 ? 8 : 24, cy = y < 16 ? 8 : 24;
+      const dx = (x + 0.5 - cx) / 6.5, dy = (y + 0.5 - cy) / 6.5, d = Math.hypot(dx, dy);
+      if (d > 1) { put(384 + x, 160 + y, [10, 6, 3]); continue; }
+      const nz = Math.sqrt(1 - d * d), dif = light(dx, dy, nz), sp = spec(dx, dy, nz, 50);
+      const core = 1 - d;
+      put(384 + x, 160 + y, [120 + 135 * core + 60 * dif + 255 * sp, 40 + 150 * core * core + 30 * dif + 255 * sp, 8 + 60 * core * core * core + 230 * sp]);
+    }
+    // TIP (384,192 32x32): a glowing bead, white-hot at its heart
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+      const d = Math.hypot(x + 0.5 - 16, y + 0.5 - 16) / 16, k = Math.max(0, 1 - d);
+      put(384 + x, 192 + y, [255, 140 + 115 * k * k, 40 + 190 * k * k * k]);
+    }
+    // FANGS (128,256 320x32) and FANGS_DN (128,288): rounded ivory fangs, lit from the left, a stained root and a
+    // pale translucent point, transparent between
+    for (const [y0, up] of [[256, false], [288, true]]) {
+      clear(128, y0, 320, 32);
+      let x = 130, seed = up ? 5 : 3;
+      const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      while (x < 440) {
+        const w = 6 + Math.floor(rnd() * 8), broken = rnd() < 0.12;
+        const len = broken ? 8 + Math.floor(rnd() * 6) : 14 + Math.floor(rnd() * 17);
+        const lean = (rnd() - 0.5) * 0.25;
+        for (let j = 0; j < Math.min(32, len); j++) {
+          const f = j / len, half = (w / 2) * (1 - Math.pow(f, 1.3) * 0.92), mid = w / 2 + lean * j;
+          for (let i = 0; i < w + 4; i++) {
+            const dx = (i + 0.5 - mid) / Math.max(0.5, half);
+            if (Math.abs(dx) > 1 || x + i >= 448) continue;
+            const nz = Math.sqrt(1 - dx * dx), dif = light(dx * 0.9, 0, nz), sp = spec(dx * 0.9, 0, nz, 20) * 90;
+            const root = f < 0.15 ? 0.6 : 1;
+            const c = [120 + f * 90, 104 + f * 82, 72 + f * 70];
+            put(x + i, up ? y0 + 31 - j : y0 + j, [c[0] * (0.45 + 0.7 * dif) * root + sp, c[1] * (0.45 + 0.7 * dif) * root + sp, c[2] * (0.45 + 0.7 * dif) * root + sp * 0.8]);
+          }
+        }
+        x += w + (rnd() < 0.35 ? 3 + Math.floor(rnd() * 6) : 1);
+      }
+    }
   };
   return Object.keys(SKINS);
 })()
