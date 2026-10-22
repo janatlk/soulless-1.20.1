@@ -10,6 +10,8 @@ import net.minecraftforge.registries.RegistryObject;
 public final class ModParticles {
     public static final DeferredRegister<ParticleType<?>> PARTICLES = DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, Soulless.MODID);
 
+    /** A soul leaving a body toward a vessel (client.SoulWisp; spawned straight from SoulWispPacket). */
+    public static final RegistryObject<SimpleParticleType> SOUL_WISP = PARTICLES.register("soul_wisp", () -> new SimpleParticleType(false));
     public static final RegistryObject<SimpleParticleType> SOUL_EMBER = PARTICLES.register("soul_ember", () -> new SimpleParticleType(false));
     /** The Soulsmith's Ring "skin": the same flame tongues in gold. */
     public static final RegistryObject<SimpleParticleType> GOLD_EMBER = PARTICLES.register("gold_ember", () -> new SimpleParticleType(false));

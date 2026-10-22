@@ -16,6 +16,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.DragonFireball;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
@@ -90,9 +91,9 @@ public final class KatanaParry {
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem) || !player.isAlive() || player.isSpectator()) return;
         if (ResonanceRitual.isActive(player) || KatanaCombat.isCutting(player)) return;
-        if (!KatanaSouls.has(player, KatanaSouls.PARRY)) {
-            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.soulless.katana_locked",
-                    net.minecraft.network.chat.Component.translatable("tooltip.soulless.katana_stage." + KatanaSouls.PARRY)), true);
+        if (!com.soulless.upgrade.Upgrades.has(player, com.soulless.upgrade.Upgrades.KATANA_PARRY)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.soulless.upgrade_locked",
+                    net.minecraft.network.chat.Component.translatable("upgrade.soulless." + com.soulless.upgrade.Upgrades.KATANA_PARRY)), true);
             return;
         }
         long now = player.level().getGameTime();
@@ -118,6 +119,13 @@ public final class KatanaParry {
         // a parry that caught something keeps the guard up a little longer: a quick second blow is caught too
         Long caught = LAST_CATCH.get(player.getUUID());
         return CAUGHT.contains(player.getUUID()) && caught != null && now - caught < CHAIN;
+    }
+
+    /** The Deep Stun path stretches the stun by this much. */
+    public static final float STUN_PATH_MULT = 1.75F;
+
+    public static int stunTicks(ItemStack katana) {
+        return Math.round(STUN_TICKS * (com.soulless.upgrade.Upgrades.has(katana, com.soulless.upgrade.Upgrades.KATANA_STUN) ? STUN_PATH_MULT : 1));
     }
 
     /** When this player last raised the guard (game time; -1: never). */
@@ -206,7 +214,8 @@ public final class KatanaParry {
             player.addEffect(new MobEffectInstance(ModEffects.SOUL_RESONANCE.get(), BLESSING_TICKS, 0, false, true, true));
         }
         if (attacker instanceof LivingEntity l && !isBoss(l)) {
-            l.addEffect(new MobEffectInstance(ModEffects.STUN.get(), l instanceof Player ? PLAYER_STUN_TICKS : STUN_TICKS, 0));
+            int stun = stunTicks(player.getMainHandItem());
+            l.addEffect(new MobEffectInstance(ModEffects.STUN.get(), l instanceof Player ? Math.min(stun, PLAYER_STUN_TICKS * 2) : stun, 0));
         }
         if (first) player.displayClientMessage(Component.translatable("message.soulless.parry"), true);
     }

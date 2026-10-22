@@ -67,7 +67,7 @@ public final class KatanaCombat {
     public static void announce(ServerPlayer player, int step) {
         if (step < KESA || step > THRUST_STEP || !(player.getMainHandItem().getItem() instanceof SoulKatanaItem)) return;
         if (ResonanceRitual.isActive(player)) return;
-        if (step == THRUST_STEP && !KatanaSouls.has(player, KatanaSouls.THRUST)) return;
+        if (step == THRUST_STEP && !com.soulless.upgrade.Upgrades.has(player, com.soulless.upgrade.Upgrades.KATANA_THRUST)) return;
         long now = player.level().getGameTime();
         // right after a parry the riposte comes at once, faster and at full strength, whatever the weapon's cooldown
         boolean riposte = KatanaParry.riposteReady(player);
@@ -176,6 +176,7 @@ public final class KatanaCombat {
                     SoundSource.PLAYERS, HIT_VOLUME, 0.95F + player.getRandom().nextFloat() * 0.15F);
         }
         float bonus = hit.isEmpty() ? 1 : KatanaParry.consumeBonus(player);
+        riposte = bonus > 1;
         // the main target: the one most squarely in front (smallest angle off the facing, then nearest)
         LivingEntity main = null;
         double best = Double.MAX_VALUE;
@@ -190,6 +191,7 @@ public final class KatanaCombat {
         }
         float side = player.hasEffect(com.soulless.registry.ModEffects.SOUL_RESONANCE.get()) ? CUT_SIDE_DAMAGE_BLESSED : CUT_SIDE_DAMAGE;
         for (LivingEntity t : hit) strike(player, t, t == main, charge, bonus * (t == main ? 1 : side), facing, 0.4F);
+        riposte = false;
         if (!hit.isEmpty()) wear(player);
     }
 
@@ -202,9 +204,17 @@ public final class KatanaCombat {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(),
                 SoundSource.PLAYERS, HIT_VOLUME, 1.15F);
         level.sendParticles(ParticleTypes.CRIT, best.getX(), best.getY(0.6), best.getZ(), 12, 0.2, 0.2, 0.2, 0.3);
-        strike(player, best, true, charge, THRUST_DAMAGE_MULT * KatanaParry.consumeBonus(player), new Vec3(dir.x, 0, dir.z).normalize(), 0.7F);
+        float bonus = KatanaParry.consumeBonus(player);
+        riposte = bonus > 1;
+        strike(player, best, true, charge, THRUST_DAMAGE_MULT * bonus, new Vec3(dir.x, 0, dir.z).normalize(), 0.7F);
+        riposte = false;
         wear(player);
     }
+
+    /** The strikes being dealt right now are a riposte (the parry bonus was in them). */
+    private static boolean riposte;
+    /** The Blood Riposte path: a riposte heals this share of the damage it deals. */
+    public static final float RIPOSTE_LEECH = 0.35F;
 
     private static boolean canHit(net.minecraft.world.entity.player.Player player, LivingEntity t) {
         return t != player && t.isAlive() && t.isAttackable() && !t.isSpectator() && !player.isAlliedTo(t)
@@ -234,6 +244,11 @@ public final class KatanaCombat {
         EnchantmentHelper.doPostHurtEffects(t, player);
         EnchantmentHelper.doPostDamageEffects(player, t);
         float dealt = hpBefore - t.getHealth();
+        if (riposte && dealt > 0 && com.soulless.upgrade.Upgrades.has(stack, com.soulless.upgrade.Upgrades.KATANA_LEECH)) {
+            player.heal(dealt * RIPOSTE_LEECH);
+            player.serverLevel().sendParticles(com.soulless.registry.ModParticles.BLOOD_EMBER.get(), player.getX(), player.getY(1), player.getZ(),
+                    8, 0.3, 0.4, 0.3, 0.02);
+        }
         if (dealt > 2.0F) {
             player.serverLevel().sendParticles(ParticleTypes.DAMAGE_INDICATOR, t.getX(), t.getY(0.5), t.getZ(),
                     (int) (dealt * 0.5), 0.1, 0, 0.1, 0.2);

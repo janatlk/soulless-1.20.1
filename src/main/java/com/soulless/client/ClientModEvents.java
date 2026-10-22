@@ -28,6 +28,7 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onParticles(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SOUL_EMBER.get(), SoulEmberParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.SOUL_WISP.get(), SoulWisp.Sprites::new);
         event.registerSpriteSet(ModParticles.GOLD_EMBER.get(), SoulEmberParticle.Provider::new);
         event.registerSpriteSet(ModParticles.BLOOD_EMBER.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.EMBER));
         event.registerSpriteSet(ModParticles.DARK_SMOKE.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.SMOKE));
@@ -41,6 +42,7 @@ public final class ClientModEvents {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static void onRenderers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(com.soulless.registry.ModEntities.WAILING_REAPER.get(), BossRenderers.Reaper::new);
+        event.registerBlockEntityRenderer(com.soulless.registry.ModBlocks.SOUL_ANVIL_BE.get(), com.soulless.client.anvil.SoulAnvilRenderer::new);
         event.registerEntityRenderer(com.soulless.registry.ModEntities.SOUL_BOLT.get(), BossRenderers.Bolt::new);
         event.registerEntityRenderer((net.minecraft.world.entity.EntityType) com.soulless.registry.ModEntities.ABYSS_HEAD.get(),
                 ctx -> new BossRenderers.AbyssHead(ctx));
@@ -74,7 +76,6 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onClientSetup(net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
         KatanaAnim.register();
-        event.enqueueWork(() -> net.minecraft.client.gui.screens.MenuScreens.register(com.soulless.registry.ModMenus.SOUL_ANVIL.get(), SoulAnvilScreen::new));
         ChainedAnim.register();
         SwimRendAnim.register();
     }

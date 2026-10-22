@@ -515,99 +515,153 @@ public final class DevAutoTest {
         ServerLevel level = p.serverLevel();
         var inv = p.getInventory();
         var dmgAttr = net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE;
+        com.soulless.forge.SoulAnvilBlockEntity be = anvilAt == null ? null
+                : level.getBlockEntity(anvilAt) instanceof com.soulless.forge.SoulAnvilBlockEntity b ? b : null;
         if (tick == 20) {
             p.setGameMode(GameType.SURVIVAL);
             inv.clearContent();
             anvilAt = p.blockPosition().relative(p.getDirection(), 2);
             level.setBlock(anvilAt, com.soulless.registry.ModBlocks.SOUL_ANVIL.get().defaultBlockState(), 3);
-            inv.add(new ItemStack(ModItems.WRAITH_IRON_INGOT.get(), 7));
+            inv.add(new ItemStack(ModItems.WRAITH_IRON_INGOT.get(), 9));
             inv.add(new ItemStack(net.minecraft.world.item.Items.STICK, 2));
-            p.openMenu(new net.minecraft.world.SimpleMenuProvider((id, i, pl) -> new com.soulless.forge.SoulAnvilMenu(id, i,
-                    net.minecraft.world.inventory.ContainerLevelAccess.create(level, anvilAt)), net.minecraft.network.chat.Component.translatable("container.soulless.soul_anvil")));
-            forgeLog("anvil placed at {}, screen open: {}", anvilAt, p.containerMenu instanceof com.soulless.forge.SoulAnvilMenu);
+            inv.add(new ItemStack(net.minecraft.world.item.Items.GLASS_BOTTLE, 1));
         }
-        if (tick == 40) {
-            boolean forged = p.containerMenu.clickMenuButton(p, 0);
-            boolean soulForged = p.containerMenu.clickMenuButton(p, 1);
-            forgeLog("katana forged={} (ingots left {}, sticks left {}) | Soul Forged without the Reaper Soul forged={}", forged,
-                    com.soulless.forge.SoulAnvilRecipes.count(p, ModItems.WRAITH_IRON_INGOT.get()),
-                    com.soulless.forge.SoulAnvilRecipes.count(p, net.minecraft.world.item.Items.STICK), soulForged);
-            p.closeContainer();
-            for (int i = 0; i < inv.getContainerSize(); i++) {
-                if (inv.getItem(i).getItem() instanceof com.soulless.item.SoulKatanaItem) {
-                    ItemStack k = inv.getItem(i);
-                    inv.setItem(i, inv.getItem(0));
-                    inv.setItem(0, k);
-                }
+        if (tick == 25) {
+            // the vessel: chosen on the screen, filled by hand
+            com.soulless.network.AnvilActionPacket.run(p, be, com.soulless.network.AnvilActionPacket.CHOOSE, "soul_vessel", 0);
+            forgeLog("vessel chosen: recipe={}", be.recipe() == null ? null : be.recipe().id());
+            feed(p, be, ModItems.WRAITH_IRON_INGOT.get());
+            feed(p, be, net.minecraft.world.item.Items.GLASS_BOTTLE);
+        }
+        if (tick == 30) {
+            var drops = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(anvilAt).inflate(2));
+            forgeLog("vessel forged: idle={} dropped={}", be.idle(), drops.stream().map(e -> e.getItem().getItem().toString()).toList());
+            drops.forEach(e -> {
+                inv.add(e.getItem().copy());
+                e.discard();
+            });
+            // kills: a zombie gives a soul to the vessel, a cow none
+            for (int k = 0; k < 25; k++) {
+                Zombie z = EntityType.ZOMBIE.create(level);
+                z.moveTo(p.getX() + 2, p.getY(), p.getZ(), 0, 0);
+                level.addFreshEntity(z);
+                z.hurt(p.damageSources().playerAttack(p), 1000);
             }
-            inv.selected = 0;
-        }
-        if (tick == 50) {
-            ItemStack k = p.getMainHandItem();
-            com.soulless.item.KatanaParry.tryStart(p);
-            com.soulless.item.ResonanceRitual.tryStart(p);
-            forgeLog("stage {} souls {} dmg {} | parry raised={} ritual active={}", com.soulless.item.KatanaSouls.stage(k),
-                    com.soulless.item.KatanaSouls.souls(k), p.getAttributeValue(dmgAttr),
-                    com.soulless.item.KatanaParry.started(p) >= 0, com.soulless.item.ResonanceRitual.isActive(p));
-            com.soulless.item.KatanaSouls.set(k, 49);
-        }
-        if (tick == 60) {
-            // the 50th soul: a zombie slain with the katana wakes it; a cow has no soul worth the blade
-            Zombie z = EntityType.ZOMBIE.create(level);
-            z.moveTo(p.getX() + 2, p.getY(), p.getZ(), 0, 0);
-            level.addFreshEntity(z);
-            z.hurt(p.damageSources().playerAttack(p), 1000);
             var cow = EntityType.COW.create(level);
             cow.moveTo(p.getX() - 2, p.getY(), p.getZ(), 0, 0);
             level.addFreshEntity(cow);
             cow.hurt(p.damageSources().playerAttack(p), 1000);
         }
-        if (tick == 70) {
+        if (tick == 35) {
+            forgeLog("after 25 zombies and a cow: souls={}", com.soulless.upgrade.SoulVessels.total(p));
+            com.soulless.network.AnvilActionPacket.run(p, be, com.soulless.network.AnvilActionPacket.CHOOSE, "soul_katana", 0);
+            feed(p, be, ModItems.WRAITH_IRON_INGOT.get());
+            forgeLog("katana half laid: ingots {}/6 sticks {}/2 souls {}/20", be.filled(0), be.filled(1), be.soulsPaid());
+        }
+        if (tick == 40) {
+            feed(p, be, net.minecraft.world.item.Items.STICK);
+            feed(p, be, ModItems.SOUL_VESSEL.get());
+            var drops = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(anvilAt).inflate(2));
+            forgeLog("katana forged: idle={} dropped={} souls left={}", be.idle(), drops.stream().map(e -> e.getItem().getItem().toString()).toList(),
+                    com.soulless.upgrade.SoulVessels.total(p));
+            drops.forEach(e -> {
+                if (e.getItem().getItem() instanceof com.soulless.item.SoulKatanaItem) inv.setItem(0, e.getItem().copy());
+                e.discard();
+            });
+            inv.selected = 0;
+        }
+        if (tick == 45) {
             ItemStack k = p.getMainHandItem();
             com.soulless.item.KatanaParry.tryStart(p);
-            forgeLog("after the zombie and the cow: stage {} souls {} dmg {} | parry raised={}", com.soulless.item.KatanaSouls.stage(k),
-                    com.soulless.item.KatanaSouls.souls(k), p.getAttributeValue(dmgAttr), com.soulless.item.KatanaParry.started(p) >= 0);
+            forgeLog("fresh katana: invested={} tier={} dmg {} parry raised={}", com.soulless.upgrade.Upgrades.invested(k),
+                    com.soulless.upgrade.Upgrades.tier(k), p.getAttributeValue(dmgAttr), com.soulless.item.KatanaParry.started(p) >= 0);
+            // laid on the anvil and upgraded, through the screen actions
+            be.place(k.copy());
+            inv.setItem(0, ItemStack.EMPTY);
+            com.soulless.upgrade.SoulVessels.give(p, 1000);
         }
-        if (tick == 72) {
+        if (tick == 50) {
+            int a = com.soulless.upgrade.SoulVessels.total(p);
+            com.soulless.network.AnvilActionPacket.run(p, be, com.soulless.network.AnvilActionPacket.BUY, "", 0);
+            com.soulless.network.AnvilActionPacket.run(p, be, com.soulless.network.AnvilActionPacket.BUY, "", 1);
+            com.soulless.network.AnvilActionPacket.run(p, be, com.soulless.network.AnvilActionPacket.BUY, "", 0);
+            forgeLog("bought 3 tiers: picked={} souls {} -> {} (one vessel holds {})", com.soulless.upgrade.Upgrades.picked(be.held()), a,
+                    com.soulless.upgrade.SoulVessels.total(p), com.soulless.item.SoulVesselItem.MAX);
+        }
+        if (tick == 53) {
+            com.soulless.network.AnvilActionPacket.run(p, be, com.soulless.network.AnvilActionPacket.TAKE, "", 0);
+            for (int i = 0; i < inv.items.size(); i++) {
+                if (inv.items.get(i).getItem() instanceof com.soulless.item.SoulKatanaItem) {
+                    ItemStack k = inv.items.get(i);
+                    inv.items.set(i, inv.items.get(0));
+                    inv.items.set(0, k);
+                }
+            }
+            inv.selected = 0;
+        }
+        if (tick == 56) {
             ItemStack k = p.getMainHandItem();
-            com.soulless.item.KatanaSouls.set(k, 500);
+            com.soulless.item.KatanaParry.resetCooldown(p);
+            com.soulless.item.KatanaParry.tryStart(p);
+            forgeLog("upgraded katana: tier={} dmg {} stun ticks {} parry raised={} invested={}", com.soulless.upgrade.Upgrades.tier(k),
+                    p.getAttributeValue(dmgAttr), com.soulless.item.KatanaParry.stunTicks(k), com.soulless.item.KatanaParry.started(p) >= 0,
+                    com.soulless.upgrade.Upgrades.invested(k));
+            // the ward: 10 souls for Resistance IV
         }
-        if (tick == 80) {
-            p.setHealth(20);
-            com.soulless.item.ResonanceRitual.tryStart(p);
-            forgeLog("stage {}: dmg {} ritual active={}", com.soulless.item.KatanaSouls.stage(p.getMainHandItem()),
-                    p.getAttributeValue(dmgAttr), com.soulless.item.ResonanceRitual.isActive(p));
+        if (tick == 60) {
+            int before = com.soulless.upgrade.SoulVessels.total(p);
+            for (int i = 0; i < inv.items.size(); i++) {
+                if (inv.items.get(i).getItem() instanceof com.soulless.item.SoulVesselItem) {
+                    inv.selected = i < 9 ? i : inv.selected;
+                    break;
+                }
+            }
+            ItemStack v = p.getMainHandItem();
+            if (v.getItem() instanceof com.soulless.item.SoulVesselItem) v.use(level, p, net.minecraft.world.InteractionHand.MAIN_HAND);
+            var res = p.getEffect(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE);
+            forgeLog("ward: souls {} -> {} resistance amp={} cooldown={}", before, com.soulless.upgrade.SoulVessels.total(p), res == null ? -1 : res.getAmplifier(),
+                    p.getCooldowns().isOnCooldown(v.getItem()));
+            inv.selected = 0;
+        }
+        if (tick == 65) {
+            // melting the katana down: half of all it cost
+            int before = com.soulless.upgrade.SoulVessels.total(p);
+            int value = com.soulless.forge.SoulAnvilRecipes.salvageValue(inv.items.get(0));
+            com.soulless.network.AnvilActionPacket.run(p, be, com.soulless.network.AnvilActionPacket.SALVAGE_SLOT, "", 0);
+            forgeLog("melted: value {} souls {} -> {} slot0={}", value, before, com.soulless.upgrade.SoulVessels.total(p), inv.items.get(0));
+        }
+        if (tick == 70) {
+            com.soulless.network.AnvilActionPacket.run(p, be, com.soulless.network.AnvilActionPacket.CHOOSE, "soul_forged", 0);
+            feed(p, be, ModItems.WRAITH_IRON_INGOT.get());
         }
         if (tick == 85) {
-            // the vein feature itself, in a block of stone and one of deepslate high above (the test world is flat)
             var src = p.createCommandSourceStack().withSuppressedOutput().withPermission(4);
             var cmds = level.getServer().getCommands();
             int bx = p.getBlockX(), bz = p.getBlockZ();
             cmds.performPrefixedCommand(src, "fill " + (bx - 6) + " 150 " + (bz - 6) + " " + (bx + 6) + " 162 " + (bz + 6) + " stone");
-            cmds.performPrefixedCommand(src, "fill " + (bx + 20) + " 150 " + (bz - 6) + " " + (bx + 32) + " 162 " + (bz + 6) + " deepslate");
-            for (int i = 0; i < 6; i++) {
-                cmds.performPrefixedCommand(src, "place feature soulless:wraith_iron_ore " + bx + " 156 " + bz);
-                cmds.performPrefixedCommand(src, "place feature soulless:wraith_iron_ore " + (bx + 26) + " 156 " + bz);
-            }
+            for (int i = 0; i < 6; i++) cmds.performPrefixedCommand(src, "place feature soulless:wraith_iron_ore " + bx + " 156 " + bz);
         }
         if (tick == 90) {
-            // the ore in the ground around, 64 x 64 blocks
-            int stone = 0, deep = 0, minY = 999, maxY = -999;
+            int stone = 0;
             var pos = new net.minecraft.core.BlockPos.MutableBlockPos();
-            for (int x = -32; x < 32; x++) for (int z = -32; z < 32; z++) for (int y = -64; y < 170; y++) {
+            for (int x = -8; x < 8; x++) for (int z = -8; z < 8; z++) for (int y = 148; y < 165; y++) {
                 pos.set(p.getBlockX() + x, y, p.getBlockZ() + z);
-                var b = level.getBlockState(pos).getBlock();
-                if (b == com.soulless.registry.ModBlocks.WRAITH_IRON_ORE.get()) stone++;
-                else if (b == com.soulless.registry.ModBlocks.DEEPSLATE_WRAITH_IRON_ORE.get()) deep++;
-                else continue;
-                minY = Math.min(minY, y);
-                maxY = Math.max(maxY, y);
+                if (level.getBlockState(pos).is(com.soulless.registry.ModBlocks.WRAITH_IRON_ORE.get())) stone++;
             }
-            forgeLog("ore in 64x64: stone={} deepslate={} y {}..{}", stone, deep, minY, maxY);
+            forgeLog("ore placed by the feature: {}", stone);
         }
-        if (tick == 95) com.soulless.item.KatanaSouls.set(p.getMainHandItem(), 1000);
-        if (tick == 100) forgeLog("true stage dmg {}", p.getAttributeValue(dmgAttr));
         if (tick == 160) Soulless.LOGGER.info("[autotest] forge done");
+    }
+
+    /** A right click on the anvil with this item in hand. */
+    private static void feed(ServerPlayer p, com.soulless.forge.SoulAnvilBlockEntity be, net.minecraft.world.item.Item item) {
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.items.size(); i++) {
+            if (inv.items.get(i).is(item)) {
+                be.feed(p, inv.items.get(i));
+                return;
+            }
+        }
     }
 
     private static int rgPhase, rgPhaseAt, rgLastAttack = -2;

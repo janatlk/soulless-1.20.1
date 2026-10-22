@@ -41,6 +41,15 @@ public final class ModNetwork {
         CHANNEL.messageBuilder(KatanaCutPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(KatanaCutPacket::encode).decoder(KatanaCutPacket::decode)
                 .consumerMainThread(KatanaCutPacket::handle).add();
+        CHANNEL.messageBuilder(AnvilOpenPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(AnvilOpenPacket::encode).decoder(AnvilOpenPacket::decode)
+                .consumerMainThread(AnvilOpenPacket::handle).add();
+        CHANNEL.messageBuilder(AnvilActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AnvilActionPacket::encode).decoder(AnvilActionPacket::decode)
+                .consumerMainThread(AnvilActionPacket::handle).add();
+        CHANNEL.messageBuilder(SoulWispPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SoulWispPacket::encode).decoder(SoulWispPacket::decode)
+                .consumerMainThread(SoulWispPacket::handle).add();
         CHANNEL.messageBuilder(KatanaAnimPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(KatanaAnimPacket::encode).decoder(KatanaAnimPacket::decode)
                 .consumerMainThread(KatanaAnimPacket::handle).add();

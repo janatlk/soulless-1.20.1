@@ -187,7 +187,7 @@ public final class KatanaAnim implements IAnimation {
     /** True when an attack now would be the thrust: during gyaku or right after it, and not already queued. */
     public boolean thrustNext() {
         float t = cutTime(0);
-        return step == GYAKU && !thrustQueued && com.soulless.item.KatanaSouls.has(player, com.soulless.item.KatanaSouls.THRUST)
+        return step == GYAKU && !thrustQueued && com.soulless.upgrade.Upgrades.has(player, com.soulless.upgrade.Upgrades.KATANA_THRUST)
                 && t >= KatanaPoses.number("tsuki.queueAfter")
                 && t < KatanaPoses.length(CUTS[GYAKU]) + COMBO_GRACE;
     }

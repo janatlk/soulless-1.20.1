@@ -42,6 +42,10 @@ public final class ModBlocks {
             BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(5.0F, 1200.0F).requiresCorrectToolForDrops()
                     .sound(net.minecraft.world.level.block.SoundType.ANVIL).lightLevel(s -> 4).noOcclusion()));
 
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.soulless.forge.SoulAnvilBlockEntity>> SOUL_ANVIL_BE = BLOCK_ENTITIES.register("soul_anvil",
+            () -> BlockEntityType.Builder.of(com.soulless.forge.SoulAnvilBlockEntity::new, SOUL_ANVIL.get()).build(null));
+
     public static final RegistryObject<Item> WRAITH_IRON_ORE_ITEM = ModItems.ITEMS.register("wraith_iron_ore",
             () -> new BlockItem(WRAITH_IRON_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> DEEPSLATE_WRAITH_IRON_ORE_ITEM = ModItems.ITEMS.register("deepslate_wraith_iron_ore",

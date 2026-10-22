@@ -18,6 +18,7 @@ public final class ModCreativeTabs {
                 out.accept(ModBlocks.SOUL_ANVIL_ITEM.get());
                 out.accept(ModBlocks.WRAITH_IRON_ORE_ITEM.get());
                 out.accept(ModBlocks.DEEPSLATE_WRAITH_IRON_ORE_ITEM.get());
+                out.accept(ModItems.SOUL_VESSEL.get());
                 out.accept(ModItems.RAW_WRAITH_IRON.get());
                 out.accept(ModItems.WRAITH_IRON_INGOT.get());
                 out.accept(ModItems.REAPER_SOUL.get());

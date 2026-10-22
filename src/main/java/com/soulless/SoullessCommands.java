@@ -122,20 +122,42 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.literal("Renegade reset"), false);
                             return 1;
                         })))
-                .then(Commands.literal("katana")
+                .then(Commands.literal("souls")
                         .requires(src -> src.hasPermission(2))
-                        .then(Commands.literal("souls").then(Commands.argument("count", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
+                        .then(Commands.argument("count", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
                                 .executes(ctx -> {
-                                    var stack = ctx.getSource().getPlayerOrException().getMainHandItem();
-                                    if (!(stack.getItem() instanceof com.soulless.item.SoulKatanaItem)) {
-                                        ctx.getSource().sendFailure(Component.literal("Hold the katana"));
-                                        return 0;
+                                    // the vessels hold exactly this many (a vessel is given if there is none)
+                                    var p = ctx.getSource().getPlayerOrException();
+                                    if (com.soulless.upgrade.SoulVessels.vessels(p).isEmpty()) {
+                                        p.getInventory().add(new net.minecraft.world.item.ItemStack(com.soulless.registry.ModItems.SOUL_VESSEL.get()));
                                     }
                                     int n = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "count");
-                                    com.soulless.item.KatanaSouls.set(stack, n);
-                                    ctx.getSource().sendSuccess(() -> Component.literal("Katana souls: " + n + ", stage " + com.soulless.item.KatanaSouls.stage(stack)), false);
+                                    com.soulless.upgrade.SoulVessels.take(p, com.soulless.upgrade.SoulVessels.total(p));
+                                    int got = com.soulless.upgrade.SoulVessels.give(p, n);
+                                    ctx.getSource().sendSuccess(() -> Component.literal("Souls in vessels: " + got), false);
                                     return 1;
-                                }))))
+                                })))
+                .then(Commands.literal("upgrade")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.literal("buy").then(Commands.argument("option", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 2))
+                                .executes(ctx -> {
+                                    var p = ctx.getSource().getPlayerOrException();
+                                    var stack = p.getMainHandItem();
+                                    int opt = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "option");
+                                    String why = com.soulless.upgrade.Upgrades.refusal(p, stack, opt);
+                                    if (why != null || !com.soulless.upgrade.Upgrades.buy(p, stack, opt)) {
+                                        ctx.getSource().sendFailure(Component.literal("Cannot: " + why));
+                                        return 0;
+                                    }
+                                    ctx.getSource().sendSuccess(() -> Component.literal("Upgrades: " + com.soulless.upgrade.Upgrades.picked(stack)), false);
+                                    return 1;
+                                })))
+                        .then(Commands.literal("reset").executes(ctx -> {
+                            var p = ctx.getSource().getPlayerOrException();
+                            int back = com.soulless.upgrade.Upgrades.reset(p, p.getMainHandItem());
+                            ctx.getSource().sendSuccess(() -> Component.literal("Upgrades reset, souls back: " + back), false);
+                            return 1;
+                        })))
                 .then(Commands.literal("resetcd")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> resetCooldowns(ctx.getSource(), self(ctx.getSource())))

@@ -65,9 +65,9 @@ public final class ResonanceRitual {
 
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem item) || !player.isAlive() || player.isSpectator()) return;
-        if (!KatanaSouls.has(player, KatanaSouls.RESONANCE)) {
-            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.soulless.katana_locked",
-                    net.minecraft.network.chat.Component.translatable("tooltip.soulless.katana_stage." + KatanaSouls.RESONANCE)), true);
+        if (!com.soulless.upgrade.Upgrades.has(player, com.soulless.upgrade.Upgrades.KATANA_RESONANCE)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.soulless.upgrade_locked",
+                    net.minecraft.network.chat.Component.translatable("upgrade.soulless." + com.soulless.upgrade.Upgrades.KATANA_RESONANCE)), true);
             return;
         }
         if (isActive(player) || player.getCooldowns().isOnCooldown(item)) return;

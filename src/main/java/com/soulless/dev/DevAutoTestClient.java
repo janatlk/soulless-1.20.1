@@ -36,7 +36,7 @@ public final class DevAutoTestClient {
     /** SOULLESS_PREVIEW_STRIP=1: film the preview animation from one view instead of walking around it. */
     public static final boolean PREVIEW_STRIP = System.getenv("SOULLESS_PREVIEW_STRIP") != null;
     private static boolean started;
-    private static int tick = -1;
+    private static int tick = -1, upShots;
     private static ArmorStand sideCam;
 
     @SubscribeEvent
@@ -125,16 +125,43 @@ public final class DevAutoTestClient {
         }
         if (DevAutoTest.FORGE) {
             opts.setCameraType(CameraType.FIRST_PERSON);
-            if (tick == 32) shot(mc, "forge_anvil_screen");
-            if (tick == 56 || tick == 98) {
+            var anvil = mc.player.blockPosition().relative(mc.player.getDirection(), 2);
+            if (tick == 22) mc.setScreen(new com.soulless.client.anvil.ForgeScreen(anvil));
+            if (tick == 24) shot(mc, "forge_categories");
+            if (tick == 26 && mc.screen != null) mc.screen.mouseClicked(mc.getWindow().getGuiScaledWidth() / 2F - 150, mc.getWindow().getGuiScaledHeight() / 2F
+                    - 5 * 26 / 2F, 0);
+            if (tick == 28) shot(mc, "forge_melee");
+            if (tick == 29 && mc.screen != null) mc.screen.mouseClicked(mc.getWindow().getGuiScaledWidth() / 2F - 150, mc.getWindow().getGuiScaledHeight() / 2F
+                    - 13, 0);
+            if (tick == 31) shot(mc, "forge_card");
+            if (tick == 33) mc.setScreen(null);
+            if (tick == 36) mc.player.setPos(mc.player.getX() - mc.player.getDirection().getStepX() * 1.5, mc.player.getY(), mc.player.getZ() - mc.player.getDirection().getStepZ() * 1.5);
+            if (tick == 37) {
+                mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, net.minecraft.world.phys.Vec3.atCenterOf(anvil).add(0, 0.6, 0));
+            }
+            if (tick == 38) shot(mc, "forge_laying");
+            // the upgrade screen, as soon as the katana lies on the anvil here; a shot before and after the buying
+            ItemStack onAnvil = mc.level.getBlockEntity(anvil) instanceof com.soulless.forge.SoulAnvilBlockEntity be ? be.held() : ItemStack.EMPTY;
+            if (!onAnvil.isEmpty() && !(mc.screen instanceof com.soulless.client.anvil.UpgradeScreen) && upShots == 0) {
+                mc.setScreen(new com.soulless.client.anvil.UpgradeScreen(anvil));
+                upShots = 1;
+            }
+            if (upShots == 1 && mc.screen instanceof com.soulless.client.anvil.UpgradeScreen) {
+                shot(mc, "forge_upgrade_0");
+                upShots = 2;
+            }
+            if (upShots == 2 && com.soulless.upgrade.Upgrades.tier(onAnvil) >= 2) {
+                shot(mc, "forge_upgrade_3");
+                upShots = 3;
+            }
+            if (tick == 58 || tick == 98) {
                 var lines = mc.player.getMainHandItem().getTooltipLines(mc.player, net.minecraft.world.item.TooltipFlag.NORMAL);
                 Soulless.LOGGER.info("[autotest] forge tooltip t={}: {}", tick, lines.stream().map(net.minecraft.network.chat.Component::getString).toList());
             }
-            if (tick == 110) {
-                mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,
-                        net.minecraft.world.phys.Vec3.atCenterOf(mc.player.blockPosition().relative(mc.player.getDirection(), 2)));
+            if (tick == 75) {
+                mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, net.minecraft.world.phys.Vec3.atCenterOf(anvil).add(0, 0.6, 0));
             }
-            if (tick == 120) shot(mc, "forge_anvil_block");
+            if (tick == 78) shot(mc, "forge_soul_forged_laying");
             if (tick == 170) mc.stop();
             return;
         }
