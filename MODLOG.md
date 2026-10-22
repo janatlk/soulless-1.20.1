@@ -200,3 +200,5 @@ Direction change (user): the quest line fought Minecraft's sandbox. Now the mod 
 - Renegade: comes only from the sigil (needs a katana on the player). Dreams after a loss stay.
 - Autotest SOULLESS_FORGE=1: anvil screen + forging, stage gates (parry/thrust/R), zombie counts and cow not, damage per stage,
   the ore feature placed into stone/deepslate (the test world is superflat, so no natural ore there). Passed.
+
+- 2026-10-22: new item icons (ingot, raw, vessel, reaper soul, sigil, both eyes, gills) come from an AI pixel-art sheet (art/icons/sheet_new_items_a.png, fal nano-banana-2.1) cut and re-pixelled by tools/sprite_from_sheet.py. The old generators (gen_ingot_vessel, gen_eyes, gen_gills, gen_forge_assets) would overwrite them - do not rerun those for these items.
