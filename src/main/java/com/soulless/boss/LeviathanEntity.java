@@ -62,6 +62,9 @@ public class LeviathanEntity extends Monster implements GeoEntity {
      * last pose and when it was seen (client.LeviathanModel). */
     public final float[][] whisker = new float[6][16];
     public float lastHeadYaw = Float.NaN, lastHeadPitch, lastWhiskerT;
+    /** Client: each body bone's bend (pitch, yaw), eased toward the path's so the body never snaps. */
+    public final float[] bend = new float[24];
+    public float bendT = Float.NaN;
 
     public LeviathanEntity(EntityType<? extends LeviathanEntity> type, Level level) {
         super(type, level);
@@ -192,7 +195,9 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     /** Lays the head part before the neck and the body parts along the path the neck has swum. */
     private void layBody() {
         Vec3 now = position().add(0, 1.5, 0);
-        if (trail.isEmpty() || trail.peekFirst().distanceToSqr(now) > 0.0004) trail.addFirst(now);
+        // a new point only once the neck has really moved on: bumping a wall or the network's small corrections would
+        // otherwise crowd the trail with jitter, and the body would twitch along it
+        if (trail.isEmpty() || trail.peekFirst().distanceToSqr(now) > 0.3 * 0.3) trail.addFirst(now);
         while (trail.size() > 400) trail.removeLast();
         Vec3 fwd = Vec3.directionFromRotation(getXRot(), getYRot());
         place(head, now.add(fwd.scale(3.6)));

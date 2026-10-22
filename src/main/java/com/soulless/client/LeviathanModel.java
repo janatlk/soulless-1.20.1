@@ -40,6 +40,8 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         float pt = state.getPartialTick();
         float prevYaw = Mth.rotLerp(pt, e.yBodyRotO, e.yBodyRot), prevPitch = Mth.lerp(pt, e.xRotO, e.getXRot());
         net.minecraft.world.phys.Vec3 front = e.getPosition(pt).add(0, 1.5, 0);
+        float dtBend = Float.isNaN(e.bendT) ? 100 : Mth.clamp(t - e.bendT, 0, 4);
+        e.bendT = t;
         for (int i = 0; i < SEGMENTS; i++) {
             float f = (i + 1f) / SEGMENTS;
             var p = parts[i];
@@ -48,7 +50,13 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             net.minecraft.world.phys.Vec3 dir = front.subtract(c);
             float yaw = dir.lengthSqr() < 1e-6 ? prevYaw : (float) (Mth.atan2(dir.z, dir.x) * Mth.RAD_TO_DEG) - 90;
             float pitch = dir.lengthSqr() < 1e-6 ? prevPitch : (float) (-Mth.atan2(dir.y, dir.horizontalDistance()) * Mth.RAD_TO_DEG);
-            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -35, 35), bendX = Mth.clamp(pitch - prevPitch, -30, 30);
+            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -28, 28), bendX = Mth.clamp(pitch - prevPitch, -22, 22);
+            // eased, so a jolt in the path (a bump on a block, a correction from the server) becomes a slow ripple
+            float ease = 1 - (float) Math.pow(0.9, dtBend);
+            e.bend[i * 2] += (bendX - e.bend[i * 2]) * ease;
+            e.bend[i * 2 + 1] += (bendY - e.bend[i * 2 + 1]) * ease;
+            bendX = e.bend[i * 2];
+            bendY = e.bend[i * 2 + 1];
             float wave = Mth.sin(t * 0.09F - i * 0.55F) * (1.5F + 4.5F * f);
             float rise = Mth.sin(t * 0.06F - i * 0.4F + 1.3F) * (0.6F + 2F * f);
             add("body_" + i, (rise + BEND_PITCH * bendX) * d, (wave + BEND_YAW * bendY) * d, 0);
