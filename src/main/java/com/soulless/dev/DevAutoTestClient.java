@@ -123,6 +123,14 @@ public final class DevAutoTestClient {
             if (tick == 640) mc.stop();
             return;
         }
+        if (DevAutoTest.STRUCT) {
+            opts.hideGui = true;
+            if (tick == 60) shot(mc, "struct_drowned");
+            if (tick == 110) shot(mc, "struct_altar");
+            if (tick == 150) shot(mc, "struct_eye");
+            if (tick == 260) mc.stop();
+            return;
+        }
         if (DevAutoTest.FORGE) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             var anvil = mc.player.blockPosition().relative(mc.player.getDirection(), 2);

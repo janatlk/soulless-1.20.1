@@ -39,6 +39,12 @@ public final class ModItems {
     public static final RegistryObject<Item> RENEGADE_SIGIL = ITEMS.register("renegade_sigil",
             () -> new com.soulless.item.RenegadeSigilItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
 
+    /** Seeking eyes: thrown, they fly toward their boss's structure (item.SeekingEyeItem). */
+    public static final RegistryObject<Item> EYE_OF_LAMENT = ITEMS.register("eye_of_lament",
+            () -> new com.soulless.item.SeekingEyeItem(new Item.Properties().rarity(Rarity.RARE), com.soulless.registry.ModStructures.EYE_OF_LAMENT, "lament"));
+    public static final RegistryObject<Item> EYE_OF_DROWNED = ITEMS.register("eye_of_drowned",
+            () -> new com.soulless.item.SeekingEyeItem(new Item.Properties().rarity(Rarity.RARE), com.soulless.registry.ModStructures.EYE_OF_DROWNED, "drowned"));
+
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

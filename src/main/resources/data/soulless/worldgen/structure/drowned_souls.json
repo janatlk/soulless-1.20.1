@@ -1,0 +1,7 @@
+{
+  "type": "soulless:drowned_souls",
+  "biomes": "#soulless:has_structure/drowned_souls",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "terrain_adaptation": "none"
+}

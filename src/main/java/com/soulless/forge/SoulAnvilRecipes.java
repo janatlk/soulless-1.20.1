@@ -50,6 +50,16 @@ public final class SoulAnvilRecipes {
             new Recipe("soul_vessel", Category.ACCESSORY, ModItems.SOUL_VESSEL::get, 0, List.of(
                     new Cost(ModItems.WRAITH_IRON_INGOT::get, 3),
                     new Cost(() -> Items.GLASS_BOTTLE, 1))),
+            new Recipe("eye_of_lament", Category.SUMMON, ModItems.EYE_OF_LAMENT::get, 30, List.of(
+                    new Cost(() -> Items.NETHERITE_SCRAP, 2),
+                    new Cost(() -> Items.ENDER_EYE, 1),
+                    new Cost(() -> Items.SOUL_SOIL, 4),
+                    new Cost(ModItems.WRAITH_IRON_INGOT::get, 2))),
+            new Recipe("eye_of_drowned", Category.SUMMON, ModItems.EYE_OF_DROWNED::get, 30, List.of(
+                    new Cost(() -> Items.NETHERITE_SCRAP, 2),
+                    new Cost(() -> Items.ENDER_EYE, 1),
+                    new Cost(() -> Items.NAUTILUS_SHELL, 1),
+                    new Cost(() -> Items.PRISMARINE_SHARD, 4))),
             new Recipe("renegade_sigil", Category.SUMMON, ModItems.RENEGADE_SIGIL::get, 50, List.of(
                     new Cost(ModItems.WRAITH_IRON_INGOT::get, 3),
                     new Cost(() -> Items.ECHO_SHARD, 1),

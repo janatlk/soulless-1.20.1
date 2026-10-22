@@ -263,5 +263,11 @@
   "upgrade.soulless.forged.curse": "Endless Curse",
   "upgrade.soulless.forged.curse.desc": "The Soul Curse lasts twice as long and burns hotter",
   "upgrade.soulless.forged.weight": "Weight",
-  "upgrade.soulless.forged.weight.desc": "+3 damage on every strike"
+  "upgrade.soulless.forged.weight.desc": "+3 damage on every strike",
+  "item.soulless.eye_of_lament": "Eye of Lament",
+  "item.soulless.eye_of_drowned": "Eye of the Drowned",
+  "tooltip.soulless.eye.lament": "Throw it - it flies toward the Reaper's altar (soul sand valley, Nether)",
+  "tooltip.soulless.eye.drowned": "Throw it - it flies toward the Drowned Souls (deep ocean)",
+  "message.soulless.eye_nothing": "The eye sees nowhere to fly",
+  "entity.soulless.seeking_eye": "Eye"
 }

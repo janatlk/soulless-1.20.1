@@ -67,6 +67,10 @@ public final class ModEntities {
             () -> EntityType.Builder.<com.soulless.boss.SpectralBladeEntity>of(com.soulless.boss.SpectralBladeEntity::new, MobCategory.MISC)
                     .sized(0.4F, 0.4F).fireImmune().clientTrackingRange(8).updateInterval(1).build("spectral_blade"));
 
+    public static final RegistryObject<EntityType<com.soulless.boss.SeekingEyeEntity>> SEEKING_EYE = ENTITIES.register("seeking_eye",
+            () -> EntityType.Builder.<com.soulless.boss.SeekingEyeEntity>of(com.soulless.boss.SeekingEyeEntity::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F).clientTrackingRange(4).updateInterval(4).build("seeking_eye"));
+
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(WAILING_REAPER.get(), WailingReaperEntity.createAttributes().build());

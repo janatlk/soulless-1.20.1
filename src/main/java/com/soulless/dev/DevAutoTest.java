@@ -50,6 +50,8 @@ public final class DevAutoTest {
     public static final boolean RENEGADE = ENABLED && System.getenv("SOULLESS_RENEGADE") != null;
     /** SOULLESS_FORGE=1: Wraith Iron in the ground, the Soul Anvil (screen and forging), the katana's stages and what they unlock. */
     public static final boolean FORGE = ENABLED && System.getenv("SOULLESS_FORGE") != null;
+    /** SOULLESS_STRUCT=1: the Drowned Souls arena and the altar shrine built in front of the camera; a seeking eye's flight and fall. */
+    public static final boolean STRUCT = ENABLED && System.getenv("SOULLESS_STRUCT") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -101,7 +103,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE && !STRUCT) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -231,6 +233,10 @@ public final class DevAutoTest {
         }
         if (FOX) {
             foxTick(p);
+            return;
+        }
+        if (STRUCT) {
+            structTick(p);
             return;
         }
         if (FORGE) {
@@ -651,6 +657,37 @@ public final class DevAutoTest {
             forgeLog("ore placed by the feature: {}", stone);
         }
         if (tick == 160) Soulless.LOGGER.info("[autotest] forge done");
+    }
+
+    private static com.soulless.boss.SeekingEyeEntity eye;
+
+    private static void structTick(ServerPlayer p) {
+        ServerLevel level = p.serverLevel();
+        var all = new net.minecraft.world.level.levelgen.structure.BoundingBox(-30000000, -64, -30000000, 30000000, 320, 30000000);
+        if (tick == 20) {
+            p.setGameMode(GameType.SPECTATOR);
+            var base = p.blockPosition().offset(0, 0, 30);
+            com.soulless.world.DrownedSoulsStructure.build(level, base, all);
+            com.soulless.boss.SoulAltarFeature.build(level, p.blockPosition().offset(40, 1, 30));
+            p.teleportTo(level, base.getX() + 0.5, base.getY() + 12, base.getZ() - 22.5, 0, 25);
+            Soulless.LOGGER.info("[autotest] struct built at {}", base);
+        }
+        if (tick == 80) {
+            p.teleportTo(level, p.getX() + 40, p.getY() - 6, p.getZ() + 14, 0, 20);
+        }
+        if (tick == 120) {
+            eye = new com.soulless.boss.SeekingEyeEntity(level, p.getX(), p.getY(), p.getZ() + 3);
+            eye.setItem(new ItemStack(ModItems.EYE_OF_LAMENT.get()));
+            eye.signalTo(p.blockPosition().offset(200, 0, 200));
+            level.addFreshEntity(eye);
+            Soulless.LOGGER.info("[autotest] struct eye thrown at {}", eye.position());
+        }
+        if (tick == 215) {
+            var drops = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, p.getBoundingBox().inflate(40));
+            Soulless.LOGGER.info("[autotest] struct eye alive={} drops={}", eye.isAlive(),
+                    drops.stream().map(e -> e.getItem().getItem() + " glowing=" + e.isCurrentlyGlowing() + " fireproof=" + e.fireImmune()).toList());
+        }
+        if (tick == 240) Soulless.LOGGER.info("[autotest] struct done");
     }
 
     /** A right click on the anvil with this item in hand. */

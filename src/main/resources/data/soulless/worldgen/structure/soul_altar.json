@@ -1,0 +1,7 @@
+{
+  "type": "soulless:soul_altar",
+  "biomes": "#soulless:has_structure/soul_altar",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "terrain_adaptation": "none"
+}

@@ -263,5 +263,11 @@
   "upgrade.soulless.forged.curse": "Вечное проклятье",
   "upgrade.soulless.forged.curse.desc": "Проклятье душ держится вдвое дольше и жжёт сильнее",
   "upgrade.soulless.forged.weight": "Тяжесть",
-  "upgrade.soulless.forged.weight.desc": "+3 урона к каждому удару"
+  "upgrade.soulless.forged.weight.desc": "+3 урона к каждому удару",
+  "item.soulless.eye_of_lament": "Око Плача",
+  "item.soulless.eye_of_drowned": "Око Утопленных",
+  "tooltip.soulless.eye.lament": "Бросьте - полетит к алтарю Жнеца (долина песка душ, Незер)",
+  "tooltip.soulless.eye.drowned": "Бросьте - полетит к Утопленным душам (глубокий океан)",
+  "message.soulless.eye_nothing": "Око не видит, куда лететь",
+  "entity.soulless.seeking_eye": "Око"
 }

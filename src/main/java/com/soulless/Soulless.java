@@ -5,7 +5,6 @@ import com.soulless.network.ModNetwork;
 import com.soulless.registry.ModBlocks;
 import com.soulless.registry.ModCreativeTabs;
 import com.soulless.registry.ModEntities;
-import com.soulless.registry.ModFeatures;
 import com.soulless.registry.ModEffects;
 import com.soulless.registry.ModItems;
 import com.soulless.registry.ModParticles;
@@ -30,7 +29,8 @@ public class Soulless {
         ModBlocks.BLOCKS.register(bus);
         ModBlocks.BLOCK_ENTITIES.register(bus);
         ModEntities.ENTITIES.register(bus);
-        ModFeatures.FEATURES.register(bus);
+        com.soulless.registry.ModStructures.TYPES.register(bus);
+        com.soulless.registry.ModStructures.PIECES.register(bus);
         ModEffects.EFFECTS.register(bus);
         ModParticles.PARTICLES.register(bus);
         ModSounds.SOUNDS.register(bus);
