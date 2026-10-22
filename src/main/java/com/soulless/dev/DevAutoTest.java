@@ -666,15 +666,15 @@ public final class DevAutoTest {
         var all = new net.minecraft.world.level.levelgen.structure.BoundingBox(-30000000, -64, -30000000, 30000000, 320, 30000000);
         if (tick == 20) {
             p.setGameMode(GameType.SPECTATOR);
-            var base = p.blockPosition().offset(0, 0, 30);
+            // the dungeon's grid corner 45 blocks to the side, its gate facing the camera
+            var base = p.blockPosition().offset(-45, 0, 30);
             com.soulless.world.DrownedSoulsStructure.build(level, base, all);
-            com.soulless.boss.SoulAltarFeature.build(level, p.blockPosition().offset(40, 1, 30));
-            p.teleportTo(level, base.getX() + 0.5, base.getY() + 12, base.getZ() - 22.5, 0, 25);
+            com.soulless.boss.SoulAltarFeature.build(level, p.blockPosition().offset(80, 1, 30));
+            p.teleportTo(level, base.getX() + 45.5, base.getY() + 30, base.getZ() - 20.5, 0, 40);
             Soulless.LOGGER.info("[autotest] struct built at {}", base);
         }
-        if (tick == 80) {
-            p.teleportTo(level, p.getX() + 40, p.getY() - 6, p.getZ() + 14, 0, 20);
-        }
+        if (tick == 70) p.teleportTo(level, p.getX(), p.getY() + 40, p.getZ() + 60, 0, 90);   // straight down over the roofs
+        if (tick == 80) p.teleportTo(level, p.getX() + 80, p.getY() - 64, p.getZ() - 46, 0, 20);
         if (tick == 120) {
             eye = new com.soulless.boss.SeekingEyeEntity(level, p.getX(), p.getY(), p.getZ() + 3);
             eye.setItem(new ItemStack(ModItems.EYE_OF_LAMENT.get()));

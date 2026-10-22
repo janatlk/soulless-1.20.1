@@ -62,7 +62,19 @@ public final class BossIntro {
     }
 
     public static boolean active() {
-        return id >= 0 && ClientState.gameTime() - startedAt < length;
+        if (id < 0) return false;
+        long e = ClientState.gameTime() - startedAt;
+        if (e < 0 || e >= length || boss() == null) {   // over, or another world with another clock
+            id = -1;
+            return false;
+        }
+        return true;
+    }
+
+    @SubscribeEvent
+    public static void onLeave(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) {
+        id = -1;
+        cam = null;
     }
 
     /** 0..1: how far into the shot (eased in, eased out). */

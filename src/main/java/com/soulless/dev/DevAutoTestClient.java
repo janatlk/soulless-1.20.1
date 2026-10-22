@@ -126,6 +126,7 @@ public final class DevAutoTestClient {
         if (DevAutoTest.STRUCT) {
             opts.hideGui = true;
             if (tick == 60) shot(mc, "struct_drowned");
+            if (tick == 76) shot(mc, "struct_drowned_top");
             if (tick == 110) shot(mc, "struct_altar");
             if (tick == 150) shot(mc, "struct_eye");
             if (tick == 260) mc.stop();
