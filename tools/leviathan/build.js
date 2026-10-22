@@ -108,7 +108,32 @@
     const k = 22 + (rnd() - 0.5) * 6 - j * 0.2;
     fill(i, 128 + j, 1, 1, rgb(k + 14, k - 12, k - 6));
   }
+  // FANGS: two strips of flat, hand-drawn fangs for the 2D tooth rows - uneven widths and lengths, some broken
+  // short, a few gaps; a stained root, an old-ivory shaft, a paler point, a dark edge. FANGS_DN is the same set
+  // turned point-up for the lower jaw
+  const fangStrip = (x0, y0, up) => {
+    let x = x0 + 1;
+    while (x < x0 + 158) {
+      const w = 3 + Math.floor(rnd() * 4), broken = rnd() < 0.12;
+      const len = broken ? 4 + Math.floor(rnd() * 3) : 7 + Math.floor(rnd() * 9);
+      for (let j = 0; j < len; j++) {
+        const f = j / len, half = (w / 2) * (1 - f * 0.85);
+        for (let i = 0; i < w; i++) {
+          const dx = i + 0.5 - w / 2;
+          if (Math.abs(dx) > half + 0.25) continue;
+          const edge = Math.abs(dx) > half - 0.75;
+          const base = [118 + f * 92, 104 + f * 82, 70 + f * 70];
+          const k = edge ? -34 : (i === 0 ? 12 : 0) + (j < 2 ? -26 : 0);
+          fill(x + i, up ? y0 + 15 - j : y0 + j, 1, 1, rgb(base[0] + k, base[1] + k, base[2] + k));
+        }
+      }
+      x += w + (rnd() < 0.35 ? 2 + Math.floor(rnd() * 4) : 1);
+    }
+  };
+  fangStrip(64, 128, false);
+  fangStrip(64, 144, true);
   const S = {
+    FANGS: [64, 128, 224, 144], FANGS_DN: [64, 144, 224, 160],
     TOP: [0, 0, 128, 64], SIDE: [0, 64, 128, 128], BELLY: [128, 0, 256, 64], LID: [128, 64, 192, 128], TEETH: [192, 64, 208, 80], TEETH_UP: [192, 80, 208, 64],
     GUM: [208, 64, 256, 112], EYE: [192, 80, 208, 96], TIP: [192, 96, 208, 112], THROAT: [0, 128, 64, 192],
   };
@@ -155,18 +180,9 @@
   cube('brow_l', head, [11, CY + 22, -62], [24, CY + 27, -18], null, [17, CY + 24, -40], [0, 0, -14]);
   cube('brow_r', head, [-24, CY + 22, -62], [-11, CY + 27, -18], null, [-17, CY + 24, -40], [0, 0, 14]);
   cube('palate', head, [-17, CY + 2, -104], [17, CY + 5, -8], 'GUM');
-  // needle teeth along the whole upper jaw, long and thin, longest toward the front
-  // fangs along the whole upper jaw: uneven - thick and thin, long and broken, some missing, each leaning its own way
-  for (let i = 0; i < 26; i++) {
-    for (const s of [-1, 1]) {
-      if (rnd() < 0.12) continue;
-      const z = -104 + i * 3.6 + (rnd() - 0.5) * 1.4;
-      const w = 1.4 + rnd() * 1.4, len = (i < 6 ? 11 : 8) + rnd() * 7 - i * 0.15;
-      const x = s * (16.4 - (i < 3 ? (3 - i) * 1.5 : 0) - w / 2);
-      cube(`tooth_u_${s > 0 ? 'l' : 'r'}${i}`, head, [x - w / 2, CY + 3 - len, z], [x + w / 2, CY + 3, z + w], 'TEETH',
-        [x, CY + 3, z + w / 2], [(rnd() - 0.5) * 22, 0, s * (4 + rnd() * 8)]);
-    }
-  }
+  // the upper teeth: flat rows of fangs hung along the lips, just outside the lower jaw so the mouth can shut over it
+  for (const sx of [-1, 1]) cube(`fangs_u_${sx > 0 ? 'l' : 'r'}`, head, [sx * 18.3, CY - 12, -104], [sx * 18.3, CY + 4, -12], 'FANGS');
+  cube('fangs_u_front', head, [-13, CY - 11, -106.3], [13, CY + 5, -106.3], 'FANGS');
   // eyes: three a side along the skull, each smaller than the one before. Each shuts like a sliding door: two leaves
   // meet in the middle from the front and the back (the game squashes them away to open, stretches them to blink)
   const eyes = [[-48, 8, 18], [-39, 6, 17.5], [-32, 4, 17]];
@@ -184,7 +200,7 @@
     }
   });
   // the lower jaw, hinged at the back of the skull, hanging wide open at rest
-  const jaw = group('jaw', head, [0, CY + 2, -10], [-30, 0, 0]);
+  const jaw = group('jaw', head, [0, CY + 2, -10], [-10, 0, 0]);
   cube('jaw_bone', jaw, [-18, CY - 8, -104], [18, CY + 2, -10]);
   cube('jaw_chin', jaw, [-13, CY - 11, -106], [13, CY - 4, -84]);
   cube('jaw_floor', jaw, [-16, CY + 2, -102], [16, CY + 3, -12], 'GUM');
@@ -195,16 +211,9 @@
     const w = 12 - k * 2.2, z0 = -16 - k * 16;
     cube(`tongue_${k}`, tongue, [-w / 2, CY + 3, z0 - 16], [w / 2, CY + 4.5 - k * 0.2, z0], 'GUM');
   }
-  for (let i = 0; i < 24; i++) {
-    for (const s of [-1, 1]) {
-      if (rnd() < 0.12) continue;
-      const z = -102 + i * 3.7 + (rnd() - 0.5) * 1.4;
-      const w = 1.4 + rnd() * 1.4, len = (i < 5 ? 10 : 7) + rnd() * 6 - i * 0.12;
-      const x = s * (16.4 - (i < 3 ? (3 - i) * 1.5 : 0) - w / 2);
-      cube(`tooth_d_${s > 0 ? 'l' : 'r'}${i}`, jaw, [x - w / 2, CY + 2, z], [x + w / 2, CY + 2 + len, z + w], 'TEETH_UP',
-        [x, CY + 2, z + w / 2], [(rnd() - 0.5) * 22, 0, -s * (4 + rnd() * 8)]);
-    }
-  }
+  // the lower teeth: flat rows standing up inside the lips of the jaw
+  for (const sx of [-1, 1]) cube(`fangs_d_${sx > 0 ? 'l' : 'r'}`, jaw, [sx * 17.4, CY - 2, -102], [sx * 17.4, CY + 14, -12], 'FANGS_DN');
+  cube('fangs_d_front', jaw, [-12, CY - 2, -105.6], [12, CY + 14, -105.6], 'FANGS_DN');
   // whiskers: thin feelers from the snout, three segments, glowing tips
   const whiskers = [[1, CY + 8, -78, -40, -30], [-1, CY + 8, -78, -40, 30], [1, CY + 4, -70, 10, -55], [-1, CY + 4, -70, 10, 55]];
   whiskers.forEach(([s, y, z, pitch, yaw], w) => {

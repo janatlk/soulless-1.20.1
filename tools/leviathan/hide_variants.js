@@ -24,7 +24,7 @@
     const v = VARIANTS[name];
     const tex = Texture.all[0];
     const c = document.createElement('canvas');
-    c.width = tex.width; c.height = tex.height;
+    c.width = 256; c.height = 256;
     const g = c.getContext('2d');
     g.drawImage(tex.img, 0, 0);
     let seed = 11;
