@@ -398,6 +398,7 @@ public final class ClientForgeEvents {
             return;
         }
         if (event.isUseItem() && mc.player != null && mc.player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem
+                && !lookingAtAnvil(mc)
                 && event.getHand() == InteractionHand.MAIN_HAND && !mc.player.isShiftKeyDown()) {
             // the katana's right click is the parry (Shift + right click still opens doors, chests...); sent directly,
             // so the ritual's cooldown on the item does not block it
@@ -513,4 +514,10 @@ public final class ClientForgeEvents {
     }
 
     private ClientForgeEvents() {}
+
+    /** Right click on a Soul Anvil lays the weapon on it: the katana's parry must not take that click. */
+    private static boolean lookingAtAnvil(net.minecraft.client.Minecraft mc) {
+        return mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult hit && hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
+                && mc.level.getBlockState(hit.getBlockPos()).is(com.soulless.registry.ModBlocks.SOUL_ANVIL.get());
+    }
 }
