@@ -1,2 +1,0 @@
-Reptile skin texture by RooMan93, CC0 (public domain): https://opengameart.org/content/reptile-skin
-Used, darkened and tinted, as the Leviathan's hide (tools/leviathan/prep_hide.py).

@@ -27,30 +27,35 @@
     }
   };
   const rgb = (r, g2, b) => `rgb(${Math.max(0, Math.min(255, Math.round(r)))},${Math.max(0, Math.min(255, Math.round(g2)))},${Math.max(0, Math.min(255, Math.round(b)))})`;
-  // the hide: rounded overlapping scales (5 wide, 4 tall, every other row half a scale over), each darker at its rim,
-  // lit across its upper half, with a faint blue-violet sheen that drifts across the hide
-  const scales = (x0, y0, w, h, base) => {
-    for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) {
-      const row = Math.floor(j / 4), off = (row % 2) * 2.5;
-      const u = ((i + off) % 5 + 5) % 5, v = j % 4;
-      const cu = (u - 2) / 2.5, cv = (v - 1.2) / 2.8;
-      const r2 = cu * cu + cv * cv;
-      let k = base + (1 - Math.min(1, r2)) * 7 - v * 2;
-      if (r2 > 0.9 || v === 3) k -= 8;
-      if (v === 0 && u > 0.6 && u < 3.6) k += 5;
-      k += (rnd() - 0.5) * 3;
-      const sheen = 3 + 3 * Math.sin((x0 + i) * 0.11 + (y0 + j) * 0.07);
-      fill(x0 + i, y0 + j, 1, 1, rgb(k, k + 1, k + 4 + sheen));
+  // the hide, pixel art in Minecraft's manner: a five-tone palette, scales drawn as rounded shields - lit along the
+  // top, shaded to a dark rim - laid in rows half a scale over; now and then a scale a shade lighter or darker, so the
+  // hide does not read as a grid
+  const HIDE = {o: [12, 13, 19], d: [22, 24, 32], m: [32, 35, 46], l: [45, 49, 63], h: [62, 68, 86]};
+  const SCALE = ['ohhhhhho', 'dllllllm', 'dmmmmmmd', 'dmmmmmmd', 'odmmmmdo', 'oodddooo'];
+  const shades = ['o', 'd', 'm', 'l', 'h'];
+  const scalesPx = (x0, y0, w, h) => {
+    for (let j = 0; j < h; j++) {
+      const row = Math.floor(j / 6), off = (row % 2) * 4;
+      for (let i = 0; i < w; i++) {
+        const col = Math.floor((i + off) / 8);
+        const k = SCALE[j % 6][(i + off) % 8];
+        // each scale's own small shift in tone, from where it sits
+        const vary = ((col * 7 + row * 13) % 11 === 0) ? 1 : ((col * 5 + row * 3) % 13 === 0) ? -1 : 0;
+        const idx = Math.max(0, Math.min(4, shades.indexOf(k) + (k === 'o' ? 0 : vary)));
+        const c = HIDE[shades[idx]];
+        fill(x0 + i, y0 + j, 1, 1, rgb(c[0], c[1], c[2]));
+      }
     }
   };
-  // the hide: a CC0 reptile skin (RooMan93, OpenGameArt) darkened to near-black with a cold sheen - prep_hide.py
-  // writes it as raw RGBA, 128 x 192: the top, the sides and the belly
-  const hideRaw = require('fs').readFileSync('C:/Users/janat/GameMakerProjects/minecraftmod/tools/leviathan/hide_rgba.bin');
-  const hideImg = new ImageData(new Uint8ClampedArray(hideRaw), 128, 192);
-  g.putImageData(hideImg, 0, 0, 0, 0, 128, 128);                  // TOP and SIDE
-  const bellyImg = g.createImageData(128, 64);
-  bellyImg.data.set(new Uint8ClampedArray(hideRaw.subarray(128 * 128 * 4)));
-  g.putImageData(bellyImg, 128, 0);                                // BELLY
+  scalesPx(0, 0, 128, 64);                 // TOP
+  scalesPx(0, 64, 128, 64);                // SIDE, with one row of photophores along it
+  // BELLY: broad plates, Minecraft-flat - a lit lip, a body, a shadowed seam
+  const BELLY = [[56, 60, 72], [44, 48, 59], [40, 43, 54], [40, 43, 54], [35, 38, 48], [24, 26, 34]];
+  for (let j = 0; j < 64; j++) for (let i = 0; i < 128; i++) {
+    const c = BELLY[j % 6];
+    const notch = (i + Math.floor(j / 6) * 5) % 16 === 0 && j % 6 > 0 ? -8 : 0;
+    fill(128 + i, j, 1, 1, rgb(c[0] + notch, c[1] + notch, c[2] + notch));
+  }
   for (let x = 3; x < 128; x += 8) {
     // a small cold light with a faint halo
     fill(x - 1, 95, 3, 3, rgb(48, 62, 78));
