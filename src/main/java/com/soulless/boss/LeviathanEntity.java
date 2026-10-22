@@ -38,6 +38,10 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private int goalTicks;
     /** Client: how fast it is turning (degrees per tick), smoothed - the body bends into its turns. */
     public float turn, turnO;
+    /** Client: the whiskers' inertia - per whisker and link, its lag (pitch, yaw) and how fast that changes; the head's
+     * last pose and when it was seen (client.LeviathanModel). */
+    public final float[][] whisker = new float[6][16];
+    public float lastHeadYaw = Float.NaN, lastHeadPitch, lastWhiskerT;
 
     public LeviathanEntity(EntityType<? extends LeviathanEntity> type, Level level) {
         super(type, level);

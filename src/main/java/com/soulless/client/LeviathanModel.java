@@ -15,7 +15,7 @@ import software.bernie.geckolib.model.DefaultedEntityGeoModel;
  *   <li>the body and tail: a travelling wave from neck to tail fin, growing toward the tail, as a swimming dragon's,
  *       and bending into its turns;</li>
  *   <li>the head tentacles: each a slow wave of its own, out of step with the others;</li>
- *   <li>the whiskers: quicker, lighter drifting;</li>
+ *   <li>the whiskers: no motion of their own - they trail the head with inertia;</li>
  *   <li>the eyes: shut like sliding doors, one after another from the front, both sides together.</li>
  * </ul>
  */
@@ -56,20 +56,10 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             }
         }
 
-        // the whiskers drift quicker and lighter; the two on top (4, 5) curl and uncurl slowly
-        for (int w = 0; w < WHISKERS; w++) {
-            for (int k = 0; k < WHISKER_LINKS; k++) {
-                float f = (k + 1f) / WHISKER_LINKS;
-                add("whisker_" + w + "_" + k, Mth.sin(t * 0.13F + w * 2.1F - k * 0.8F) * 8 * f * d,
-                        Mth.sin(t * 0.11F + w * 1.4F - k * 0.7F) * 10 * f * d, 0);
-            }
-        }
-        for (int w = 4; w <= 5; w++) {
-            for (int k = 0; k < 4; k++) {
-                float f = (k + 1f) / 4;
-                add("whisker_" + w + "_" + k, Mth.sin(t * 0.06F + w - k * 0.5F) * 7 * f * d, Mth.sin(t * 0.08F + w * 2 - k * 0.6F) * 5 * f * d, 0);
-            }
-        }
+        // the whiskers do not move by themselves: they trail the head. Each link is a damped spring that lags behind
+        // the head's turning (its body's yaw and pitch plus the keyframed head), and each link follows the one before,
+        // so a turn sweeps them out and they swing back and settle; a little drag sweeps them back as it swims
+        whiskers(e, t, state);
 
         // the eyes shut like sliding doors, the two leaves meeting in the middle - one eye after another from the front,
         // both sides together, every few seconds
@@ -84,6 +74,40 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
                     CoreGeoBone door = getAnimationProcessor().getBone("door_" + side + n + "_" + leaf);
                     if (door != null) door.setScaleZ(Math.max(0.02F, shut));
                 }
+            }
+        }
+    }
+
+    private static final float WHISKER_GAIN = 5.5F, WHISKER_K = 0.16F, WHISKER_DAMP = 0.78F, WHISKER_MAX = 45;
+
+    private void whiskers(LeviathanEntity e, float t, AnimationState<LeviathanEntity> state) {
+        float pt = state.getPartialTick();
+        CoreGeoBone head = getAnimationProcessor().getBone("head");
+        float headYaw = Mth.rotLerp(pt, e.yRotO, e.getYRot()) - (head == null ? 0 : head.getRotY() * Mth.RAD_TO_DEG);
+        float headPitch = Mth.lerp(pt, e.xRotO, e.getXRot()) - (head == null ? 0 : head.getRotX() * Mth.RAD_TO_DEG);
+        float dt = Float.isNaN(e.lastHeadYaw) ? 0 : Mth.clamp(t - e.lastWhiskerT, 0, 2);
+        float wYaw = dt > 0 ? Mth.wrapDegrees(headYaw - e.lastHeadYaw) / dt : 0;
+        float wPitch = dt > 0 ? (headPitch - e.lastHeadPitch) / dt : 0;
+        e.lastHeadYaw = headYaw;
+        e.lastHeadPitch = headPitch;
+        e.lastWhiskerT = t;
+        float drag = (float) e.getDeltaMovement().length() * 20;
+        for (int w = 0; w < 6; w++) {
+            int links = w < 4 ? WHISKER_LINKS : 4;
+            float[] s = e.whisker[w];
+            for (int k = 0; k < links; k++) {
+                // what this link is pulled toward: against the head's turn, and after the link before it
+                float pullP = -wPitch * WHISKER_GAIN + (w < 4 ? drag : -drag) * 0.6F + (k > 0 ? s[(k - 1) * 4] : 0);
+                float pullY = -wYaw * WHISKER_GAIN + (k > 0 ? s[(k - 1) * 4 + 1] : 0);
+                if (dt > 0) {
+                    s[k * 4 + 2] = (s[k * 4 + 2] + (pullP - s[k * 4]) * WHISKER_K * dt) * (float) Math.pow(WHISKER_DAMP, dt);
+                    s[k * 4 + 3] = (s[k * 4 + 3] + (pullY - s[k * 4 + 1]) * WHISKER_K * dt) * (float) Math.pow(WHISKER_DAMP, dt);
+                    s[k * 4] = Mth.clamp(s[k * 4] + s[k * 4 + 2] * dt, -WHISKER_MAX, WHISKER_MAX);
+                    s[k * 4 + 1] = Mth.clamp(s[k * 4 + 1] + s[k * 4 + 3] * dt, -WHISKER_MAX, WHISKER_MAX);
+                }
+                // each link carries only its share of the bend (the chain adds them up toward the tip)
+                float share = 1F / links;
+                add("whisker_" + w + "_" + k, s[k * 4] * share * Mth.DEG_TO_RAD, s[k * 4 + 1] * share * Mth.DEG_TO_RAD, 0);
             }
         }
     }
