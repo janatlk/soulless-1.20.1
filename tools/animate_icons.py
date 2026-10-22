@@ -4,7 +4,7 @@
   glow    - the glowing parts (bright, cold-coloured pixels) breathe brighter and dimmer
   sheen   - a band of light sweeps across the metal
   twinkle - glints flare up one after another
-  flicker - a flame: the glow flickers unevenly and the top of the flame sways
+  flicker - a flame: the glow flickers unevenly and the top of the flame sways (the Reaper's Soul now has real frames: tools/flame_frames.py)
 
     python tools/animate_icons.py
 """
@@ -25,7 +25,6 @@ ANIM = {
     "wraith_iron_ingot": (["sheen", "glow"], 16, 2),
     "raw_wraith_iron": (["twinkle"], 12, 3),
     "soul_vessel": (["glow", "twinkle"], 16, 3),
-    "reaper_soul": (["flicker"], 10, 2),
     "renegade_sigil": (["ember"], 16, 3),
     "eye_of_lament": (["glow", "sheen"], 16, 3),
     "eye_of_drowned": (["glow", "sheen"], 16, 3),

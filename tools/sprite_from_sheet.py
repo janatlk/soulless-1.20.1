@@ -70,6 +70,10 @@ def crush(cell):
                     p = ap[min(art.width - 1, max(0, cx + dx * s // 4)), min(art.height - 1, max(0, cy + dy * s // 4))]
                     votes[p if p[3] else (0, 0, 0, 0)] += 1
             p = votes.most_common(1)[0][0]
+            # thin lines (a cord, an outline) cover only the middle of an art pixel: if the middle is drawn, keep it
+            mid = ap[cx, cy]
+            if p[3] <= 128 and mid[3] > 128:
+                p = mid
             op[x, y] = p if p[3] > 128 else (0, 0, 0, 0)
     # a square just big enough (one free pixel all round), so the sprite fills the inventory slot like vanilla's
     size = 16 if max(nw, nh) <= 14 else max(nw, nh) + 2
