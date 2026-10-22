@@ -48,6 +48,10 @@ public final class ModItems {
     public static final RegistryObject<Item> LEVIATHAN_SPAWN_EGG = ITEMS.register("leviathan_spawn_egg",
             () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.LEVIATHAN, 0x111318, 0xFF9A3A, new Item.Properties()));
 
+    /** The Drowned One's Gills: breath in the water, none out of it (item.DrownedGills). */
+    public static final RegistryObject<Item> DROWNED_GILLS = ITEMS.register("drowned_gills",
+            () -> new com.soulless.item.DrownedGills.GillsItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
+
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

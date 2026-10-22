@@ -273,5 +273,10 @@
   "boss.soulless.wailing_reaper.title": "Жнец Душ",
   "boss.soulless.wailing_reaper.subtitle": "Лучше бы ты сидел дома",
   "entity.soulless.leviathan": "Левиафан Бездны",
-  "item.soulless.leviathan_spawn_egg": "Яйцо призыва Левиафана"
+  "item.soulless.leviathan_spawn_egg": "Яйцо призыва Левиафана",
+  "item.soulless.drowned_gills": "Жабры Утопленника",
+  "item.soulless.drowned_gills.desc": "Снятые с того, кто так и не всплыл",
+  "tooltip.soulless.drowned_gills.water": "В воде: дыхание без конца, ясный взгляд в мути, плавание быстрее на %s%%",
+  "tooltip.soulless.drowned_gills.land": "На суше: вы задыхаетесь, как рыба - спасает вода или дождь",
+  "tooltip.soulless.drowned_gills.slot": "Носится на шее (слот ожерелья)"
 }

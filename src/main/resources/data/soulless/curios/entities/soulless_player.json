@@ -1,4 +1,9 @@
 {
-  "entities": ["minecraft:player"],
-  "slots": ["ring"]
+  "entities": [
+    "minecraft:player"
+  ],
+  "slots": [
+    "ring",
+    "necklace"
+  ]
 }

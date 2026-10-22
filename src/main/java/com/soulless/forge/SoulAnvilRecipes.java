@@ -60,6 +60,12 @@ public final class SoulAnvilRecipes {
                     new Cost(() -> Items.ENDER_EYE, 1),
                     new Cost(() -> Items.NAUTILUS_SHELL, 1),
                     new Cost(() -> Items.PRISMARINE_SHARD, 4))),
+            new Recipe("drowned_gills", Category.ACCESSORY, ModItems.DROWNED_GILLS::get, 60, List.of(
+                    new Cost(() -> Items.HEART_OF_THE_SEA, 1),
+                    new Cost(() -> Items.NETHERITE_INGOT, 1),
+                    new Cost(() -> Items.NAUTILUS_SHELL, 2),
+                    new Cost(() -> Items.PRISMARINE_CRYSTALS, 4),
+                    new Cost(ModItems.WRAITH_IRON_INGOT::get, 3))),
             new Recipe("renegade_sigil", Category.SUMMON, ModItems.RENEGADE_SIGIL::get, 50, List.of(
                     new Cost(ModItems.WRAITH_IRON_INGOT::get, 3),
                     new Cost(() -> Items.ECHO_SHARD, 1),

@@ -273,5 +273,10 @@
   "boss.soulless.wailing_reaper.title": "Reaper of Souls",
   "boss.soulless.wailing_reaper.subtitle": "You should have stayed home",
   "entity.soulless.leviathan": "Leviathan of the Abyss",
-  "item.soulless.leviathan_spawn_egg": "Leviathan Spawn Egg"
+  "item.soulless.leviathan_spawn_egg": "Leviathan Spawn Egg",
+  "item.soulless.drowned_gills": "Drowned One's Gills",
+  "item.soulless.drowned_gills.desc": "Taken from one who never came up",
+  "tooltip.soulless.drowned_gills.water": "In water: endless breath, clear sight in the murk, %s%% faster swimming",
+  "tooltip.soulless.drowned_gills.land": "On land: you choke like a fish - water or rain saves you",
+  "tooltip.soulless.drowned_gills.slot": "Worn round the neck (necklace slot)"
 }
