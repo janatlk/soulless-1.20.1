@@ -79,6 +79,66 @@
       const k = (0.35 + 0.8 * dif) * pit * (seam || bevelBot ? 0.55 : 1);
       return [base[0] * k * scratch + sp * 0.8, base[1] * k * scratch + sp, base[2] * k * scratch + sp];
     },
+    // ---- black skins
+    // D. obsidian glass: big faceted scales, nearly black, sharp hard highlights along their ridges
+    obsidian(x, y) {
+      const c = cells(x, y, 13, 0.75);
+      const edge = c.f2 - c.f1;
+      const fx = Math.sign(c.px) * 0.55, fy = Math.sign(c.py) * 0.55;        // facets: flat planes, not a dome
+      const nz = Math.sqrt(1 - fx * fx - fy * fy);
+      const dif = light(fx, fy, nz), sp = spec(fx, fy, nz, 60) * 210;
+      const ridge = Math.abs(c.px) < 0.04 || Math.abs(c.py) < 0.04 ? 30 : 0;
+      const k = 6 + 22 * dif + ridge * (dif > 0.5 ? 1 : 0.2);
+      const ao = edge < 0.06 ? 0.3 : 1;
+      return [(k + sp * 0.6) * ao, (k + 2 + sp * 0.7) * ao, (k + 8 + sp) * ao];
+    },
+    // E. abyssal leather: thick black hide in deep folds and wrinkles, wet, a faint cold sheen in the creases
+    leather(x, y) {
+      const fold = Math.sin(y * 0.22 + fbm(x * 0.6, y) * 7) + 0.5 * Math.sin(x * 0.09 + y * 0.05);
+      const fine = Math.sin(x * 0.8 + fbm(x, y * 2) * 6) * 0.25;
+      const h = fold + fine;
+      const ny = Math.cos(y * 0.22 + fbm(x * 0.6, y) * 7) * 0.6, nx = Math.cos(x * 0.8) * 0.15;
+      const nz = Math.sqrt(Math.max(0.05, 1 - nx * nx - ny * ny));
+      const dif = light(nx, ny, nz), sp = spec(nx, ny, nz, 30) * 120;
+      const k = 7 + 20 * dif * (0.6 + 0.4 * (h * 0.5 + 0.5));
+      return [k + sp * 0.5, k + 3 + sp * 0.7, k + 9 + sp];
+    },
+    // F. blade scales: long pointed scales laid back toward the tail, black, each edged with blue rim light
+    blades(x, y) {
+      const W = 22, H = 9, row = Math.floor(y / H), off = (row % 2) * W / 2;
+      const u = ((x + off) % W) / W, v = (y % H) / H;
+      const width = 1 - u;                          // the scale narrows to its point
+      const inside = Math.abs(v - 0.5) < width * 0.55;
+      if (!inside) return [5, 6, 9];
+      const ny = (v - 0.5) / Math.max(0.1, width * 0.55) * 0.7, nx = -0.3;
+      const nz = Math.sqrt(Math.max(0.05, 1 - nx * nx - ny * ny));
+      const dif = light(nx, ny, nz), rim = Math.abs(Math.abs(v - 0.5) - width * 0.55) < 0.06 ? 1 : 0;
+      const k = 8 + 24 * dif;
+      return [k + rim * 30, k + 3 + rim * 70, k + 10 + rim * 110];
+    },
+    // G. oil-slick: black scales with an iridescent film - violet, teal and green drifting across them in the light
+    oil(x, y) {
+      const c = cells(x, y, 8, 0.85);
+      const edge = c.f2 - c.f1;
+      const nx = c.px * 1.5, ny = c.py * 1.5, nz = Math.sqrt(Math.max(0.05, 1 - nx * nx - ny * ny));
+      const dif = light(nx, ny, nz), sp = spec(nx, ny, nz, 18);
+      const phase = fbm(x, y) * 6 + nx * 2 + ny * 2;
+      const film = [Math.sin(phase) * 0.5 + 0.5, Math.sin(phase + 2.1) * 0.5 + 0.5, Math.sin(phase + 4.2) * 0.5 + 0.5];
+      const k = 6 + 14 * dif, ao = edge < 0.07 ? 0.3 : 1;
+      return [(k + film[0] * 60 * sp + sp * 40) * ao, (k + film[1] * 60 * sp + sp * 40) * ao, (k + 4 + film[2] * 70 * sp + sp * 50) * ao];
+    },
+    // H. osteoderms: fine black pebbled skin set with rows of large bony knobs, as a crocodile's back
+    knobs(x, y) {
+      const big = cells(x, y, 18, 1), small = cells(x * 3.1, y * 3.1, 4, 1);
+      const isKnob = big.f1 < 0.36;
+      const c = isKnob ? big : small;
+      const sc = isKnob ? 2.4 : 1.4;
+      const nx = c.px * sc, ny = c.py * sc, nz = Math.sqrt(Math.max(0.05, 1 - nx * nx - ny * ny));
+      const dif = light(nx, ny, nz), sp = spec(nx, ny, nz, isKnob ? 20 : 12) * (isKnob ? 120 : 50);
+      const groove = !isKnob && small.f2 - small.f1 < 0.1 ? 0.4 : 1;
+      const k = (isKnob ? 12 : 8) + (isKnob ? 26 : 14) * dif;
+      return [(k + sp * 0.6) * groove, (k + 2 + sp * 0.7) * groove, (k + 7 + sp) * groove];
+    },
   };
 
   window.paintHD = (name) => {
@@ -111,7 +171,8 @@
       const v = (y % 16) / 16, t = fbm(x + 900, y);
       const ny = v < 0.15 ? -0.7 : v > 0.85 ? 0.7 : 0, nz = Math.sqrt(1 - ny * ny);
       const k = 0.45 + 0.7 * light(0, ny, nz);
-      put(128 * S + x, y, [(70 + 30 * t) * k, (76 + 30 * t) * k, (52 + 20 * t) * k]);
+      const dark = window.__blackBelly;
+      put(128 * S + x, y, dark ? [(26 + 14 * t) * k, (28 + 14 * t) * k, (36 + 16 * t) * k] : [(70 + 30 * t) * k, (76 + 30 * t) * k, (52 + 20 * t) * k]);
     }
     g.putImageData(img, 0, 0);
     tex.fromDataURL(c.toDataURL());
