@@ -72,6 +72,9 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     /** Ticks after the cast until the ice rain's last spike lands (set by castShardRain). */
     private int ultRainTicks = 40;
     private static final int EMERGE_TOTAL = 50;
+    /** The intro: at this tick of rising, the Reaper freezes for INTRO_TICKS while the camera of everyone on the arena turns on it. */
+    private static final int INTRO_AT = 44, INTRO_TICKS = 72;
+    private static final EntityDataAccessor<Integer> INTRO = SynchedEntityData.defineId(WailingReaperEntity.class, EntityDataSerializers.INT);
     private static final float[] ULT_AT = {0.5F, 0.15F};
     private static final float VULNERABLE_MULT = 1.2F;
 
@@ -110,6 +113,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         super.defineSynchedData();
         entityData.define(STATE, State.IDLE.ordinal());
         entityData.define(PREVIEW, "");
+        entityData.define(INTRO, 0);
     }
 
     public State state() {
@@ -129,6 +133,22 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         setState(State.EMERGE);
     }
 
+    /** Frozen by its intro: the server holds it still (its rise plays out and holds its last pose). */
+    public boolean frozen() {
+        return entityData.get(INTRO) > 0;
+    }
+
+    private void startIntro(ServerLevel level) {
+        entityData.set(INTRO, INTRO_TICKS);
+        BlockPos at = home != null ? home : blockPosition();
+        for (var p : level.players()) {
+            if (p.distanceToSqr(at.getX() + 0.5, at.getY(), at.getZ() + 0.5) < 40 * 40) {
+                com.soulless.network.ModNetwork.sendToPlayer(p, new com.soulless.network.BossIntroPacket(getId(), INTRO_TICKS, "boss.soulless.wailing_reaper"));
+            }
+        }
+        level.playSound(null, blockPosition(), ModSounds.REAPER_SCREAM.get(), SoundSource.HOSTILE, 3.0F, 0.55F);
+    }
+
     // ------------------------------------------------------------------ AI
 
     @Override
@@ -141,6 +161,12 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         super.customServerAiStep();
         ServerLevel level = (ServerLevel) level();
         bossBar.setProgress(getHealth() / getMaxHealth());
+        if (frozen()) {   // the intro: held still mid-rise
+            entityData.set(INTRO, entityData.get(INTRO) - 1);
+            setDeltaMovement(Vec3.ZERO);
+            return;
+        }
+        if (state() == State.EMERGE && stateTicks == INTRO_AT - 1 && !isPreview()) startIntro(level);
         stateTicks++;
         if (tickCount % 20 == 0 || target == null || !validTarget(target)) target = findTarget();
         if (target != null) getLookControl().setLookAt(target, 10, 10);
@@ -738,7 +764,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
     private static final RawAnimation ULT = RawAnimation.begin().thenPlay("animation.wailing_reaper.ult")
             .thenLoop("animation.wailing_reaper.ult_hold");
     private static final RawAnimation STUNNED = RawAnimation.begin().thenLoop("animation.wailing_reaper.stunned");
-    private static final RawAnimation EMERGE = RawAnimation.begin().thenPlay("animation.wailing_reaper.emerge");
+    private static final RawAnimation EMERGE = RawAnimation.begin().thenPlayAndHold("animation.wailing_reaper.emerge");
     private static final RawAnimation DEATH = RawAnimation.begin().thenPlay("animation.wailing_reaper.death");
 
     private static final RawAnimation AMBIENT = RawAnimation.begin().thenLoop("animation.wailing_reaper.ambient");

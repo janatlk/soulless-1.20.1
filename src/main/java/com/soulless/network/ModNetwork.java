@@ -47,6 +47,9 @@ public final class ModNetwork {
         CHANNEL.messageBuilder(AnvilActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(AnvilActionPacket::encode).decoder(AnvilActionPacket::decode)
                 .consumerMainThread(AnvilActionPacket::handle).add();
+        CHANNEL.messageBuilder(BossIntroPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BossIntroPacket::encode).decoder(BossIntroPacket::decode)
+                .consumerMainThread(BossIntroPacket::handle).add();
         CHANNEL.messageBuilder(SoulWispPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(SoulWispPacket::encode).decoder(SoulWispPacket::decode)
                 .consumerMainThread(SoulWispPacket::handle).add();

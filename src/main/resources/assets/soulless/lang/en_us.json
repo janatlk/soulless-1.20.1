@@ -31,7 +31,7 @@
   "item.soulless.abyssal_heart.desc": "It is still beating",
   "tooltip.soulless.material.used_for": "Component of Soul Forged",
   "tooltip.soulless.material.source": "Source: ??? — unknown guardians (coming soon)",
-  "entity.soulless.wailing_reaper": "The Wailing Reaper",
+  "entity.soulless.wailing_reaper": "Reaper of Souls",
   "entity.soulless.soul_bolt": "Soul Bolt",
   "entity.soulless.abyss_head": "Head of the Abyss",
   "entity.soulless.soul_eruption": "Soul Eruption",
@@ -269,5 +269,7 @@
   "tooltip.soulless.eye.lament": "Throw it - it flies toward the Reaper's altar (soul sand valley, Nether)",
   "tooltip.soulless.eye.drowned": "Throw it - it flies toward the Drowned Souls (deep ocean)",
   "message.soulless.eye_nothing": "The eye sees nowhere to fly",
-  "entity.soulless.seeking_eye": "Eye"
+  "entity.soulless.seeking_eye": "Eye",
+  "boss.soulless.wailing_reaper.title": "Reaper of Souls",
+  "boss.soulless.wailing_reaper.subtitle": "You should have stayed home"
 }

@@ -36,7 +36,7 @@ public final class DevAutoTestClient {
     /** SOULLESS_PREVIEW_STRIP=1: film the preview animation from one view instead of walking around it. */
     public static final boolean PREVIEW_STRIP = System.getenv("SOULLESS_PREVIEW_STRIP") != null;
     private static boolean started;
-    private static int tick = -1, upShots;
+    private static int tick = -1, upShots, introAt = -1;
     private static ArmorStand sideCam;
 
     @SubscribeEvent
@@ -192,6 +192,18 @@ public final class DevAutoTestClient {
         if (DevAutoTest.BOSS) {
             if (tick == 15) opts.setCameraType(CameraType.FIRST_PERSON);
             if (tick > 60 && tick % 30 == 0 && tick < 1800) shot(mc, String.format("boss_%04d", tick));
+            // the intro, frame by frame
+            if (com.soulless.client.BossIntro.active()) {
+                if (introAt < 0) introAt = tick;
+                int it = tick - introAt;
+                if (it == 3 || it == 14 || it == 30 || it == 55) shot(mc, "boss_intro_" + it);
+                if (it == 30) {
+                    var c = mc.gameRenderer.getMainCamera();
+                    var b = mc.level.getEntitiesOfClass(com.soulless.boss.WailingReaperEntity.class, mc.player.getBoundingBox().inflate(60)).stream().findFirst();
+                    Soulless.LOGGER.info("[autotest] intro camera entity={} at {} yaw={} pitch={} | player {} | boss {}", mc.getCameraEntity().getClass().getSimpleName(),
+                            c.getPosition(), c.getYRot(), c.getXRot(), mc.player.position(), b.map(e -> e.position().toString()).orElse("none"));
+                }
+            }
             if (tick == 1850) mc.stop();   // the run ends on its own
             return;
         }

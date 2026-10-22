@@ -31,7 +31,7 @@
   "item.soulless.abyssal_heart.desc": "Оно всё ещё бьётся",
   "tooltip.soulless.material.used_for": "Компонент Кованной души",
   "tooltip.soulless.material.source": "Источник: ??? — неведомые стражи (скоро)",
-  "entity.soulless.wailing_reaper": "Скорбный Жнец",
+  "entity.soulless.wailing_reaper": "Жнец Душ",
   "entity.soulless.soul_bolt": "Сгусток душ",
   "entity.soulless.abyss_head": "Голова бездны",
   "entity.soulless.soul_eruption": "Извержение душ",
@@ -269,5 +269,7 @@
   "tooltip.soulless.eye.lament": "Бросьте - полетит к алтарю Жнеца (долина песка душ, Незер)",
   "tooltip.soulless.eye.drowned": "Бросьте - полетит к Утопленным душам (глубокий океан)",
   "message.soulless.eye_nothing": "Око не видит, куда лететь",
-  "entity.soulless.seeking_eye": "Око"
+  "entity.soulless.seeking_eye": "Око",
+  "boss.soulless.wailing_reaper.title": "Жнец Душ",
+  "boss.soulless.wailing_reaper.subtitle": "Лучше бы ты сидел дома"
 }

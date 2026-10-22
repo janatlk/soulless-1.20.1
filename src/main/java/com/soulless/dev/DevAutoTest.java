@@ -184,7 +184,7 @@ public final class DevAutoTest {
             if (!bosses.isEmpty()) {
                 var boss = bosses.get(0);
                 if (tick % 20 == 0) {
-                    Soulless.LOGGER.info("[autotest] t={} boss state={} hp={} pos={} playerHp={}", tick, boss.state(), boss.getHealth(),
+                    Soulless.LOGGER.info("[autotest] t={} boss state={} frozen={} hp={} pos={} playerHp={}", tick, boss.state(), boss.frozen(), boss.getHealth(),
                             boss.position(), p.getHealth());
                 }
                 if (bossSeen < 0) bossSeen = tick;
