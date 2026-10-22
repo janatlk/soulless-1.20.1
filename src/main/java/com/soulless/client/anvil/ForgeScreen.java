@@ -34,6 +34,8 @@ public class ForgeScreen extends Screen {
     private Recipe picked;
     /** Souls category: the inventory slot picked for melting. */
     private int meltSlot = -1;
+    /** The card's description, scrolled by the wheel. */
+    private int descScroll, descMax;
 
     public ForgeScreen(BlockPos pos) {
         super(Component.translatable("container.soulless.soul_anvil"));
@@ -224,15 +226,48 @@ public class ForgeScreen extends Screen {
             }
         }
         if (col != 0) y += 18;
-        // the description, as the item itself tells it
+        // the description, as the item itself tells it in full (no Shift needed), its sections set apart; the wheel scrolls it
         y += 4;
-        List<Component> lines = s.getTooltipLines(p, TooltipFlag.NORMAL);
-        for (int i = 1; i < lines.size() && y < y1 - 34; i++) {
-            for (var seq : font.split(lines.get(i), x1 - x0 - 24)) {
-                if (y >= y1 - 34) break;
-                g.drawString(font, seq, x0 + 12, y, AnvilStyle.DIM, false);
-                y += 10;
+        int top = y, bottom = y1 - 34;
+        ItemStack shown = s.copy();
+        shown.hideTooltipPart(ItemStack.TooltipPart.MODIFIERS);
+        com.soulless.client.ClientKeys.forceDetails = true;
+        List<Component> lines;
+        try {
+            lines = shown.getTooltipLines(p, TooltipFlag.NORMAL);
+        } finally {
+            com.soulless.client.ClientKeys.forceDetails = false;
+        }
+        g.enableScissor(x0 + 4, top, x1 - 4, bottom);
+        int ly2 = top - descScroll, total = 0;
+        for (int i = 1; i < lines.size(); i++) {
+            String raw = lines.get(i).getString();
+            if (raw.startsWith(com.soulless.item.SoulForgedItem.SECTION_MARK)) {
+                ly2 += 5;
+                total += 5;
+                g.drawString(font, Component.literal(raw.substring(com.soulless.item.SoulForgedItem.SECTION_MARK.length())), x0 + 12, ly2, AnvilStyle.GOLD, false);
+                g.fill(x0 + 12, ly2 + 10, x1 - 12, ly2 + 11, 0x60D9B45A);
+                ly2 += 14;
+                total += 14;
+                continue;
             }
+            if (raw.isEmpty()) {
+                ly2 += 5;
+                total += 5;
+                continue;
+            }
+            for (var seq : font.split(lines.get(i), x1 - x0 - 24)) {
+                g.drawString(font, seq, x0 + 12, ly2, AnvilStyle.TEXT, false);
+                ly2 += 10;
+                total += 10;
+            }
+        }
+        g.disableScissor();
+        descMax = Math.max(0, total - (bottom - top));
+        if (descMax > 0) {   // a thin bar showing where in the text we are
+            int bh = Math.max(10, (bottom - top) * (bottom - top) / (total));
+            int by = top + (int) ((bottom - top - bh) * (descScroll / (float) descMax));
+            g.fill(x1 - 7, by, x1 - 5, by + bh, 0x806FE6F5);
         }
         boolean can = picked.affordable(p);
         AnvilStyle.button(g, font, Component.translatable(can ? "anvil.soulless.forge" : "anvil.soulless.forge_lay"), x0 + 12, y1 - 28, x1 - x0 - 24, mx, my, true);
@@ -287,6 +322,7 @@ public class ForgeScreen extends Screen {
             if (AnvilStyle.inDiamond(mx, my, cx(i, rs.size()), cy(i, rs.size()), BIG)) {
                 AnvilStyle.click();
                 picked = rs.get(i);
+                descScroll = 0;
                 return true;
             }
         }
@@ -300,6 +336,15 @@ public class ForgeScreen extends Screen {
             }
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double delta) {
+        if (picked != null && descMax > 0) {
+            descScroll = net.minecraft.util.Mth.clamp(descScroll - (int) (delta * 20), 0, descMax);
+            return true;
+        }
+        return super.mouseScrolled(mx, my, delta);
     }
 
     @Override
