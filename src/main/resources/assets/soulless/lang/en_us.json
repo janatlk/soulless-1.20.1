@@ -271,5 +271,7 @@
   "message.soulless.eye_nothing": "The eye sees nowhere to fly",
   "entity.soulless.seeking_eye": "Eye",
   "boss.soulless.wailing_reaper.title": "Reaper of Souls",
-  "boss.soulless.wailing_reaper.subtitle": "You should have stayed home"
+  "boss.soulless.wailing_reaper.subtitle": "You should have stayed home",
+  "entity.soulless.leviathan": "Leviathan of the Abyss",
+  "item.soulless.leviathan_spawn_egg": "Leviathan Spawn Egg"
 }

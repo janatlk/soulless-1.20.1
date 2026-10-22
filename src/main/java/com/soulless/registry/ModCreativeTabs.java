@@ -25,6 +25,7 @@ public final class ModCreativeTabs {
                 out.accept(ModItems.RENEGADE_SIGIL.get());
                 out.accept(ModItems.EYE_OF_LAMENT.get());
                 out.accept(ModItems.EYE_OF_DROWNED.get());
+                out.accept(ModItems.LEVIATHAN_SPAWN_EGG.get());
                 out.accept(ModItems.SOUL_FORGED.get());
                 out.accept(ModItems.SOUL_KATANA.get());
                 out.accept(ModItems.ABYSSAL_HEART.get());

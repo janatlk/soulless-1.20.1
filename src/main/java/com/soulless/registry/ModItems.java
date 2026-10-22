@@ -45,6 +45,9 @@ public final class ModItems {
     public static final RegistryObject<Item> EYE_OF_DROWNED = ITEMS.register("eye_of_drowned",
             () -> new com.soulless.item.SeekingEyeItem(new Item.Properties().rarity(Rarity.RARE), com.soulless.registry.ModStructures.EYE_OF_DROWNED, "drowned"));
 
+    public static final RegistryObject<Item> LEVIATHAN_SPAWN_EGG = ITEMS.register("leviathan_spawn_egg",
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.LEVIATHAN, 0x111318, 0xFF9A3A, new Item.Properties()));
+
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

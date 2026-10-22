@@ -42,6 +42,7 @@ public final class ClientModEvents {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static void onRenderers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(com.soulless.registry.ModEntities.WAILING_REAPER.get(), BossRenderers.Reaper::new);
+        event.registerEntityRenderer(com.soulless.registry.ModEntities.LEVIATHAN.get(), LeviathanRenderer::new);
         event.registerEntityRenderer(com.soulless.registry.ModEntities.SEEKING_EYE.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx, 1.0F, true));
         event.registerBlockEntityRenderer(com.soulless.registry.ModBlocks.SOUL_ANVIL_BE.get(), com.soulless.client.anvil.SoulAnvilRenderer::new);

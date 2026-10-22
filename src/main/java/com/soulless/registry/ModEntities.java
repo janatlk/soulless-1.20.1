@@ -71,11 +71,17 @@ public final class ModEntities {
             () -> EntityType.Builder.<com.soulless.boss.SeekingEyeEntity>of(com.soulless.boss.SeekingEyeEntity::new, MobCategory.MISC)
                     .sized(0.25F, 0.25F).clientTrackingRange(4).updateInterval(4).build("seeking_eye"));
 
+    /** The Leviathan of the Abyss (boss.LeviathanEntity): 40 blocks long, its box only the head and neck for now. */
+    public static final RegistryObject<EntityType<com.soulless.boss.LeviathanEntity>> LEVIATHAN = ENTITIES.register("leviathan",
+            () -> EntityType.Builder.<com.soulless.boss.LeviathanEntity>of(com.soulless.boss.LeviathanEntity::new, MobCategory.MONSTER)
+                    .sized(4.0F, 3.5F).fireImmune().clientTrackingRange(16).build("leviathan"));
+
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(WAILING_REAPER.get(), WailingReaperEntity.createAttributes().build());
         event.put(TAMED_FOX.get(), com.soulless.pet.TamedFox.createAttributes().build());
         event.put(RENEGADE.get(), com.soulless.boss.RenegadeEntity.createAttributes().build());
+        event.put(LEVIATHAN.get(), com.soulless.boss.LeviathanEntity.createAttributes().build());
     }
 
     private ModEntities() {}
