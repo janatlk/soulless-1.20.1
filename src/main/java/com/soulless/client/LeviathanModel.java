@@ -34,11 +34,27 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         float d = Mth.DEG_TO_RAD;
 
         // the body: a wave running back along it, bigger toward the tail, plus the bend of a turn
+        // the body follows the path its head swam (the same points its hit boxes lie on): each segment turns by the
+        // bend between it and the one before, and a smaller wave of its own rides on top
+        var parts = e.bodyParts();
+        float pt = state.getPartialTick();
+        float prevYaw = Mth.rotLerp(pt, e.yBodyRotO, e.yBodyRot), prevPitch = Mth.lerp(pt, e.xRotO, e.getXRot());
+        net.minecraft.world.phys.Vec3 front = e.getPosition(pt).add(0, 1.5, 0);
         for (int i = 0; i < SEGMENTS; i++) {
             float f = (i + 1f) / SEGMENTS;
-            float wave = Mth.sin(t * 0.09F - i * 0.55F) * (2.5F + 7.5F * f);
-            float rise = Mth.sin(t * 0.06F - i * 0.4F + 1.3F) * (1F + 3F * f);
-            add("body_" + i, rise * d, (wave - turn * 1.6F) * d, 0);
+            var p = parts[i];
+            net.minecraft.world.phys.Vec3 c = new net.minecraft.world.phys.Vec3(Mth.lerp(pt, p.xo, p.getX()),
+                    Mth.lerp(pt, p.yo, p.getY()) + p.getBbHeight() / 2, Mth.lerp(pt, p.zo, p.getZ()));
+            net.minecraft.world.phys.Vec3 dir = front.subtract(c);
+            float yaw = dir.lengthSqr() < 1e-6 ? prevYaw : (float) (Mth.atan2(dir.z, dir.x) * Mth.RAD_TO_DEG) - 90;
+            float pitch = dir.lengthSqr() < 1e-6 ? prevPitch : (float) (-Mth.atan2(dir.y, dir.horizontalDistance()) * Mth.RAD_TO_DEG);
+            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -35, 35), bendX = Mth.clamp(pitch - prevPitch, -30, 30);
+            float wave = Mth.sin(t * 0.09F - i * 0.55F) * (1.5F + 4.5F * f);
+            float rise = Mth.sin(t * 0.06F - i * 0.4F + 1.3F) * (0.6F + 2F * f);
+            add("body_" + i, (rise + BEND_PITCH * bendX) * d, (wave + BEND_YAW * bendY) * d, 0);
+            prevYaw = yaw;
+            prevPitch = pitch;
+            front = c;
         }
         add("tail_fin", 0, Mth.sin(t * 0.09F - SEGMENTS * 0.55F) * 14 * d, 0);
 
@@ -78,13 +94,15 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         }
     }
 
+    /** How a bend in the swum path turns a body bone (the sign maps world yaw/pitch onto the bone's rotation). */
+    private static final float BEND_YAW = -1, BEND_PITCH = -1;
     private static final float WHISKER_GAIN = 5.5F, WHISKER_K = 0.16F, WHISKER_DAMP = 0.78F, WHISKER_MAX = 45;
 
     private void whiskers(LeviathanEntity e, float t, AnimationState<LeviathanEntity> state) {
-        float pt = state.getPartialTick();
+        float ptw = state.getPartialTick();
         CoreGeoBone head = getAnimationProcessor().getBone("head");
-        float headYaw = Mth.rotLerp(pt, e.yRotO, e.getYRot()) - (head == null ? 0 : head.getRotY() * Mth.RAD_TO_DEG);
-        float headPitch = Mth.lerp(pt, e.xRotO, e.getXRot()) - (head == null ? 0 : head.getRotX() * Mth.RAD_TO_DEG);
+        float headYaw = Mth.rotLerp(ptw, e.yRotO, e.getYRot()) - (head == null ? 0 : head.getRotY() * Mth.RAD_TO_DEG);
+        float headPitch = Mth.lerp(ptw, e.xRotO, e.getXRot()) - (head == null ? 0 : head.getRotX() * Mth.RAD_TO_DEG);
         float dt = Float.isNaN(e.lastHeadYaw) ? 0 : Mth.clamp(t - e.lastWhiskerT, 0, 2);
         float wYaw = dt > 0 ? Mth.wrapDegrees(headYaw - e.lastHeadYaw) / dt : 0;
         float wPitch = dt > 0 ? (headPitch - e.lastHeadPitch) / dt : 0;
