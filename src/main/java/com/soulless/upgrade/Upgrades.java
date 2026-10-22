@@ -25,13 +25,24 @@ public final class Upgrades {
     public static final String KATANA_PARRY = "katana.parry", KATANA_LEECH = "katana.parry_leech", KATANA_STUN = "katana.parry_stun",
             KATANA_THRUST = "katana.thrust", KATANA_RESONANCE = "katana.resonance", KATANA_EDGE = "katana.edge", KATANA_FLOW = "katana.flow";
 
+    /** Soul Forged option ids (ability.SlamManager, ability.RendManager, ability.SoulSlashEntity, item.SoulForgedItem). */
+    public static final String FORGED_SLAM = "forged.slam", FORGED_QUAKE = "forged.quake", FORGED_HASTE = "forged.haste",
+            FORGED_REND = "forged.rend", FORGED_HUNGER = "forged.hunger", FORGED_SPLIT = "forged.split",
+            FORGED_CURSE = "forged.curse", FORGED_WEIGHT = "forged.weight";
+
     private static final Map<Supplier<Item>, UpgradeTree> TREES = Map.of(
             ModItems.SOUL_KATANA::get, new UpgradeTree(List.of(
                     UpgradeTree.Tier.of(50, KATANA_PARRY),
                     UpgradeTree.Tier.of(150, KATANA_LEECH, KATANA_STUN),
                     UpgradeTree.Tier.of(300, KATANA_THRUST),
                     UpgradeTree.Tier.of(500, KATANA_RESONANCE),
-                    UpgradeTree.Tier.of(800, KATANA_EDGE, KATANA_FLOW))));
+                    UpgradeTree.Tier.of(800, KATANA_EDGE, KATANA_FLOW))),
+            ModItems.SOUL_FORGED::get, new UpgradeTree(List.of(
+                    UpgradeTree.Tier.of(200, FORGED_SLAM),
+                    UpgradeTree.Tier.of(350, FORGED_QUAKE, FORGED_HASTE),
+                    UpgradeTree.Tier.of(500, FORGED_REND),
+                    UpgradeTree.Tier.of(700, FORGED_HUNGER, FORGED_SPLIT),
+                    UpgradeTree.Tier.of(1000, FORGED_CURSE, FORGED_WEIGHT))));
 
     public static UpgradeTree tree(ItemStack stack) {
         for (var e : TREES.entrySet()) {

@@ -114,7 +114,6 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
             tooltip.add(gated(stack, com.soulless.upgrade.Upgrades.KATANA_RESONANCE, line(k + "c.ritual", ChatFormatting.LIGHT_PURPLE, key)));
             if (!com.soulless.upgrade.Upgrades.has(stack, com.soulless.upgrade.Upgrades.KATANA_THRUST)) tooltip.add(gated(stack, com.soulless.upgrade.Upgrades.KATANA_THRUST, Component.translatable(k + "thrust_name")));
             tooltip.add(Component.empty());
-            tooltip.add(Component.translatable("tooltip.soulless.upgrade.where").withStyle(ChatFormatting.DARK_GRAY));
             tooltip.add(Component.translatable(k + "c.more").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
             return;
         }

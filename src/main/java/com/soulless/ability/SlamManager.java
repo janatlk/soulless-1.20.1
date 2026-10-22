@@ -74,6 +74,10 @@ public final class SlamManager {
         ItemStack stack = player.getMainHandItem();
         if (!(stack.getItem() instanceof SoulForgedItem item) || !player.isAlive() || player.isSpectator()) return;
         if (player.getCooldowns().isOnCooldown(item) || ACTIVE.containsKey(player.getUUID()) || RendManager.isActive(player)) return;
+        if (!com.soulless.upgrade.Upgrades.has(stack, com.soulless.upgrade.Upgrades.FORGED_SLAM)) {
+            player.displayClientMessage(Component.translatable("message.soulless.upgrade_locked", Component.translatable("upgrade.soulless." + com.soulless.upgrade.Upgrades.FORGED_SLAM)), true);
+            return;
+        }
         boolean ring = com.soulless.item.SoulRing.worn(player);
         if (player.isInWater()) {
             player.displayClientMessage(Component.translatable("message.soulless.slam_water"), true);
@@ -85,7 +89,7 @@ public final class SlamManager {
         }
 
         ServerLevel level = player.serverLevel();
-        player.getCooldowns().addCooldown(item, COOLDOWN_TICKS);
+        player.getCooldowns().addCooldown(item, cooldown(stack));
         ACTIVE.put(player.getUUID(), new State(level.getGameTime(), player.getY(), ring, false));
         com.soulless.Achievements.grant(player, "first_crush");
 
@@ -186,10 +190,11 @@ public final class SlamManager {
         int stun = Math.round(STUN_SECONDS * 20) + (withRing ? com.soulless.item.SoulRing.STUN_BONUS_TICKS : 0);
 
 
-        AABB box = new AABB(center, center).inflate(RADIUS, 3.0, RADIUS);
+        float radius = radius(player.getMainHandItem());
+        AABB box = new AABB(center, center).inflate(radius, 3.0, radius);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator() && !com.soulless.pet.TamedFox.isPetOf(e, player))) {
             if (target.isAlliedTo(player) || (target instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
-            if (!inBlast(center, target)) continue;
+            if (!inBlast(center, target, radius)) continue;
             target.invulnerableTime = 0;
             Vec3 keep = target.getDeltaMovement();
             SoulBonus.abilityDamage(() -> target.hurt(level.damageSources().playerAttack(player), DAMAGE));
@@ -207,7 +212,7 @@ public final class SlamManager {
         BlockState ground = groundPos != null ? level.getBlockState(groundPos) : null;
         level.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.3, center.z, 3, 0.6, 0.2, 0.6, 0);
         level.sendParticles(com.soulless.item.SoulRing.accent(withRing, ParticleTypes.REVERSE_PORTAL), center.x, center.y + 0.5, center.z, 80, 1.5, 0.6, 1.5, 0.4);
-        for (int ring = 1; ring <= (int) RADIUS; ring++) {
+        for (int ring = 1; ring <= (int) radius; ring++) {
             int points = ring * 10;
             for (int i = 0; i < points; i++) {
                 double a = Math.PI * 2 * i / points;
@@ -225,10 +230,21 @@ public final class SlamManager {
         level.sendParticles(com.soulless.item.SoulRing.ember(withRing), center.x, center.y + 0.5, center.z, 60, 0.6, 1.2, 0.6, 0.12);
 
         if (groundPos != null) {
-            CrackManager.start(level, groundPos, RADIUS + 1.5F, withRing);
+            CrackManager.start(level, groundPos, radius + 1.5F, withRing);
         }
-        ModNetwork.sendNear(level, center, 48, new SlamImpactPacket(player.getId(), center.x, center.y, center.z, RADIUS));
+        ModNetwork.sendNear(level, center, 48, new SlamImpactPacket(player.getId(), center.x, center.y, center.z, radius));
         player.fallDistance = 0;
+    }
+
+    /** The Quake path widens the blast by this much; the Haste path shortens the shared cooldown. */
+    public static final float QUAKE_MULT = 1.5F, HASTE_MULT = 0.65F;
+
+    public static float radius(ItemStack stack) {
+        return RADIUS * (com.soulless.upgrade.Upgrades.has(stack, com.soulless.upgrade.Upgrades.FORGED_QUAKE) ? QUAKE_MULT : 1);
+    }
+
+    public static int cooldown(ItemStack stack) {
+        return Math.round(COOLDOWN_TICKS * (com.soulless.upgrade.Upgrades.has(stack, com.soulless.upgrade.Upgrades.FORGED_HASTE) ? HASTE_MULT : 1));
     }
 
     /** Where the blade lands: a little ahead of the wielder's feet. Shared with {@code /soulless zones}. */
@@ -238,8 +254,12 @@ public final class SlamManager {
 
     /** Is the target inside the blast around {@code center} (horizontal radius, 3 blocks up/down). */
     public static boolean inBlast(Vec3 center, Entity target) {
+        return inBlast(center, target, RADIUS);
+    }
+
+    public static boolean inBlast(Vec3 center, Entity target, float radius) {
         double dist = Math.sqrt(Mth.square(target.getX() - center.x) + Mth.square(target.getZ() - center.z));
-        return dist <= RADIUS && Math.abs(target.getY() - center.y) <= 3.0;
+        return dist <= radius && Math.abs(target.getY() - center.y) <= 3.0;
     }
 
     private static Vec3 horizontalLook(Player player) {

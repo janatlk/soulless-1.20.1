@@ -31,6 +31,8 @@ public class SoulSlashEntity extends Entity {
     public static final float MIN_DAMAGE = 30.0F, MAX_DAMAGE = 60.0F;
     /** Lifesteal: this share of the damage dealt, at least half a heart, at most one heart per beam. */
     public static final float LIFESTEAL = 0.05F, MIN_HEAL = 1.0F, MAX_HEAL = 2.0F;
+    /** The Hunger path: the beam drinks this many times more; the Split path: it cuts this much harder. */
+    public static final float HUNGER_MULT = 2.0F, SPLIT_MULT = 1.25F;
     public static final double RANGE = 92;
     public static final double SPEED = 1.5;
     /** Half-width of the crescent across its flight, and its height. */
@@ -131,7 +133,7 @@ public class SoulSlashEntity extends Entity {
             if (Math.abs(side) > HALF_WIDTH + t.getBbWidth() / 2 || along < -SPEED - 0.5 - t.getBbWidth() / 2 || along > 0.8 + t.getBbWidth() / 2) continue;
             if (Math.abs(rise) > HEIGHT / 2 + t.getBbHeight() / 2) continue;
             struck.add(t.getId());
-            float damage = damageFor(power());
+            float damage = damageFor(power()) * (com.soulless.upgrade.Upgrades.has(player.getMainHandItem(), com.soulless.upgrade.Upgrades.FORGED_SPLIT) ? SPLIT_MULT : 1);
             t.invulnerableTime = 0;
             float before = t.getHealth();
             Vec3 keep = t.getDeltaMovement();
@@ -140,7 +142,8 @@ public class SoulSlashEntity extends Entity {
             t.hurtMarked = true;
             dealt += Math.max(0, before - t.getHealth());
             // lifesteal: 5% of the damage dealt, between half a heart and a heart per beam
-            float target = dealt > 0 ? Mth.clamp(dealt * LIFESTEAL, MIN_HEAL, MAX_HEAL) : 0;
+            float drink = com.soulless.upgrade.Upgrades.has(player.getMainHandItem(), com.soulless.upgrade.Upgrades.FORGED_HUNGER) ? HUNGER_MULT : 1;
+            float target = dealt > 0 ? Mth.clamp(dealt * LIFESTEAL * drink, MIN_HEAL * drink, MAX_HEAL * drink) : 0;
             if (target > healed) {
                 player.heal(target - healed);
                 if (healed == 0) level.sendParticles(net.minecraft.core.particles.ParticleTypes.HEART, player.getX(), player.getY() + 2.1, player.getZ(), 1, 0.2, 0.1, 0.2, 0);

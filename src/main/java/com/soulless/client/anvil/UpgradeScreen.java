@@ -13,11 +13,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * The artifact laid on the anvil and its path: the item in a big diamond on the left, its tiers climbing on the
@@ -27,14 +25,6 @@ import java.util.Map;
  */
 public class UpgradeScreen extends Screen {
     private static final float NODE = 18, ROW = 46, COL = 46;
-    private static final Map<String, ItemStack> ICONS = Map.of(
-            Upgrades.KATANA_PARRY, new ItemStack(Items.SHIELD),
-            Upgrades.KATANA_LEECH, new ItemStack(Items.REDSTONE),
-            Upgrades.KATANA_STUN, new ItemStack(Items.CHAIN),
-            Upgrades.KATANA_THRUST, new ItemStack(Items.ARROW),
-            Upgrades.KATANA_RESONANCE, new ItemStack(Items.AMETHYST_SHARD),
-            Upgrades.KATANA_EDGE, new ItemStack(Items.NETHERITE_SCRAP),
-            Upgrades.KATANA_FLOW, new ItemStack(Items.FEATHER));
 
     private final BlockPos pos;
 
@@ -121,8 +111,7 @@ public class UpgradeScreen extends Screen {
                     int rim = has ? AnvilStyle.SOUL : next ? (can ? AnvilStyle.alpha(AnvilStyle.SOUL, 0.5F + 0.5F * AnvilStyle.pulse()) : AnvilStyle.RIM)
                             : AnvilStyle.RIM_DIM;
                     AnvilStyle.diamond(g, x, y, NODE, hover ? AnvilStyle.FILL_HOVER : AnvilStyle.FILL, rim, has ? AnvilStyle.SOUL_DIM : 0);
-                    ItemStack icon = ICONS.getOrDefault(id, new ItemStack(Items.SOUL_LANTERN));
-                    AnvilStyle.item(g, icon, x, y, 1.0F);
+                    g.blit(com.soulless.Soulless.id("textures/gui/upgrade/" + id + ".png"), (int) x - 8, (int) y - 8, 0, 0, 16, 16, 16, 16);
                     if (passed || t > bought) g.fill((int) x - 9, (int) y - 9, (int) x + 9, (int) y + 9, passed ? 0xB0000000 : 0x80000000);
                     if (o == 0) g.drawString(font, String.valueOf(tier.souls()), (int) (nodeX(tier.options().size() - 1, tier.options().size()) + NODE + 6),
                             (int) y - 4, t < bought ? AnvilStyle.DIM : can ? AnvilStyle.SOUL : AnvilStyle.SHORT, false);
@@ -133,7 +122,6 @@ public class UpgradeScreen extends Screen {
                                 net.minecraft.network.chat.Style.EMPTY)) {
                             tip.add(Component.literal(line.getString()).withStyle(ChatFormatting.GRAY));
                         }
-                        if (tier.choice()) tip.add(Component.translatable("anvil.soulless.choice").withStyle(ChatFormatting.GOLD));
                         if (has) tip.add(Component.translatable("anvil.soulless.owned").withStyle(ChatFormatting.AQUA));
                         else if (passed) tip.add(Component.translatable("anvil.soulless.passed").withStyle(ChatFormatting.DARK_GRAY));
                         else if (next) tip.add(Component.translatable(can ? "anvil.soulless.buy" : "anvil.soulless.need", tier.souls())

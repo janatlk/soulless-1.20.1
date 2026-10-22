@@ -119,6 +119,11 @@ public final class RendManager {
         ServerLevel level = player.serverLevel();
         long now = level.getGameTime();
         if (player.getCooldowns().isOnCooldown(player.getMainHandItem().getItem())) return;   // shared with Soul Crush
+        if (!com.soulless.upgrade.Upgrades.has(player, com.soulless.upgrade.Upgrades.FORGED_REND)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.soulless.upgrade_locked",
+                    net.minecraft.network.chat.Component.translatable("upgrade.soulless." + com.soulless.upgrade.Upgrades.FORGED_REND)), true);
+            return;
+        }
         ACTIVE.put(player.getUUID(), new State(com.soulless.item.SoulRing.worn(player)));
         setSlow(player, -0.55);
         ModNetwork.sendTrackingAndSelf(player, new RendStartPacket(player.getId(), 0));
@@ -190,7 +195,7 @@ public final class RendManager {
         level.addFreshEntity(slash);
         com.soulless.Achievements.grant(player, "first_rend");
 
-        player.getCooldowns().addCooldown(player.getMainHandItem().getItem(), SlamManager.COOLDOWN_TICKS);
+        player.getCooldowns().addCooldown(player.getMainHandItem().getItem(), SlamManager.cooldown(player.getMainHandItem()));
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.4F, 0.55F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SLAM_IMPACT.get(), SoundSource.PLAYERS, 1.0F, 1.5F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.WITHER_SHOOT, SoundSource.PLAYERS, 0.5F, 0.6F);

@@ -218,8 +218,6 @@ def anvil():
 
 def main():
     (ROOT / "block").mkdir(parents=True, exist_ok=True)
-    ore("wraith_iron_ore", 11, (124, 124, 126), 0.22, False)
-    ore("deepslate_wraith_iron_ore", 21, (74, 74, 82), 0.2, True)
     shape_item("raw_wraith_iron", 41, RAW, RAW_PAL)
     shape_item("reaper_soul", 51, SOUL, SOUL_PAL)
     # the cracks across the seal are dark, not holes

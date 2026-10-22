@@ -53,6 +53,7 @@ import java.util.function.Consumer;
 public class SoulForgedItem extends SwordItem implements GeoItem {
     public static final int CURSE_SECONDS = 5;
     public static final double REACH_BONUS = 1.0;
+    private static final java.util.UUID WEIGHT_UUID = java.util.UUID.fromString("6c1f7a3e-2b9d-4e58-a1c4-8f3d2e9b7a61");
     private static final UUID REACH_UUID = UUID.fromString("5d1f3c0e-7a51-4b8e-9a43-1f5b8c2d7e90");
     /** A heavy two-hander: slightly slower while held. */
     public static final double HEAVY_SLOWNESS = 0.08;
@@ -75,7 +76,8 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
         if (!attacker.level().isClientSide) {
-            SoulCurse.apply(target, CURSE_SECONDS * 20, 0, attacker);
+            boolean deep = com.soulless.upgrade.Upgrades.has(stack, com.soulless.upgrade.Upgrades.FORGED_CURSE);
+            SoulCurse.apply(target, (deep ? CURSE_SECONDS * 2 : CURSE_SECONDS) * 20, deep ? 1 : 0, attacker);
             attacker.level().playSound(null, target.getX(), target.getY(), target.getZ(),
                     ModSounds.CURSE_IGNITE.get(), SoundSource.PLAYERS, 0.8F, 0.9F + attacker.getRandom().nextFloat() * 0.2F);
         }
@@ -93,6 +95,10 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         return InteractionResultHolder.pass(stack);
     }
 
+    /** The Weight path: this much more damage. */
+    public static final double WEIGHT_DAMAGE = 3.0;
+    private Multimap<Attribute, AttributeModifier> weightModifiers;
+
     @Override
     public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
         if (slot != EquipmentSlot.MAINHAND) {
@@ -104,8 +110,12 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
                     .put(ForgeMod.ENTITY_REACH.get(), new AttributeModifier(REACH_UUID, "Soul Forged reach", REACH_BONUS, AttributeModifier.Operation.ADDITION))
                     .put(Attributes.MOVEMENT_SPEED, new AttributeModifier(HEAVY_UUID, "Soul Forged weight", -HEAVY_SLOWNESS, AttributeModifier.Operation.MULTIPLY_TOTAL))
                     .build();
+            weightModifiers = ImmutableMultimap.<Attribute, AttributeModifier>builder()
+                    .putAll(mainHandModifiers)
+                    .put(Attributes.ATTACK_DAMAGE, new AttributeModifier(WEIGHT_UUID, "Soul Forged path", WEIGHT_DAMAGE, AttributeModifier.Operation.ADDITION))
+                    .build();
         }
-        return mainHandModifiers;
+        return com.soulless.upgrade.Upgrades.has(stack, com.soulless.upgrade.Upgrades.FORGED_WEIGHT) ? weightModifiers : mainHandModifiers;
     }
 
     /** As a dropped item it survives fire, lava and explosions. */
@@ -136,21 +146,27 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         boolean details = DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.detailsHeld(), () -> () -> true);
         String slamKey = DistExecutor.unsafeRunForDist(() -> () -> com.soulless.client.ClientKeys.slamKeyName(), () -> () -> "R");
         String rendKey = Component.translatable("hud.soulless.rmb").getString();
-        float damage = 1 + getDamage();
+        float damage = 1 + getDamage() + (com.soulless.upgrade.Upgrades.has(stack, com.soulless.upgrade.Upgrades.FORGED_WEIGHT) ? (float) WEIGHT_DAMAGE : 0);
+        int cd = SlamManager.cooldown(stack) / 20;
         float speed = 4 + ATTACK_SPEED_MODIFIER;
 
         tooltip.add(Component.translatable(k + "subtitle").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
         tooltip.add(Component.translatable(k + "stats", v(fmt(damage)), v(fmt(speed)), v(fmt(REACH_BONUS))).withStyle(ChatFormatting.GRAY));
+        var tree = com.soulless.upgrade.Upgrades.tree(stack);
+        tooltip.add(Component.translatable("tooltip.soulless.upgrade.tier", v(com.soulless.upgrade.Upgrades.tier(stack)), v(tree == null ? 0 : tree.size()))
+                .withStyle(ChatFormatting.AQUA));
+        for (String opt : com.soulless.upgrade.Upgrades.picked(stack)) {
+            tooltip.add(Component.literal(" \u2726 ").append(Component.translatable("upgrade.soulless." + opt)).withStyle(ChatFormatting.DARK_AQUA));
+        }
 
         if (!details) {
             tooltip.add(section("passive"));
             tooltip.add(line(k + "c.curse", ChatFormatting.LIGHT_PURPLE, v(CURSE_SECONDS)));
             tooltip.add(line(k + "c.traits", ChatFormatting.DARK_AQUA));
-            tooltip.add(soulsLine(stack, k));
             tooltip.add(section("active"));
-            tooltip.add(line(k + "c.slam", ChatFormatting.LIGHT_PURPLE, slamKey, v(fmt(SlamManager.DAMAGE)), v(fmt(SlamManager.STUN_SECONDS))));
-            tooltip.add(line(k + "c.rend", ChatFormatting.GOLD, rendKey, v(fmt(SoulSlashEntity.MIN_DAMAGE)), v(fmt(SoulSlashEntity.MAX_DAMAGE))));
-            tooltip.add(line(k + "c.cd", ChatFormatting.DARK_GRAY, v(SlamManager.COOLDOWN_TICKS / 20)));
+            tooltip.add(gated(stack, com.soulless.upgrade.Upgrades.FORGED_SLAM, line(k + "c.slam", ChatFormatting.LIGHT_PURPLE, slamKey, v(fmt(SlamManager.DAMAGE)), v(fmt(SlamManager.STUN_SECONDS)))));
+            tooltip.add(gated(stack, com.soulless.upgrade.Upgrades.FORGED_REND, line(k + "c.rend", ChatFormatting.GOLD, rendKey, v(fmt(SoulSlashEntity.MIN_DAMAGE)), v(fmt(SoulSlashEntity.MAX_DAMAGE)))));
+            tooltip.add(line(k + "c.cd", ChatFormatting.DARK_GRAY, v(cd)));
             tooltip.add(Component.empty());
             tooltip.add(Component.translatable(k + "c.more").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
             return;
@@ -167,21 +183,19 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         tooltip.add(line(k + "d.traits.4", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.traits.5", ChatFormatting.GRAY, v(fmt(SoulBonus.SOUL_GROUND_HIT_BONUS)),
                 v(Math.round((SoulBonus.SOUL_GROUND_ABILITY_MULT - 1) * 100))));
-        tooltip.add(soulsLine(stack, k));
-        tooltip.add(line(k + "d.souls.1", ChatFormatting.GRAY, v(SoulBonus.SOULS_PER_PERCENT)));
 
         tooltip.add(section("active"));
-        tooltip.add(line(k + "d.slam.title", ChatFormatting.LIGHT_PURPLE, slamKey));
+        tooltip.add(gated(stack, com.soulless.upgrade.Upgrades.FORGED_SLAM, line(k + "d.slam.title", ChatFormatting.LIGHT_PURPLE, slamKey)));
         tooltip.add(line(k + "d.slam.1", ChatFormatting.GRAY));
-        tooltip.add(line(k + "d.slam.2", ChatFormatting.GRAY, v(fmt(SlamManager.DAMAGE)), v(fmt(SlamManager.RADIUS))));
+        tooltip.add(line(k + "d.slam.2", ChatFormatting.GRAY, v(fmt(SlamManager.DAMAGE)), v(fmt(SlamManager.radius(stack)))));
         tooltip.add(line(k + "d.slam.6", ChatFormatting.GRAY, v(fmt(SlamManager.STUN_SECONDS))));
 
-        tooltip.add(line(k + "d.rend.title", ChatFormatting.GOLD, rendKey));
+        tooltip.add(gated(stack, com.soulless.upgrade.Upgrades.FORGED_REND, line(k + "d.rend.title", ChatFormatting.GOLD, rendKey)));
         tooltip.add(line(k + "d.rend.1", ChatFormatting.GRAY));
         tooltip.add(line(k + "d.rend.8", ChatFormatting.GRAY, v(fmt(SoulSlashEntity.MIN_DAMAGE)), v(fmt(SoulSlashEntity.MAX_DAMAGE))));
         tooltip.add(line(k + "d.rend.9", ChatFormatting.GRAY, v(Math.round(SoulSlashEntity.LIFESTEAL * 100))));
         tooltip.add(line(k + "d.rend.7", ChatFormatting.GRAY, v(RendManager.DURABILITY_COST)));
-        tooltip.add(line(k + "d.cd", ChatFormatting.DARK_GRAY, v(SlamManager.COOLDOWN_TICKS / 20)));
+        tooltip.add(line(k + "d.cd", ChatFormatting.DARK_GRAY, v(cd)));
         tooltip.add(Component.empty());
         tooltip.add(Component.translatable(k + "lore").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
     }
@@ -189,9 +203,10 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
     /** Marker for a section divider; the client tooltip renderer swaps it for a drawn header (SoulTooltip). */
     public static final String SECTION_MARK = "⁣";
 
-    private static Component soulsLine(ItemStack stack, String k) {
-        int souls = SoulBonus.souls(stack);
-        return line(k + "souls", ChatFormatting.DARK_PURPLE, v(souls), v(souls / SoulBonus.SOULS_PER_PERCENT));
+    /** The line as it is once the upgrade is bought; until then a locked line pointing at the Soul Anvil. */
+    private static Component gated(ItemStack stack, String option, Component line) {
+        if (com.soulless.upgrade.Upgrades.has(stack, option)) return line;
+        return Component.translatable("tooltip.soulless.upgrade.locked", line.getString()).withStyle(ChatFormatting.DARK_GRAY);
     }
 
     private static Component section(String name) {

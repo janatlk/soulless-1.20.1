@@ -26,8 +26,6 @@ import net.minecraftforge.fml.common.Mod;
  * Damage bonuses of Soul Forged:
  * <ul>
  * <li>Standing on soul sand / soul soil: +2 damage on normal hits, +20% on ability hits.</li>
- * <li>Harvested souls: every creature with a soul killed by the sword (hostiles, villagers, wandering
- * traders, golems; not spawner mobs) adds one to the sword's counter; +1% damage per 100 souls.</li>
  * </ul>
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
@@ -81,29 +79,13 @@ public final class SoulBonus {
         if (onSoulGround(p)) {
             amount = abilityHit ? amount * SOUL_GROUND_ABILITY_MULT : amount + SOUL_GROUND_HIT_BONUS;
         }
-        event.setAmount(amount * soulMultiplier(stack));
+        event.setAmount(amount);
     }
 
     @SubscribeEvent
     public static void onSpawn(MobSpawnEvent.FinalizeSpawn event) {
         if (event.getSpawnType() == MobSpawnType.SPAWNER) {
             event.getEntity().getPersistentData().putBoolean(SPAWNER_TAG, true);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onDeath(LivingDeathEvent event) {
-        LivingEntity dead = event.getEntity();
-        if (dead.level().isClientSide || !(event.getSource().getEntity() instanceof ServerPlayer p)) return;
-        ItemStack stack = p.getMainHandItem();
-        if (!(stack.getItem() instanceof SoulForgedItem) || !hasSoul(dead) || dead.getPersistentData().getBoolean(SPAWNER_TAG)) return;
-        int before = souls(stack);
-        int after = before + 1;
-        stack.getOrCreateTag().putInt(SOULS_TAG, after);
-        if (after / SOULS_PER_PERCENT > before / SOULS_PER_PERCENT) {
-            p.displayClientMessage(Component.translatable("message.soulless.souls_milestone", after, after / SOULS_PER_PERCENT)
-                    .withStyle(ChatFormatting.LIGHT_PURPLE), true);
-            p.level().playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 1.0F, 0.8F);
         }
     }
 
