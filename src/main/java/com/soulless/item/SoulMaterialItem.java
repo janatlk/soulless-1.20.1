@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-/** A Soul Forged crafting material. Lore and source come from the lang file ("<descriptionId>.desc"). */
+/** A Soul Anvil material. Lore and source come from the lang file ("<descriptionId>.desc"). */
 public class SoulMaterialItem extends Item {
     private final boolean foil;
 
@@ -29,6 +29,10 @@ public class SoulMaterialItem extends Item {
         tooltip.add(Component.translatable(getDescriptionId() + ".desc").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
         if (stack.is(com.soulless.registry.ModItems.ABYSSAL_HEART.get())) {
             tooltip.add(Component.translatable("tooltip.soulless.material.altar").withStyle(ChatFormatting.DARK_PURPLE));
+            return;
+        }
+        if (stack.is(com.soulless.registry.ModItems.REAPER_SOUL.get())) {
+            tooltip.add(Component.translatable("tooltip.soulless.material.reaper_soul").withStyle(ChatFormatting.DARK_PURPLE));
             return;
         }
         tooltip.add(Component.translatable("tooltip.soulless.material.source").withStyle(ChatFormatting.DARK_GRAY));

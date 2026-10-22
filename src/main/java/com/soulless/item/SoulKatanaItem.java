@@ -130,6 +130,6 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
 
     @Override
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-        consumer.accept(new KatanaClientExtensions(false));
+        consumer.accept(new KatanaClientExtensions());
     }
 }

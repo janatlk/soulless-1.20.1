@@ -15,6 +15,12 @@ public final class ModCreativeTabs {
             .title(Component.translatable("itemGroup.soulless"))
             .icon(() -> new ItemStack(ModItems.SOUL_FORGED.get()))
             .displayItems((params, out) -> {
+                out.accept(ModBlocks.SOUL_ANVIL_ITEM.get());
+                out.accept(ModBlocks.WRAITH_IRON_ORE_ITEM.get());
+                out.accept(ModBlocks.DEEPSLATE_WRAITH_IRON_ORE_ITEM.get());
+                out.accept(ModItems.RAW_WRAITH_IRON.get());
+                out.accept(ModItems.WRAITH_IRON_INGOT.get());
+                out.accept(ModItems.REAPER_SOUL.get());
                 out.accept(ModItems.SOUL_FORGED.get());
                 out.accept(ModItems.SOUL_KATANA.get());
                 out.accept(ModItems.ABYSSAL_HEART.get());

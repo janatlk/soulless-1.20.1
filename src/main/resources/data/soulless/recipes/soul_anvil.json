@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "WWW",
+    " A ",
+    "III"
+  ],
+  "key": {
+    "W": {
+      "tag": "forge:ingots/wraith_iron"
+    },
+    "A": {
+      "item": "minecraft:anvil"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "item": "soulless:soul_anvil"
+  }
+}

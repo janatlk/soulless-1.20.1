@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "soulless:block/deepslate_wraith_iron_ore"
+  }
+}

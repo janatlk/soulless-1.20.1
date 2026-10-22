@@ -180,5 +180,17 @@
   "dialogue.soulless.renegade.dream_call": "Спишь? Я же говорил, что приду.",
   "dialogue.soulless.renegade.again1": "Опять ты. Опять этот клинок, который слушается тебя, а не меня.",
   "dialogue.soulless.renegade.again2": "Здесь старик тебе не поможет. Никто не поможет.",
-  "message.soulless.renegade_chained": "Цепи держат намертво."
+  "message.soulless.renegade_chained": "Цепи держат намертво.",
+  "block.soulless.wraith_iron_ore": "Призрачная железная руда",
+  "block.soulless.deepslate_wraith_iron_ore": "Глубинная призрачная железная руда",
+  "item.soulless.raw_wraith_iron": "Необработанное призрачное железо",
+  "item.soulless.wraith_iron_ingot": "Слиток призрачного железа",
+  "item.soulless.reaper_soul": "Душа Жнеца",
+  "item.soulless.reaper_soul.desc": "Она всё ещё плачет",
+  "tooltip.soulless.material.reaper_soul": "Остаётся после победы над Плачущим Жнецом",
+  "block.soulless.soul_anvil": "Наковальня душ",
+  "container.soulless.soul_anvil": "Наковальня душ",
+  "container.soulless.soul_anvil.forge": "Выковать",
+  "container.soulless.soul_anvil.needs": "Нужно:",
+  "container.soulless.soul_anvil.short": "Не хватает материалов"
 }

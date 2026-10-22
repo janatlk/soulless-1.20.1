@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "soulless:block/soul_anvil"
+    },
+    "facing=east": {
+      "model": "soulless:block/soul_anvil",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "soulless:block/soul_anvil",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "soulless:block/soul_anvil",
+      "y": 270
+    }
+  }
+}

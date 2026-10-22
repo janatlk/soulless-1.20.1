@@ -30,5 +30,24 @@ public final class ModBlocks {
     public static final RegistryObject<BlockEntityType<SoulAltarBlockEntity>> SOUL_ALTAR_BE = BLOCK_ENTITIES.register("soul_altar",
             () -> BlockEntityType.Builder.of(SoulAltarBlockEntity::new, SOUL_ALTAR.get()).build(null));
 
+    /** Wraith Iron ore, in stone and in deepslate (worldgen: configured_feature/wraith_iron_ore). */
+    public static final RegistryObject<Block> WRAITH_IRON_ORE = BLOCKS.register("wraith_iron_ore", () -> new net.minecraft.world.level.block.DropExperienceBlock(
+            BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(3.0F, 3.0F).requiresCorrectToolForDrops()
+                    .lightLevel(s -> 3), net.minecraft.util.valueproviders.UniformInt.of(2, 5)));
+    public static final RegistryObject<Block> DEEPSLATE_WRAITH_IRON_ORE = BLOCKS.register("deepslate_wraith_iron_ore", () -> new net.minecraft.world.level.block.DropExperienceBlock(
+            BlockBehaviour.Properties.of().mapColor(MapColor.DEEPSLATE).strength(4.5F, 3.0F).requiresCorrectToolForDrops()
+                    .sound(net.minecraft.world.level.block.SoundType.DEEPSLATE).lightLevel(s -> 3), net.minecraft.util.valueproviders.UniformInt.of(2, 5)));
+    /** The Soul Anvil: every weapon of the mod is forged here (forge.SoulAnvilRecipes). */
+    public static final RegistryObject<Block> SOUL_ANVIL = BLOCKS.register("soul_anvil", () -> new com.soulless.forge.SoulAnvilBlock(
+            BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(5.0F, 1200.0F).requiresCorrectToolForDrops()
+                    .sound(net.minecraft.world.level.block.SoundType.ANVIL).lightLevel(s -> 4).noOcclusion()));
+
+    public static final RegistryObject<Item> WRAITH_IRON_ORE_ITEM = ModItems.ITEMS.register("wraith_iron_ore",
+            () -> new BlockItem(WRAITH_IRON_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DEEPSLATE_WRAITH_IRON_ORE_ITEM = ModItems.ITEMS.register("deepslate_wraith_iron_ore",
+            () -> new BlockItem(DEEPSLATE_WRAITH_IRON_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SOUL_ANVIL_ITEM = ModItems.ITEMS.register("soul_anvil",
+            () -> new BlockItem(SOUL_ANVIL.get(), new Item.Properties().rarity(Rarity.RARE)));
+
     private ModBlocks() {}
 }

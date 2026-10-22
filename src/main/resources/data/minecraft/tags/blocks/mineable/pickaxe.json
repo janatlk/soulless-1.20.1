@@ -1,1 +1,9 @@
-{ "replace": false, "values": ["soulless:soul_altar"] }
+{
+  "replace": false,
+  "values": [
+    "soulless:soul_altar",
+    "soulless:wraith_iron_ore",
+    "soulless:deepslate_wraith_iron_ore",
+    "soulless:soul_anvil"
+  ]
+}

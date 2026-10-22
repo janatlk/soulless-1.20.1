@@ -180,5 +180,17 @@
   "dialogue.soulless.renegade.dream_call": "Asleep? I told you I'd come.",
   "dialogue.soulless.renegade.again1": "You again. Again that blade, obeying you and not me.",
   "dialogue.soulless.renegade.again2": "The old man can't help you here. No one can.",
-  "message.soulless.renegade_chained": "The chains hold fast."
+  "message.soulless.renegade_chained": "The chains hold fast.",
+  "block.soulless.wraith_iron_ore": "Wraith Iron Ore",
+  "block.soulless.deepslate_wraith_iron_ore": "Deepslate Wraith Iron Ore",
+  "item.soulless.raw_wraith_iron": "Raw Wraith Iron",
+  "item.soulless.wraith_iron_ingot": "Wraith Iron Ingot",
+  "item.soulless.reaper_soul": "Reaper's Soul",
+  "item.soulless.reaper_soul.desc": "It is still weeping",
+  "tooltip.soulless.material.reaper_soul": "Left behind by the defeated Wailing Reaper",
+  "block.soulless.soul_anvil": "Soul Anvil",
+  "container.soulless.soul_anvil": "Soul Anvil",
+  "container.soulless.soul_anvil.forge": "Forge",
+  "container.soulless.soul_anvil.needs": "Needs:",
+  "container.soulless.soul_anvil.short": "Not enough materials"
 }

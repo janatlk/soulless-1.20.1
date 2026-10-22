@@ -35,6 +35,7 @@ public class Soulless {
         ModParticles.PARTICLES.register(bus);
         ModSounds.SOUNDS.register(bus);
         ModCreativeTabs.TABS.register(bus);
+        com.soulless.registry.ModMenus.MENUS.register(bus);
         bus.addListener(this::commonSetup);
         // Custom ArmPose enum values must exist before HumanoidModel first switches over the enum.
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> com.soulless.client.SoulArmPose::init);

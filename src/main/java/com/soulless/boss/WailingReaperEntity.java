@@ -703,7 +703,7 @@ public class WailingReaperEntity extends Monster implements GeoEntity {
         BlockPos pos = home != null ? home : blockPosition();
         level.setBlock(pos, Blocks.CHEST.defaultBlockState(), 3);
         if (level.getBlockEntity(pos) instanceof ChestBlockEntity chest) {
-            chest.setItem(13, new ItemStack(ModItems.SOUL_FORGED.get()));
+            chest.setItem(13, new ItemStack(ModItems.REAPER_SOUL.get()));
         }
         level.playSound(null, pos, SoundEvents.CHEST_OPEN, SoundSource.BLOCKS, 1.0F, 0.6F);
         level.playSound(null, pos, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0F, 1.0F);

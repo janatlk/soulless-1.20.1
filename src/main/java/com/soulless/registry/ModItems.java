@@ -24,6 +24,13 @@ public final class ModItems {
             () -> new com.soulless.item.SoulRingItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));
 
 
+    /** Wraith Iron: mined from its ore deep below (raw), smelted into ingots - what the katana is forged from. */
+    public static final RegistryObject<Item> RAW_WRAITH_IRON = ITEMS.register("raw_wraith_iron", () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> WRAITH_IRON_INGOT = ITEMS.register("wraith_iron_ingot", () -> new Item(new Item.Properties()));
+
+    /** The Wailing Reaper's soul, left in its chest: forges Soul Forged at the Soul Anvil. */
+    public static final RegistryObject<Item> REAPER_SOUL = material("reaper_soul", Rarity.EPIC, true);
+
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

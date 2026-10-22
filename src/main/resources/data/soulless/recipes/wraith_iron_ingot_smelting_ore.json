@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "ingredient": {
+    "tag": "forge:ores/wraith_iron"
+  },
+  "result": "soulless:wraith_iron_ingot",
+  "experience": 1.0,
+  "cookingtime": 200
+}

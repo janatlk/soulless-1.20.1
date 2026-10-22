@@ -69,12 +69,12 @@ public final class ClientModEvents {
     public static void onModels(ModelEvent.RegisterAdditional event) {
         event.register(SoulForgedRenderer.ICON_MODEL);
         event.register(KatanaRenderer.ICON_MODEL);
-        event.register(KatanaRenderer.TRAINING_ICON_MODEL);
     }
 
     @SubscribeEvent
     public static void onClientSetup(net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
         KatanaAnim.register();
+        event.enqueueWork(() -> net.minecraft.client.gui.screens.MenuScreens.register(com.soulless.registry.ModMenus.SOUL_ANVIL.get(), SoulAnvilScreen::new));
         ChainedAnim.register();
         SwimRendAnim.register();
     }
