@@ -65,6 +65,11 @@ public final class ResonanceRitual {
 
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem item) || !player.isAlive() || player.isSpectator()) return;
+        if (!KatanaSouls.has(player, KatanaSouls.RESONANCE)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.soulless.katana_locked",
+                    net.minecraft.network.chat.Component.translatable("tooltip.soulless.katana_stage." + KatanaSouls.RESONANCE)), true);
+            return;
+        }
         if (isActive(player) || player.getCooldowns().isOnCooldown(item)) return;
         if (!player.onGround() || player.isInWater()) {
             player.displayClientMessage(Component.translatable("message.soulless.ritual_ground"), true);

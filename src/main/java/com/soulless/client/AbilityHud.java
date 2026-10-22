@@ -50,13 +50,13 @@ public final class AbilityHud implements IGuiOverlay {
     }
 
     /**
-     * The katana: R - the Kitsune ritual (its cooldown), RMB - the parry (locked until learned, lit while the window is
+     * The katana: R - Soul Resonance (its cooldown), RMB - the parry (locked until the blade's stage reaches it, lit while the window is
      * open, shaded after a parry that caught nothing), and while the blessing lasts a third, blue slot with its seconds.
      */
     private static void katana(GuiGraphics g, Font font, Player player, com.soulless.item.SoulKatanaItem item, float partial, int width, int height) {
         int x = width / 2 + 91 + 8, y = height - SLOT - 2;
         float ritual = player.getCooldowns().getCooldownPercent(item, partial);
-        if (!ClientState.ritualKnown) {
+        if (!com.soulless.item.KatanaSouls.has(player, com.soulless.item.KatanaSouls.RESONANCE)) {
             g.fill(x, y, x + SLOT, y + SLOT, 0x99000000);
             g.fill(x, y + SLOT - 2, x + SLOT, y + SLOT, 0xFF555555);
             g.drawString(font, "?", x + (SLOT - font.width("?")) / 2, y + 6, 0xFF888888, true);
@@ -65,7 +65,7 @@ public final class AbilityHud implements IGuiOverlay {
         }
 
         int px = x + SLOT + 4;
-        if (!ClientState.parryKnown) {
+        if (!com.soulless.item.KatanaSouls.has(player, com.soulless.item.KatanaSouls.PARRY)) {
             g.fill(px, y, px + SLOT, y + SLOT, 0x99000000);
             g.fill(px, y + SLOT - 2, px + SLOT, y + SLOT, 0xFF555555);
             g.drawString(font, "?", px + (SLOT - font.width("?")) / 2, y + 6, 0xFF888888, true);

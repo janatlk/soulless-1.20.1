@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
  * the player has of each, red when short) and the Forge button. Drawn with flat fills - no texture.
  */
 public class SoulAnvilScreen extends AbstractContainerScreen<SoulAnvilMenu> {
-    private static final int W = 248, H = 160, ROW = 24, LIST_W = 104;
+    private static final int W = 320, H = 160, ROW = 24, LIST_W = 136;
     private static final int BG = 0xF0141820, EDGE = 0xFF5E8FA8, PANEL = 0xFF1C222C, ROW_ON = 0xFF2C3A4A, ROW_HOVER = 0xFF232C38;
     private static final int TEXT = 0xFFDDEEF4, DIM = 0xFF8496A4, OK = 0xFF7FE0A0, SHORT = 0xFFE07070;
 

@@ -48,6 +48,8 @@ public final class DevAutoTest {
     public static final boolean FOX = ENABLED && System.getenv("SOULLESS_FOX") != null;
     /** SOULLESS_RENEGADE=1: the fight with the Renegade - every attack, a parry, the loss, the win, the harakiri lesson. */
     public static final boolean RENEGADE = ENABLED && System.getenv("SOULLESS_RENEGADE") != null;
+    /** SOULLESS_FORGE=1: Wraith Iron in the ground, the Soul Anvil (screen and forging), the katana's stages and what they unlock. */
+    public static final boolean FORGE = ENABLED && System.getenv("SOULLESS_FORGE") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -99,7 +101,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -229,6 +231,10 @@ public final class DevAutoTest {
         }
         if (FOX) {
             foxTick(p);
+            return;
+        }
+        if (FORGE) {
+            forgeTick(p);
             return;
         }
         if (RENEGADE) {
@@ -495,6 +501,114 @@ public final class DevAutoTest {
         }
     }
 
+
+    private static net.minecraft.core.BlockPos anvilAt;
+
+    private static void forgeLog(String what, Object... args) {
+        Object[] all = new Object[args.length + 1];
+        all[0] = tick;
+        System.arraycopy(args, 0, all, 1, args.length);
+        Soulless.LOGGER.info("[autotest] forge t={} " + what, all);
+    }
+
+    private static void forgeTick(ServerPlayer p) {
+        ServerLevel level = p.serverLevel();
+        var inv = p.getInventory();
+        var dmgAttr = net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE;
+        if (tick == 20) {
+            p.setGameMode(GameType.SURVIVAL);
+            inv.clearContent();
+            anvilAt = p.blockPosition().relative(p.getDirection(), 2);
+            level.setBlock(anvilAt, com.soulless.registry.ModBlocks.SOUL_ANVIL.get().defaultBlockState(), 3);
+            inv.add(new ItemStack(ModItems.WRAITH_IRON_INGOT.get(), 7));
+            inv.add(new ItemStack(net.minecraft.world.item.Items.STICK, 2));
+            p.openMenu(new net.minecraft.world.SimpleMenuProvider((id, i, pl) -> new com.soulless.forge.SoulAnvilMenu(id, i,
+                    net.minecraft.world.inventory.ContainerLevelAccess.create(level, anvilAt)), net.minecraft.network.chat.Component.translatable("container.soulless.soul_anvil")));
+            forgeLog("anvil placed at {}, screen open: {}", anvilAt, p.containerMenu instanceof com.soulless.forge.SoulAnvilMenu);
+        }
+        if (tick == 40) {
+            boolean forged = p.containerMenu.clickMenuButton(p, 0);
+            boolean soulForged = p.containerMenu.clickMenuButton(p, 1);
+            forgeLog("katana forged={} (ingots left {}, sticks left {}) | Soul Forged without the Reaper Soul forged={}", forged,
+                    com.soulless.forge.SoulAnvilRecipes.count(p, ModItems.WRAITH_IRON_INGOT.get()),
+                    com.soulless.forge.SoulAnvilRecipes.count(p, net.minecraft.world.item.Items.STICK), soulForged);
+            p.closeContainer();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                if (inv.getItem(i).getItem() instanceof com.soulless.item.SoulKatanaItem) {
+                    ItemStack k = inv.getItem(i);
+                    inv.setItem(i, inv.getItem(0));
+                    inv.setItem(0, k);
+                }
+            }
+            inv.selected = 0;
+        }
+        if (tick == 50) {
+            ItemStack k = p.getMainHandItem();
+            com.soulless.item.KatanaParry.tryStart(p);
+            com.soulless.item.ResonanceRitual.tryStart(p);
+            forgeLog("stage {} souls {} dmg {} | parry raised={} ritual active={}", com.soulless.item.KatanaSouls.stage(k),
+                    com.soulless.item.KatanaSouls.souls(k), p.getAttributeValue(dmgAttr),
+                    com.soulless.item.KatanaParry.started(p) >= 0, com.soulless.item.ResonanceRitual.isActive(p));
+            com.soulless.item.KatanaSouls.set(k, 49);
+        }
+        if (tick == 60) {
+            // the 50th soul: a zombie slain with the katana wakes it; a cow has no soul worth the blade
+            Zombie z = EntityType.ZOMBIE.create(level);
+            z.moveTo(p.getX() + 2, p.getY(), p.getZ(), 0, 0);
+            level.addFreshEntity(z);
+            z.hurt(p.damageSources().playerAttack(p), 1000);
+            var cow = EntityType.COW.create(level);
+            cow.moveTo(p.getX() - 2, p.getY(), p.getZ(), 0, 0);
+            level.addFreshEntity(cow);
+            cow.hurt(p.damageSources().playerAttack(p), 1000);
+        }
+        if (tick == 70) {
+            ItemStack k = p.getMainHandItem();
+            com.soulless.item.KatanaParry.tryStart(p);
+            forgeLog("after the zombie and the cow: stage {} souls {} dmg {} | parry raised={}", com.soulless.item.KatanaSouls.stage(k),
+                    com.soulless.item.KatanaSouls.souls(k), p.getAttributeValue(dmgAttr), com.soulless.item.KatanaParry.started(p) >= 0);
+        }
+        if (tick == 72) {
+            ItemStack k = p.getMainHandItem();
+            com.soulless.item.KatanaSouls.set(k, 500);
+        }
+        if (tick == 80) {
+            p.setHealth(20);
+            com.soulless.item.ResonanceRitual.tryStart(p);
+            forgeLog("stage {}: dmg {} ritual active={}", com.soulless.item.KatanaSouls.stage(p.getMainHandItem()),
+                    p.getAttributeValue(dmgAttr), com.soulless.item.ResonanceRitual.isActive(p));
+        }
+        if (tick == 85) {
+            // the vein feature itself, in a block of stone and one of deepslate high above (the test world is flat)
+            var src = p.createCommandSourceStack().withSuppressedOutput().withPermission(4);
+            var cmds = level.getServer().getCommands();
+            int bx = p.getBlockX(), bz = p.getBlockZ();
+            cmds.performPrefixedCommand(src, "fill " + (bx - 6) + " 150 " + (bz - 6) + " " + (bx + 6) + " 162 " + (bz + 6) + " stone");
+            cmds.performPrefixedCommand(src, "fill " + (bx + 20) + " 150 " + (bz - 6) + " " + (bx + 32) + " 162 " + (bz + 6) + " deepslate");
+            for (int i = 0; i < 6; i++) {
+                cmds.performPrefixedCommand(src, "place feature soulless:wraith_iron_ore " + bx + " 156 " + bz);
+                cmds.performPrefixedCommand(src, "place feature soulless:wraith_iron_ore " + (bx + 26) + " 156 " + bz);
+            }
+        }
+        if (tick == 90) {
+            // the ore in the ground around, 64 x 64 blocks
+            int stone = 0, deep = 0, minY = 999, maxY = -999;
+            var pos = new net.minecraft.core.BlockPos.MutableBlockPos();
+            for (int x = -32; x < 32; x++) for (int z = -32; z < 32; z++) for (int y = -64; y < 170; y++) {
+                pos.set(p.getBlockX() + x, y, p.getBlockZ() + z);
+                var b = level.getBlockState(pos).getBlock();
+                if (b == com.soulless.registry.ModBlocks.WRAITH_IRON_ORE.get()) stone++;
+                else if (b == com.soulless.registry.ModBlocks.DEEPSLATE_WRAITH_IRON_ORE.get()) deep++;
+                else continue;
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+            }
+            forgeLog("ore in 64x64: stone={} deepslate={} y {}..{}", stone, deep, minY, maxY);
+        }
+        if (tick == 95) com.soulless.item.KatanaSouls.set(p.getMainHandItem(), 1000);
+        if (tick == 100) forgeLog("true stage dmg {}", p.getAttributeValue(dmgAttr));
+        if (tick == 160) Soulless.LOGGER.info("[autotest] forge done");
+    }
 
     private static int rgPhase, rgPhaseAt, rgLastAttack = -2;
 

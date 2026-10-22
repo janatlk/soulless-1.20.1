@@ -17,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public class SoulAnvilMenu extends AbstractContainerMenu {
     private final ContainerLevelAccess access;
+    private final Player owner;
 
     public SoulAnvilMenu(int id, Inventory inv) {
         this(id, inv, ContainerLevelAccess.NULL);
@@ -25,6 +26,15 @@ public class SoulAnvilMenu extends AbstractContainerMenu {
     public SoulAnvilMenu(int id, Inventory inv, ContainerLevelAccess access) {
         super(ModMenus.SOUL_ANVIL.get(), id);
         this.access = access;
+        this.owner = inv.player;
+    }
+
+    /** With no slots of its own the menu would not sync the player's inventory: forged items and spent ingots would
+     * not show until it closes. Keep the inventory's own menu in step while this one is open. */
+    @Override
+    public void broadcastChanges() {
+        super.broadcastChanges();
+        if (owner instanceof net.minecraft.server.level.ServerPlayer) owner.inventoryMenu.broadcastChanges();
     }
 
     @Override

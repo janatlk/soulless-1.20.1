@@ -31,6 +31,10 @@ public final class ModItems {
     /** The Wailing Reaper's soul, left in its chest: forges Soul Forged at the Soul Anvil. */
     public static final RegistryObject<Item> REAPER_SOUL = material("reaper_soul", Rarity.EPIC, true);
 
+    /** Calls the Renegade (item.RenegadeSigilItem). */
+    public static final RegistryObject<Item> RENEGADE_SIGIL = ITEMS.register("renegade_sigil",
+            () -> new com.soulless.item.RenegadeSigilItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
+
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

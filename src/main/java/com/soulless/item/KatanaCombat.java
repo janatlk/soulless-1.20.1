@@ -67,6 +67,7 @@ public final class KatanaCombat {
     public static void announce(ServerPlayer player, int step) {
         if (step < KESA || step > THRUST_STEP || !(player.getMainHandItem().getItem() instanceof SoulKatanaItem)) return;
         if (ResonanceRitual.isActive(player)) return;
+        if (step == THRUST_STEP && !KatanaSouls.has(player, KatanaSouls.THRUST)) return;
         long now = player.level().getGameTime();
         // right after a parry the riposte comes at once, faster and at full strength, whatever the weapon's cooldown
         boolean riposte = KatanaParry.riposteReady(player);

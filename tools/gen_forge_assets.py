@@ -143,6 +143,27 @@ SOUL = [
 SOUL_PAL = [(250, 255, 255), (170, 240, 250), (90, 170, 220), (60, 40, 110)]
 
 
+SIGIL = [
+    "................",
+    ".....000000.....",
+    "...0011111100...",
+    "..011222222110..",
+    "..012233332210..",
+    ".01223.33.32210.",
+    ".0123333333.210.",
+    ".012.33.3333210.",
+    ".0123333.333210.",
+    ".01233.3333.210.",
+    "..012333.33210..",
+    "..011222222110..",
+    "...0011111100...",
+    ".....000000.....",
+    "................",
+    "................",
+]
+SIGIL_PAL = [(30, 14, 18), (92, 28, 34), (150, 40, 46), (214, 60, 62)]
+
+
 def anvil():
     dark = (46, 50, 62)
     top = stone(71, dark, 0.18)
@@ -181,6 +202,9 @@ def main():
     shape_item("wraith_iron_ingot", 31, INGOT, STEEL, glint=[(4, 9), (5, 8)])
     shape_item("raw_wraith_iron", 41, RAW, RAW_PAL)
     shape_item("reaper_soul", 51, SOUL, SOUL_PAL)
+    # the cracks across the seal are dark, not holes
+    sigil = [r[:r.index("0")] + r[r.index("0"):r.rindex("0") + 1].replace(".", "0") + r[r.rindex("0") + 1:] if "0" in r else r for r in SIGIL]
+    shape_item("renegade_sigil", 61, sigil, SIGIL_PAL)
     anvil()
 
 

@@ -63,6 +63,11 @@ public final class SoulBonus {
         return p.onGround() && p.level().getBlockState(p.getOnPos()).is(BlockTags.SOUL_SPEED_BLOCKS);
     }
 
+    /** Spawned by a mob spawner: its soul is worth nothing to a blade. */
+    public static boolean fromSpawner(LivingEntity e) {
+        return e.getPersistentData().getBoolean(SPAWNER_TAG);
+    }
+
     public static boolean hasSoul(LivingEntity e) {
         return e instanceof Enemy || e instanceof AbstractVillager || e instanceof AbstractGolem;
     }

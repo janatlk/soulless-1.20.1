@@ -90,6 +90,11 @@ public final class KatanaParry {
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem) || !player.isAlive() || player.isSpectator()) return;
         if (ResonanceRitual.isActive(player) || KatanaCombat.isCutting(player)) return;
+        if (!KatanaSouls.has(player, KatanaSouls.PARRY)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.soulless.katana_locked",
+                    net.minecraft.network.chat.Component.translatable("tooltip.soulless.katana_stage." + KatanaSouls.PARRY)), true);
+            return;
+        }
         long now = player.level().getGameTime();
         Long last = STARTED.get(player.getUUID());
         if (last != null && now - last < WHIFF_COOLDOWN && !CAUGHT.contains(player.getUUID())) return;
@@ -113,6 +118,11 @@ public final class KatanaParry {
         // a parry that caught something keeps the guard up a little longer: a quick second blow is caught too
         Long caught = LAST_CATCH.get(player.getUUID());
         return CAUGHT.contains(player.getUUID()) && caught != null && now - caught < CHAIN;
+    }
+
+    /** When this player last raised the guard (game time; -1: never). */
+    public static long started(Player player) {
+        return STARTED.getOrDefault(player.getUUID(), -1L);
     }
 
     /** {@code /soulless resetcd}: the next parry may come at once. */

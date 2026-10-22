@@ -184,3 +184,19 @@ Loader API (Forge) + GeckoLib 4.8.4 for the animated item model. No mixins.
 - 2026-10-08 (user): the second cut after a parry did no damage - the target's hurt-immunity (10 ticks) from the first swallowed the fast riposte's gyaku; every katana cut now clears it (KatanaCombat.strike). /soulless renegade reset also clears renegade.dream.
 
 - /soulless katana reset: whole Legendary Katana branch reset (sensei./kitsune./renegade. flags, katanas and scroll removed). Renegade first coming is now scripted: the oath marks him pending, he sets out 10 s after waking from that dream (no more timer from the oath, no fallback schedule).
+
+## 2026-10-22 - the story cut: an artifact mod
+Direction change (user): the quest line fought Minecraft's sandbox. Now the mod drops into any fantasy/RPG pack:
+- Gone: sensei, Kitsune, the astral, the oath, broken/training katana, family scroll, dojo/shrine structures, villager profession.
+- Kitsune's blessing -> Soul Resonance (effect soulless:soul_resonance, sound soul_resonance). Harakiri (R) stays and gives it.
+- Wraith Iron ore (stone + deepslate, Y -64..0 trapezoid, 4 veins of 5 per chunk), raw + ingot (smelt/blast), forge tags.
+- Soul Anvil (crafted: 3 Wraith ingots / anvil / 3 iron): screen lists every weapon (forge.SoulAnvilRecipes):
+  katana = 6 ingots + 2 sticks; Soul Forged = Reaper's Soul + 4 ingots + netherite; Renegade's Sigil = 3 ingots + echo shard + 4 redstone.
+  Menu has no slots - forging is clickMenuButton; it keeps inventoryMenu broadcasting so counts stay live.
+- The Reaper's chest now holds the Reaper's Soul, not Soul Forged.
+- Katana souls (item.KatanaSouls, stack tag): +1 per soul-bearing kill with that blade (no spawner mobs), only ever gained.
+  Stages at 0/50/200/500/1000: Sleeping(5 dmg) / Awakened(6.5, parry) / Hungering(7.5, thrust) / Resonant(8.5, R) / True(10).
+  The katana never wears (isDamageable false). /soulless katana souls <n> sets it.
+- Renegade: comes only from the sigil (needs a katana on the player). Dreams after a loss stay.
+- Autotest SOULLESS_FORGE=1: anvil screen + forging, stage gates (parry/thrust/R), zombie counts and cow not, damage per stage,
+  the ore feature placed into stone/deepslate (the test world is superflat, so no natural ore there). Passed.

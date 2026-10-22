@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 /**
  * What the Soul Anvil forges, in the order its screen lists them. The katana needs only Wraith Iron; everything
- * else needs something taken from a boss - the screen still shows it all, so the player sees what is ahead.
+ * else needs something taken from a boss (the Renegade's Sigil, which calls a boss, is forged here too) - the screen still shows it all, so the player sees what is ahead.
  */
 public final class SoulAnvilRecipes {
     public record Cost(Supplier<Item> item, int count) {}
@@ -32,7 +32,11 @@ public final class SoulAnvilRecipes {
             new Recipe(ModItems.SOUL_FORGED::get, List.of(
                     new Cost(ModItems.REAPER_SOUL::get, 1),
                     new Cost(ModItems.WRAITH_IRON_INGOT::get, 4),
-                    new Cost(() -> Items.NETHERITE_INGOT, 1))));
+                    new Cost(() -> Items.NETHERITE_INGOT, 1))),
+            new Recipe(ModItems.RENEGADE_SIGIL::get, List.of(
+                    new Cost(ModItems.WRAITH_IRON_INGOT::get, 3),
+                    new Cost(() -> Items.ECHO_SHARD, 1),
+                    new Cost(() -> Items.REDSTONE, 4))));
 
     public static int count(Player player, Item item) {
         int n = 0;

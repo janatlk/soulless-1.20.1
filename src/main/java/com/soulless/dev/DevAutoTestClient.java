@@ -123,6 +123,21 @@ public final class DevAutoTestClient {
             if (tick == 640) mc.stop();
             return;
         }
+        if (DevAutoTest.FORGE) {
+            opts.setCameraType(CameraType.FIRST_PERSON);
+            if (tick == 32) shot(mc, "forge_anvil_screen");
+            if (tick == 56 || tick == 98) {
+                var lines = mc.player.getMainHandItem().getTooltipLines(mc.player, net.minecraft.world.item.TooltipFlag.NORMAL);
+                Soulless.LOGGER.info("[autotest] forge tooltip t={}: {}", tick, lines.stream().map(net.minecraft.network.chat.Component::getString).toList());
+            }
+            if (tick == 110) {
+                mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,
+                        net.minecraft.world.phys.Vec3.atCenterOf(mc.player.blockPosition().relative(mc.player.getDirection(), 2)));
+            }
+            if (tick == 120) shot(mc, "forge_anvil_block");
+            if (tick == 170) mc.stop();
+            return;
+        }
         if (DevAutoTest.RENEGADE) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             var him = mc.level.getEntitiesOfClass(com.soulless.boss.RenegadeEntity.class, mc.player.getBoundingBox().inflate(40)).stream().findFirst().orElse(null);

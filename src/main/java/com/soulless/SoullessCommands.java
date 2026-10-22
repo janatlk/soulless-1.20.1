@@ -122,6 +122,20 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.literal("Renegade reset"), false);
                             return 1;
                         })))
+                .then(Commands.literal("katana")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.literal("souls").then(Commands.argument("count", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
+                                .executes(ctx -> {
+                                    var stack = ctx.getSource().getPlayerOrException().getMainHandItem();
+                                    if (!(stack.getItem() instanceof com.soulless.item.SoulKatanaItem)) {
+                                        ctx.getSource().sendFailure(Component.literal("Hold the katana"));
+                                        return 0;
+                                    }
+                                    int n = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "count");
+                                    com.soulless.item.KatanaSouls.set(stack, n);
+                                    ctx.getSource().sendSuccess(() -> Component.literal("Katana souls: " + n + ", stage " + com.soulless.item.KatanaSouls.stage(stack)), false);
+                                    return 1;
+                                }))))
                 .then(Commands.literal("resetcd")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> resetCooldowns(ctx.getSource(), self(ctx.getSource())))
