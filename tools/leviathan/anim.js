@@ -16,13 +16,15 @@
     return kf;
   };
 
-  // idle: slow breathing - the chest swells, the jaw works a little, the head bobs
+  // idle: breathing - the chest swells and falls, the jaw works, the head lifts and dips and looks a little aside
   const idle = anim('idle', 4, true);
-  for (const [t, s, j, hx] of [[0, 1, 0, 0], [1.6, 1.05, -4, -1.5], [2.4, 1.05, -4, -1.5], [4, 1, 0, 0]]) {
-    key(idle, 'body_0', 'scale', t, s, s, 1);
-    key(idle, 'body_1', 'scale', t, 1 + (s - 1) * 0.6, 1 + (s - 1) * 0.6, 1);
+  for (const [t, sc, j, hx, hy] of [[0, 1, 0, 0, 0], [1.0, 1.05, -5, -3, 2], [1.8, 1.09, -9, -5, 3], [2.4, 1.08, -7, -4, 1],
+    [3.2, 1.02, -2, 1, -2], [4, 1, 0, 0, 0]]) {
+    key(idle, 'body_0', 'scale', t, sc, sc, 1);
+    key(idle, 'body_1', 'scale', t, 1 + (sc - 1) * 0.7, 1 + (sc - 1) * 0.7, 1);
+    key(idle, 'body_2', 'scale', t, 1 + (sc - 1) * 0.35, 1 + (sc - 1) * 0.35, 1);
     key(idle, 'jaw', 'rotation', t, j, 0, 0);
-    key(idle, 'head', 'rotation', t, hx, 0, 0);
+    key(idle, 'head', 'rotation', t, hx, hy, 0);
   }
 
   // roar: the head draws back, the jaw drops wide, the whole skull shakes, then settles

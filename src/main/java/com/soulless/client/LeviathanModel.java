@@ -16,7 +16,7 @@ import software.bernie.geckolib.model.DefaultedEntityGeoModel;
  *       and bending into its turns;</li>
  *   <li>the head tentacles: each a slow wave of its own, out of step with the others;</li>
  *   <li>the whiskers: quicker, lighter drifting;</li>
- *   <li>the eyelids: a blink every few seconds, at random, both eyes together.</li>
+ *   <li>the eyes: shut like sliding doors, one after another from the front, both sides together.</li>
  * </ul>
  */
 public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
@@ -42,18 +42,21 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         }
         add("tail_fin", 0, Mth.sin(t * 0.09F - SEGMENTS * 0.55F) * 14 * d, 0);
 
-        // the crown of tentacles: slow and out of step, more at the tips
+        // the crown of tentacles breathes with it: the whole crown opens on the in-breath and closes on the out (the idle
+        // animation's 4 s), each arm rolling a wave down to its tip, plus a sway of its own
+        float breath = t * Mth.TWO_PI / 80F;
         for (int a = 0; a < ARMS; a++) {
-            float phase = a * 1.7F;
+            float side = a % 2 == 0 ? 1 : -1, up = a < 2 ? 1 : a < 4 ? 0.3F : -1;
             for (int k = 0; k < ARM_LINKS; k++) {
                 float f = (k + 1f) / ARM_LINKS;
-                float sway = Mth.sin(t * 0.05F + phase - k * 0.6F) * (2F + 5F * f);
-                float lift = Mth.sin(t * 0.04F + phase * 1.3F - k * 0.5F) * (1.5F + 4F * f);
-                add("arm_" + a + "_" + k, lift * d, sway * d, 0);
+                float open = Mth.sin(breath - k * 0.45F) * (4F + 9F * f);
+                float sway = Mth.sin(t * 0.07F + a * 1.7F - k * 0.7F) * (2F + 6F * f);
+                float lift = Mth.sin(t * 0.055F + a * 2.3F - k * 0.6F) * (2F + 5F * f);
+                add("arm_" + a + "_" + k, (lift - open * up * 0.6F) * d, (sway + open * side) * d, 0);
             }
         }
 
-        // the whiskers drift quicker and lighter
+        // the whiskers drift quicker and lighter; the two on top (4, 5) curl and uncurl slowly
         for (int w = 0; w < WHISKERS; w++) {
             for (int k = 0; k < WHISKER_LINKS; k++) {
                 float f = (k + 1f) / WHISKER_LINKS;
@@ -61,15 +64,27 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
                         Mth.sin(t * 0.11F + w * 1.4F - k * 0.7F) * 10 * f * d, 0);
             }
         }
+        for (int w = 4; w <= 5; w++) {
+            for (int k = 0; k < 4; k++) {
+                float f = (k + 1f) / 4;
+                add("whisker_" + w + "_" + k, Mth.sin(t * 0.06F + w - k * 0.5F) * 7 * f * d, Mth.sin(t * 0.08F + w * 2 - k * 0.6F) * 5 * f * d, 0);
+            }
+        }
 
-        // a blink every few seconds (the lid's rest is closed; open it is squashed up to nothing)
+        // the eyes shut like sliding doors, the two leaves meeting in the middle - one eye after another from the front,
+        // both sides together, every few seconds
         long seed = e.getUUID().getLeastSignificantBits();
-        int period = 70 + (int) Math.floorMod(seed, 50L);
+        int period = 80 + (int) Math.floorMod(seed, 60L);
         float since = (t + Math.floorMod(seed, 97L)) % period;
-        float shut = since < 3 ? since / 3 : since < 6 ? 1 - (since - 3) / 3 : 0;
-        for (String side : new String[]{"l", "r"}) {
-            CoreGeoBone lid = getAnimationProcessor().getBone("lid_" + side);
-            if (lid != null) lid.setScaleY(Math.max(0.02F, shut));
+        for (int n = 0; n < 3; n++) {
+            float s = since - n * 4;
+            float shut = s < 0 ? 0 : s < 2.5F ? s / 2.5F : s < 4 ? 1 : s < 6.5F ? 1 - (s - 4) / 2.5F : 0;
+            for (String side : new String[]{"l", "r"}) {
+                for (String leaf : new String[]{"f", "b"}) {
+                    CoreGeoBone door = getAnimationProcessor().getBone("door_" + side + n + "_" + leaf);
+                    if (door != null) door.setScaleZ(Math.max(0.02F, shut));
+                }
+            }
         }
     }
 

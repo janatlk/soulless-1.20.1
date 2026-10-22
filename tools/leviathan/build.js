@@ -3,6 +3,8 @@
 // Rig: root > head (jaw, eyelids, whiskers, head tentacles) and root > body_0 > body_1 > ... > body_11 > tail_fin,
 // each body segment the child of the one before, so the game can bend the chain procedurally.
 (() => {
+  if (Modes.options.edit && !Modes.edit) Modes.options.edit.select();
+  Animation.all.slice().forEach(a => a.remove(false));
   Cube.all.slice().forEach(c => c.remove());
   Group.all.slice().forEach(gr => gr.remove(false));
   Texture.all.slice().forEach(t => t.remove(true));
@@ -24,27 +26,81 @@
       fill(x + i, y + j, 1, 1, `rgb(${k},${k + 2},${k + 7})`);
     }
   };
-  hideNoise(0, 0, 128, 64, 20, 6);         // TOP: wet black hide
-  hideNoise(0, 64, 128, 64, 22, 6);        // SIDE: hide with two rows of photophores
-  for (const row of [78, 98]) {
-    for (let x = 2; x < 128; x += 6) {
-      fill(x, row + ((x / 6) % 2 ? 1 : 0), 2, 2, '#eaf6ff');
-      fill(x + 2, row + 2 + ((x / 6) % 2 ? 1 : 0), 1, 1, '#7d93a8');
+  const rgb = (r, g2, b) => `rgb(${Math.max(0, Math.min(255, Math.round(r)))},${Math.max(0, Math.min(255, Math.round(g2)))},${Math.max(0, Math.min(255, Math.round(b)))})`;
+  // the hide: rounded overlapping scales (5 wide, 4 tall, every other row half a scale over), each darker at its rim,
+  // lit across its upper half, with a faint blue-violet sheen that drifts across the hide
+  const scales = (x0, y0, w, h, base) => {
+    for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) {
+      const row = Math.floor(j / 4), off = (row % 2) * 2.5;
+      const u = ((i + off) % 5 + 5) % 5, v = j % 4;
+      const cu = (u - 2) / 2.5, cv = (v - 1.2) / 2.8;
+      const r2 = cu * cu + cv * cv;
+      let k = base + (1 - Math.min(1, r2)) * 7 - v * 2;
+      if (r2 > 0.9 || v === 3) k -= 8;
+      if (v === 0 && u > 0.6 && u < 3.6) k += 5;
+      k += (rnd() - 0.5) * 3;
+      const sheen = 3 + 3 * Math.sin((x0 + i) * 0.11 + (y0 + j) * 0.07);
+      fill(x0 + i, y0 + j, 1, 1, rgb(k, k + 1, k + 4 + sheen));
     }
+  };
+  scales(0, 0, 128, 64, 20);               // TOP
+  scales(0, 64, 128, 64, 22);              // SIDE, with one row of photophores along it
+  for (let x = 3; x < 128; x += 8) {
+    // a small cold light with a faint halo
+    fill(x - 1, 95, 3, 3, rgb(48, 62, 78));
+    fill(x, 95, 1, 3, rgb(120, 150, 175));
+    fill(x - 1, 96, 3, 1, rgb(120, 150, 175));
+    fill(x, 96, 1, 1, '#f2fbff');
   }
-  hideNoise(128, 0, 128, 64, 34, 6);       // BELLY: dark slate in plates
-  for (let j = 0; j < 64; j += 8) fill(128, j, 128, 1, '#15171d');
-  hideNoise(128, 64, 64, 64, 12, 4);       // LID / dark
-  fill(192, 64, 16, 16, '#d9cfae'); fill(192, 64, 16, 3, '#f3ecd2'); fill(192, 77, 16, 3, '#a89c7a');   // TEETH
-  for (let i = 0; i < 48; i++) for (let j = 0; j < 48; j++) {   // GUM: pale cold flesh
-    const k = 118 + Math.round((rnd() - 0.5) * 24);
-    fill(208 + i, 64 + j, 1, 1, `rgb(${k - 25},${k + 18},${k + 48})`);
+  // BELLY: plates of dark slate, each lit along its front edge and shadowed at its back
+  for (let i = 0; i < 128; i++) for (let j = 0; j < 64; j++) {
+    const v = j % 8;
+    let k = 36 - v * 1.6 + (rnd() - 0.5) * 3;
+    if (v === 0) k += 10;
+    if (v === 7) k -= 12;
+    fill(128 + i, j, 1, 1, rgb(k, k + 3, k + 9));
   }
-  fill(192, 80, 16, 16, '#ff9d1f'); fill(194, 82, 12, 12, '#ffc24a'); fill(198, 84, 4, 8, '#1a0d00');  // EYE
-  fill(192, 96, 16, 16, '#ff9a3a'); fill(194, 98, 12, 12, '#ffd27a');                                 // TIP
-  fill(0, 128, 64, 64, '#22070c');                                                                     // THROAT
+  // LID: the eye's doors - dark plates with seams
+  for (let i = 0; i < 64; i++) for (let j = 0; j < 64; j++) {
+    const k = 14 + (rnd() - 0.5) * 4 + (i % 4 === 0 ? -5 : 0);
+    fill(128 + i, 64 + j, 1, 1, rgb(k, k + 1, k + 5));
+  }
+  // TEETH: old yellowed fangs - a dark stained root (top of the swatch), a dirty ivory shaft, a paler worn point
+  for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) {
+    const f = j / 15, edge = i === 0 || i === 15 ? -26 : i < 4 ? 10 : 0;
+    const stain = Math.sin(i * 1.7 + j * 0.9) > 0.7 ? -18 : 0;
+    fill(192 + i, 64 + j, 1, 1, rgb(112 + f * 88 + edge + stain, 96 + f * 80 + edge + stain, 62 + f * 66 + edge + stain));
+  }
+  // GUM: wet, pale cold flesh with darker veins and glints
+  for (let i = 0; i < 48; i++) for (let j = 0; j < 48; j++) {
+    const vein = Math.abs(Math.sin(i * 0.35 + Math.sin(j * 0.25) * 2)) < 0.12 ? -26 : 0;
+    const k = 120 + (rnd() - 0.5) * 14 + vein + (rnd() < 0.02 ? 50 : 0);
+    fill(208 + i, 64 + j, 1, 1, rgb(k - 30, k + 14, k + 44));
+  }
+  // EYE: a compound eye - a dark socket ring, four amber cells, each glowing from its centre with a catch-light
+  fill(192, 80, 16, 16, rgb(28, 14, 6));
+  fill(192, 80, 16, 1, rgb(60, 34, 14));
+  fill(192, 95, 16, 1, rgb(10, 5, 2));
+  for (const [cx, cy] of [[193, 81], [200, 81], [193, 88], [200, 88]]) {
+    for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) {
+      const d = Math.hypot(i - 3, j - 3) / 4.3;
+      fill(cx + i, cy + j, 1, 1, rgb(255 - d * 90, 205 - d * 160, 90 - d * 90));
+    }
+    fill(cx, cy + 6, 7, 1, rgb(150, 60, 0));
+    fill(cx + 1, cy + 1, 2, 1, '#fff4d0');
+  }
+  // TIP: a glowing bead, hot at its heart
+  for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) {
+    const d = Math.hypot(i - 7.5, j - 7.5) / 10.6;
+    fill(192 + i, 96 + j, 1, 1, rgb(255, 230 - d * 130, 140 - d * 130));
+  }
+  // THROAT: the dark wet gullet
+  for (let i = 0; i < 64; i++) for (let j = 0; j < 64; j++) {
+    const k = 22 + (rnd() - 0.5) * 6 - j * 0.2;
+    fill(i, 128 + j, 1, 1, rgb(k + 14, k - 12, k - 6));
+  }
   const S = {
-    TOP: [0, 0, 128, 64], SIDE: [0, 64, 128, 128], BELLY: [128, 0, 256, 64], LID: [128, 64, 192, 128], TEETH: [192, 64, 208, 80],
+    TOP: [0, 0, 128, 64], SIDE: [0, 64, 128, 128], BELLY: [128, 0, 256, 64], LID: [128, 64, 192, 128], TEETH: [192, 64, 208, 80], TEETH_UP: [192, 80, 208, 64],
     GUM: [208, 64, 256, 112], EYE: [192, 80, 208, 96], TIP: [192, 96, 208, 112], THROAT: [0, 128, 64, 192],
   };
   const tex = new Texture({name: 'leviathan'}).fromDataURL(cv.toDataURL()).add(false);
@@ -83,40 +139,61 @@
   const head = group('head', root, [0, CY, -2]);
   cube('cranium', head, [-24, CY + 4, -60], [24, CY + 26, 4]);
   cube('cranium_back', head, [-21, CY - 8, -24], [21, CY + 6, 6]);
-  cube('snout', head, [-17, CY + 2, -88], [17, CY + 18, -58]);
-  cube('snout_tip', head, [-12, CY + 3, -96], [12, CY + 14, -86]);
+  cube('snout', head, [-18, CY + 4, -96], [18, CY + 20, -58]);
+  cube('snout_ridge', head, [-12, CY + 20, -92], [12, CY + 24, -56]);
+  cube('snout_tip', head, [-13, CY + 5, -106], [13, CY + 16, -94]);
   cube('crest', head, [-8, CY + 26, -52], [8, CY + 30, 0]);
-  cube('brow_l', head, [11, CY + 20, -60], [21, CY + 25, -40], null, [16, CY + 22, -50], [0, 0, -12]);
-  cube('brow_r', head, [-21, CY + 20, -60], [-11, CY + 25, -40], null, [-16, CY + 22, -50], [0, 0, 12]);
-  // the roof of the mouth and the upper teeth
-  cube('palate', head, [-16, CY + 1, -92], [16, CY + 4, -8], 'GUM');
-  for (let i = 0; i < 14; i++) {
-    const z = -94 + i * 6, len = 8 + (i % 3 === 1 ? 4 : 0) - Math.floor(i / 5) * 2;
+  cube('brow_l', head, [11, CY + 22, -62], [24, CY + 27, -18], null, [17, CY + 24, -40], [0, 0, -14]);
+  cube('brow_r', head, [-24, CY + 22, -62], [-11, CY + 27, -18], null, [-17, CY + 24, -40], [0, 0, 14]);
+  cube('palate', head, [-17, CY + 2, -104], [17, CY + 5, -8], 'GUM');
+  // needle teeth along the whole upper jaw, long and thin, longest toward the front
+  // fangs along the whole upper jaw: uneven - thick and thin, long and broken, some missing, each leaning its own way
+  for (let i = 0; i < 26; i++) {
     for (const s of [-1, 1]) {
-      const x = s * (15.5 - Math.min(4, Math.max(0, 3 - i)) - (i > 9 ? 2 : 0));
-      cube(`tooth_u_${s > 0 ? 'l' : 'r'}${i}`, head, [x - 1, CY + 2 - len, z], [x + 1, CY + 2, z + 2], 'TEETH');
+      if (rnd() < 0.12) continue;
+      const z = -104 + i * 3.6 + (rnd() - 0.5) * 1.4;
+      const w = 1.4 + rnd() * 1.4, len = (i < 6 ? 11 : 8) + rnd() * 7 - i * 0.15;
+      const x = s * (16.4 - (i < 3 ? (3 - i) * 1.5 : 0) - w / 2);
+      cube(`tooth_u_${s > 0 ? 'l' : 'r'}${i}`, head, [x - w / 2, CY + 3 - len, z], [x + w / 2, CY + 3, z + w], 'TEETH',
+        [x, CY + 3, z + w / 2], [(rnd() - 0.5) * 22, 0, s * (4 + rnd() * 8)]);
     }
   }
-  // eyes, set in the sides of the skull, each with a lid that the game closes to blink
-  for (const s of [-1, 1]) {
-    const side = s > 0 ? 'l' : 'r';
-    const ex = s > 0 ? 23.5 : -25.5;
-    const eye = group(`eye_${side}`, head, [s * 24, CY + 15, -50]);
-    cube(`eyeball_${side}`, eye, [ex, CY + 11, -56], [ex + 2, CY + 19, -44], 'EYE');
-    const lid = group(`lid_${side}`, head, [s * 24.8, CY + 19.5, -50]);
-    cube(`eyelid_${side}`, lid, [s > 0 ? 24 : -26.2, CY + 11, -56.5], [s > 0 ? 26.2 : -24, CY + 19.5, -43.5], 'LID');
-  }
-  // the lower jaw, hinged at the back of the skull
-  const jaw = group('jaw', head, [0, CY + 1, -10], [-16, 0, 0]);
-  cube('jaw_bone', jaw, [-18, CY - 10, -92], [18, CY, -10]);
-  cube('jaw_chin', jaw, [-12, CY - 13, -94], [12, CY - 5, -72]);
-  cube('tongue', jaw, [-14, CY, -86], [14, CY + 1, -12], 'GUM');
-  cube('throat', jaw, [-10, CY - 1, -14], [10, CY + 1, -4], 'THROAT');
-  for (let i = 0; i < 13; i++) {
-    const z = -90 + i * 6, len = 7 + (i % 3 === 0 ? 4 : 0) - Math.floor(i / 5) * 2;
+  // eyes: three a side along the skull, each smaller than the one before. Each shuts like a sliding door: two leaves
+  // meet in the middle from the front and the back (the game squashes them away to open, stretches them to blink)
+  const eyes = [[-48, 8, 18], [-39, 6, 17.5], [-32, 4, 17]];
+  eyes.forEach(([z, size, y], n) => {
     for (const s of [-1, 1]) {
-      const x = s * (15.5 - Math.min(4, Math.max(0, 3 - i)) - (i > 9 ? 2 : 0));
-      cube(`tooth_d_${s > 0 ? 'l' : 'r'}${i}`, jaw, [x - 1, CY, z], [x + 1, CY + len, z + 2], 'TEETH');
+      const side = (s > 0 ? 'l' : 'r') + n;
+      const ex = s > 0 ? 23.5 : -25.5, y0 = CY + y - size / 2, y1 = CY + y + size / 2;
+      const eye = group(`eye_${side}`, head, [s * 24, CY + y, z]);
+      cube(`eyeball_${side}`, eye, [ex, y0, z - size / 2], [ex + 2, y1, z + size / 2], 'EYE');
+      const x0 = s > 0 ? 25.5 : -26.5, x1 = s > 0 ? 26.5 : -25.5;
+      const front = group(`door_${side}_f`, head, [s * 26, CY + y, z - size / 2 - 0.3]);
+      cube(`door_${side}_f_c`, front, [x0, y0 - 0.3, z - size / 2 - 0.3], [x1, y1 + 0.3, z], 'LID');
+      const back = group(`door_${side}_b`, head, [s * 26, CY + y, z + size / 2 + 0.3]);
+      cube(`door_${side}_b_c`, back, [x0, y0 - 0.3, z], [x1, y1 + 0.3, z + size / 2 + 0.3], 'LID');
+    }
+  });
+  // the lower jaw, hinged at the back of the skull, hanging wide open at rest
+  const jaw = group('jaw', head, [0, CY + 2, -10], [-30, 0, 0]);
+  cube('jaw_bone', jaw, [-18, CY - 8, -104], [18, CY + 2, -10]);
+  cube('jaw_chin', jaw, [-13, CY - 11, -106], [13, CY - 4, -84]);
+  cube('jaw_floor', jaw, [-16, CY + 2, -102], [16, CY + 3, -12], 'GUM');
+  cube('throat', jaw, [-10, CY, -16], [10, CY + 3, -4], 'THROAT');
+  // the long tongue, lying in the jaw, tapering to its tip
+  const tongue = group('tongue', jaw, [0, CY + 3, -16]);
+  for (let k = 0; k < 5; k++) {
+    const w = 12 - k * 2.2, z0 = -16 - k * 16;
+    cube(`tongue_${k}`, tongue, [-w / 2, CY + 3, z0 - 16], [w / 2, CY + 4.5 - k * 0.2, z0], 'GUM');
+  }
+  for (let i = 0; i < 24; i++) {
+    for (const s of [-1, 1]) {
+      if (rnd() < 0.12) continue;
+      const z = -102 + i * 3.7 + (rnd() - 0.5) * 1.4;
+      const w = 1.4 + rnd() * 1.4, len = (i < 5 ? 10 : 7) + rnd() * 6 - i * 0.12;
+      const x = s * (16.4 - (i < 3 ? (3 - i) * 1.5 : 0) - w / 2);
+      cube(`tooth_d_${s > 0 ? 'l' : 'r'}${i}`, jaw, [x - w / 2, CY + 2, z], [x + w / 2, CY + 2 + len, z + w], 'TEETH_UP',
+        [x, CY + 2, z + w / 2], [(rnd() - 0.5) * 22, 0, -s * (4 + rnd() * 8)]);
     }
   }
   // whiskers: thin feelers from the snout, three segments, glowing tips
@@ -132,6 +209,19 @@
       at = [at[0], at[1], at[2] - len];
     }
   });
+  // two feelers on top of the skull, rising and curling back over the body
+  for (const s of [-1, 1]) {
+    const w = s > 0 ? 4 : 5;
+    let parent = head, at = [s * 7, CY + 30, -40];
+    for (let k = 0; k < 4; k++) {
+      const seg = group(`whisker_${w}_${k}`, parent, at.slice(), k === 0 ? [-62, s * 10, 0] : [16, s * 3, 0]);
+      const len = 22 - k * 3, t = 2 - k * 0.3;
+      cube(`whisker_${w}_${k}_c`, seg, [at[0] - t / 2, at[1] - t / 2, at[2]], [at[0] + t / 2, at[1] + t / 2, at[2] + len]);
+      if (k === 3) cube(`whisker_${w}_tip`, seg, [at[0] - 1.2, at[1] - 1.2, at[2] + len], [at[0] + 1.2, at[1] + 1.2, at[2] + len + 2.4], 'TIP');
+      parent = seg;
+      at = [at[0], at[1], at[2] + len];
+    }
+  }
   // the head tentacles: long segmented arms sweeping back from the skull, as a crown
   const arms = [
     {x: 13, y: 16, yaw: 44, pitch: -20}, {x: -13, y: 16, yaw: -44, pitch: -20},
@@ -145,9 +235,9 @@
     for (let k = 0; k < 5; k++) {
       // each link bends a little back toward the tail, so the crown sweeps backward
       const seg = group(`arm_${a}_${k}`, parent, at.slice(), k === 0 ? [arm.pitch, arm.yaw, 0] : [arm.pitch > 0 ? -5 : 4, -sgn * 9, 0]);
-      const len = 44 - k * 4, w = 16 - k * 2;
+      const len = 58 - k * 5, w = 21 - k * 2.6;
       cube(`arm_${a}_${k}_c`, seg, [at[0] - w / 2, at[1] - w / 2, at[2]], [at[0] + w / 2, at[1] + w / 2, at[2] + len]);
-      if (k === 4) cube(`arm_${a}_tip`, seg, [at[0] - 2, at[1] - 2, at[2] + len], [at[0] + 2, at[1] + 2, at[2] + len + 8], 'TIP');
+      if (k === 4) cube(`arm_${a}_tip`, seg, [at[0] - 2.5, at[1] - 2.5, at[2] + len], [at[0] + 2.5, at[1] + 2.5, at[2] + len + 10], 'TIP');
       parent = seg;
       at = [at[0], at[1], at[2] + len];
     }
