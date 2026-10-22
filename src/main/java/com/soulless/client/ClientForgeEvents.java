@@ -102,7 +102,7 @@ public final class ClientForgeEvents {
                 float left = player.getCooldowns().getCooldownPercent(katana, 0);
                 KatanaAnim anim = KatanaAnim.of(player);
                 if (left > 0) {
-                    int seconds = Mth.ceil(left * com.soulless.item.KitsuneRitual.COOLDOWN_TICKS / 20F);
+                    int seconds = Mth.ceil(left * com.soulless.item.ResonanceRitual.COOLDOWN_TICKS / 20F);
                     player.displayClientMessage(Component.translatable("message.soulless.ritual_cooldown", seconds), true);
                 } else if (!player.onGround() || player.isInWater()) {
                     player.displayClientMessage(Component.translatable("message.soulless.ritual_ground"), true);

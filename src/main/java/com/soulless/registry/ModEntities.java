@@ -43,20 +43,12 @@ public final class ModEntities {
             () -> EntityType.Builder.<com.soulless.ability.SoulSlashEntity>of(com.soulless.ability.SoulSlashEntity::new, MobCategory.MISC)
                     .sized(1.0F, 1.0F).fireImmune().clientTrackingRange(8).updateInterval(1).build("soul_slash"));
 
-    /** Talking characters (npc.NpcEntity): villager-sized. */
-    public static final RegistryObject<EntityType<com.soulless.npc.SenseiEntity>> SENSEI = ENTITIES.register("sensei",
-            () -> EntityType.Builder.<com.soulless.npc.SenseiEntity>of(com.soulless.npc.SenseiEntity::new, MobCategory.MISC)
-                    .sized(0.6F, 1.95F).clientTrackingRange(10).build("sensei"));
 
     /** A white fox tamed with sweet berries (pet.TamedFox): a vanilla fox's size. */
     public static final RegistryObject<EntityType<com.soulless.pet.TamedFox>> TAMED_FOX = ENTITIES.register("tamed_fox",
             () -> EntityType.Builder.<com.soulless.pet.TamedFox>of(com.soulless.pet.TamedFox::new, MobCategory.CREATURE)
                     .sized(0.6F, 0.7F).clientTrackingRange(8).build("tamed_fox"));
 
-    /** Kitsune, asleep in the astral (npc.KitsuneEntity): about three blocks long lying down. */
-    public static final RegistryObject<EntityType<com.soulless.npc.KitsuneEntity>> KITSUNE = ENTITIES.register("kitsune",
-            () -> EntityType.Builder.<com.soulless.npc.KitsuneEntity>of(com.soulless.npc.KitsuneEntity::new, MobCategory.MISC)
-                    .sized(2.0F, 1.6F).fireImmune().clientTrackingRange(10).build("kitsune"));
 
     /** The Renegade, the sensei's fallen student (boss.RenegadeEntity): a player's size. */
     public static final RegistryObject<EntityType<com.soulless.boss.RenegadeEntity>> RENEGADE = ENTITIES.register("renegade",
@@ -78,9 +70,7 @@ public final class ModEntities {
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(WAILING_REAPER.get(), WailingReaperEntity.createAttributes().build());
-        event.put(SENSEI.get(), com.soulless.npc.NpcEntity.createAttributes().build());
         event.put(TAMED_FOX.get(), com.soulless.pet.TamedFox.createAttributes().build());
-        event.put(KITSUNE.get(), com.soulless.npc.KitsuneEntity.createAttributes().build());
         event.put(RENEGADE.get(), com.soulless.boss.RenegadeEntity.createAttributes().build());
     }
 

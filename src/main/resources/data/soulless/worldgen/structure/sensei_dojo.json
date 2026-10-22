@@ -1,7 +1,0 @@
-{
-  "type": "soulless:sensei_dojo",
-  "biomes": "#soulless:has_structure/sensei_dojo",
-  "step": "surface_structures",
-  "spawn_overrides": {},
-  "terrain_adaptation": "none"
-}

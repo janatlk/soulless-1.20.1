@@ -31,14 +31,12 @@ public final class ClientState {
 
     /** {@code /soulless zones}: draw ability hit zones around the local player. */
     /** The parry has been taught (or the sensei's sparring is on): SenseiQuest.syncParry. */
-    public static boolean parryKnown;
-    /** The sensei's training (npc.SenseiQuest.stage) and the monsters slain for it: QuestSyncPacket, for tooltips. */
-    public static int questStage, questKills;
+    public static boolean parryKnown = true;
     /** Harakiri has been taught (SenseiQuest.syncParry). */
-    public static boolean ritualKnown;
+    public static boolean ritualKnown = true;
     public static boolean showZones;
     /** Katana HUD: the ritual's current cooldown length (ticks), the local parry's start and whether it caught something. */
-    public static int ritualCooldownTotal = com.soulless.item.KitsuneRitual.COOLDOWN_TICKS;
+    public static int ritualCooldownTotal = com.soulless.item.ResonanceRitual.COOLDOWN_TICKS;
     public static long parryStart = -1000;
     public static boolean parryCaught;
     /** The local player has read the Scroll of Parrying (synced by the server). */

@@ -17,7 +17,7 @@ import net.minecraftforge.fml.common.Mod;
  * The Kitsune ritual as the player sees it: they cannot move while kneeling, the first-person view bows to look
  * down at the blade, the screen flashes red as it goes in, and blue fox fire bursts from the wound (on every
  * client). The animation itself is KatanaAnim's "ritual"; the cost and the blessing are server-side
- * (item.KitsuneRitual).
+ * (item.ResonanceRitual).
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID, value = Dist.CLIENT)
 public final class KatanaRitualFx {

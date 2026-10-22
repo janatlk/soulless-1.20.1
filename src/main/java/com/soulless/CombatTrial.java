@@ -130,7 +130,7 @@ public final class CombatTrial {
         if (t != null) t.parries++;
     }
 
-    /** The Kitsune ritual's blade went in (item.KitsuneRitual). */
+    /** The Kitsune ritual's blade went in (item.ResonanceRitual). */
     public static void onRitual(Player player) {
         Trial t = TRIALS.get(player.getUUID());
         if (t != null) t.rituals++;

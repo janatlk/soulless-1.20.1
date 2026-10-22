@@ -1,13 +1,13 @@
 {
   "display": {
     "icon": {
-      "item": "soulless:training_katana"
+      "item": "minecraft:soul_lantern"
     },
     "title": {
-      "translate": "advancement.soulless.sensei_student"
+      "translate": "advancement.soulless.soul_resonance"
     },
     "description": {
-      "translate": "advancement.soulless.sensei_student.desc"
+      "translate": "advancement.soulless.soul_resonance.desc"
     },
     "frame": "task",
     "show_toast": true,
@@ -19,5 +19,5 @@
       "trigger": "minecraft:impossible"
     }
   },
-  "parent": "soulless:root"
+  "parent": "soulless:get_katana"
 }

@@ -66,7 +66,7 @@ public final class KatanaCombat {
     /** The client says a cut started (0 kesa, 1 gyaku, 2 tsuki); its hit is resolved when the blade gets there. */
     public static void announce(ServerPlayer player, int step) {
         if (step < KESA || step > THRUST_STEP || !(player.getMainHandItem().getItem() instanceof SoulKatanaItem)) return;
-        if (KitsuneRitual.isActive(player)) return;
+        if (ResonanceRitual.isActive(player)) return;
         long now = player.level().getGameTime();
         // right after a parry the riposte comes at once, faster and at full strength, whatever the weapon's cooldown
         boolean riposte = KatanaParry.riposteReady(player);
@@ -107,7 +107,7 @@ public final class KatanaCombat {
 
     /** How fast this player's katana moves: faster under the Kitsune's blessing. */
     public static float rate(net.minecraft.world.entity.player.Player player) {
-        return player.hasEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get()) ? BLESSED_RATE : 1;
+        return player.hasEffect(com.soulless.registry.ModEffects.SOUL_RESONANCE.get()) ? BLESSED_RATE : 1;
     }
 
     /** Horizontal unit vector the player faces. */
@@ -187,7 +187,7 @@ public final class KatanaCombat {
                 main = t;
             }
         }
-        float side = player.hasEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get()) ? CUT_SIDE_DAMAGE_BLESSED : CUT_SIDE_DAMAGE;
+        float side = player.hasEffect(com.soulless.registry.ModEffects.SOUL_RESONANCE.get()) ? CUT_SIDE_DAMAGE_BLESSED : CUT_SIDE_DAMAGE;
         for (LivingEntity t : hit) strike(player, t, t == main, charge, bonus * (t == main ? 1 : side), facing, 0.4F);
         if (!hit.isEmpty()) wear(player);
     }
@@ -212,7 +212,7 @@ public final class KatanaCombat {
 
     /**
      * One target: damage like a vanilla attack (attribute + enchantments, scaled by charge), knockback, fire aspect.
-     * {@code primary}: aimed at it (not a side target of a cut) - the oath to Kitsune judges the two differently.
+     * {@code primary}: aimed at it (not a side target of a cut).
      */
     private static void strike(ServerPlayer player, LivingEntity t, boolean primary, float charge, float mult, Vec3 push, float knockback) {
         ItemStack stack = player.getMainHandItem();
@@ -221,8 +221,6 @@ public final class KatanaCombat {
         float damage = (base * (0.2F + charge * charge * 0.8F) + ench * charge) * mult;
         float hpBefore = t.getHealth();
         if (!primary && com.soulless.pet.TamedFox.isPetOf(t, player)) return;   // a side cut passes one's own fox by
-        if (KatanaOath.stops(player, t, primary, damage)) return;
-        if (primary) com.soulless.npc.SenseiQuest.onInnocentStruck(player, t);
         // each cut is a blow of its own: the hurt-immunity left by the last one (half a second) would swallow a quick
         // second cut - the riposte's gyaku after a parry did no damage
         t.invulnerableTime = 0;
@@ -241,9 +239,7 @@ public final class KatanaCombat {
         }
     }
 
-    private static void wear(ServerPlayer player) {
-        KatanaOath.wear(player, 1);   // worn out, the katana breaks in two instead of vanishing
-    }
+    private static void wear(ServerPlayer player) {}
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {

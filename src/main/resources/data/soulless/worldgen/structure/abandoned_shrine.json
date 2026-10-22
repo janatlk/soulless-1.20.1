@@ -1,7 +1,0 @@
-{
-  "type": "soulless:abandoned_shrine",
-  "biomes": "#soulless:has_structure/abandoned_shrine",
-  "step": "surface_structures",
-  "spawn_overrides": {},
-  "terrain_adaptation": "beard_thin"
-}

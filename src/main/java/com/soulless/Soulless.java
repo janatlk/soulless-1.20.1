@@ -31,9 +31,6 @@ public class Soulless {
         ModBlocks.BLOCK_ENTITIES.register(bus);
         ModEntities.ENTITIES.register(bus);
         ModFeatures.FEATURES.register(bus);
-        com.soulless.registry.ModStructures.TYPES.register(bus);
-        com.soulless.registry.ModStructures.PIECES.register(bus);
-        com.soulless.registry.ModVillagers.PROFESSIONS.register(bus);
         ModEffects.EFFECTS.register(bus);
         ModParticles.PARTICLES.register(bus);
         ModSounds.SOUNDS.register(bus);
@@ -45,8 +42,6 @@ public class Soulless {
 
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(ModNetwork::register);
-        com.soulless.npc.KitsuneEntity.registerDialogueActions();
-        com.soulless.npc.SenseiQuest.registerDialogueActions();
     }
 
     public static ResourceLocation id(String path) {

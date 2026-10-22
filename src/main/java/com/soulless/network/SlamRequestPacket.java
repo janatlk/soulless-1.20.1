@@ -19,7 +19,7 @@ public record SlamRequestPacket() {
         ServerPlayer player = ctx.get().getSender();
         if (player != null) {
             if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem) {
-                com.soulless.item.KitsuneRitual.tryStart(player);
+                com.soulless.item.ResonanceRitual.tryStart(player);
             } else {
                 SlamManager.tryStart(player);
             }

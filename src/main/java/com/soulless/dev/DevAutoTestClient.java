@@ -123,83 +123,6 @@ public final class DevAutoTestClient {
             if (tick == 640) mc.stop();
             return;
         }
-        if (DevAutoTest.ASTRAL) {
-            opts.setCameraType(CameraType.FIRST_PERSON);
-            if (tick == 150) shot(mc, "astral_bed");
-            boolean dreaming = mc.level.dimension() == com.soulless.world.Astral.LEVEL;
-            var k = dreaming ? mc.level.getEntitiesOfClass(com.soulless.npc.KitsuneEntity.class, mc.player.getBoundingBox().inflate(30),
-                    e -> e.getType() == com.soulless.registry.ModEntities.KITSUNE.get()).stream().findFirst().orElse(null) : null;
-            if (dreaming && astralArrived < 0) {
-                astralArrived = tick;
-                astralTalk = -1;
-            }
-            if (astralArrived >= 0 && tick == astralArrived + 50) {
-                mc.player.setYRot(180);
-                mc.player.setXRot(14);
-            }
-            if (astralArrived >= 0 && tick == astralArrived + 55) shot(mc, "astral_spirit");
-            // close to her (the server moves the player there): look down at her, take a picture, talk
-            if (k != null && astralTalk < 0 && mc.player.distanceTo(k) < 5) {
-                mc.player.setYRot(180);
-                mc.player.setXRot(22);
-                if (astralNear < 0) astralNear = tick;
-                if (tick == astralNear + 10) shot(mc, "astral_kitsune_sleep");
-                if (tick == astralNear + 15) mc.gameMode.interact(mc.player, k, net.minecraft.world.InteractionHand.MAIN_HAND);
-            }
-            if (astralTalk < 0 && mc.screen instanceof com.soulless.client.DialogueScreen) astralTalk = tick;
-            if (astralTalk >= 0) {
-                int t = tick - astralTalk;
-                int sp = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE, one = org.lwjgl.glfw.GLFW.GLFW_KEY_1;
-                int[][] keys = {
-                        {4, sp}, {8, sp}, {11, sp},                          // wake: 2 pages
-                        {24, one}, {29, sp}, {33, sp}, {36, sp},             // -> blade: 2 pages
-                        {46, one}, {51, sp},                                 // -> why
-                        {61, one}, {66, sp},                                 // "I don't know"
-                        {74, one}, {79, sp}, {82, sp}, {85, sp}, {88, sp}, {91, sp},   // -> the oath: 3 pages
-                        {101, one}};                                         // "I swear"
-                for (int[] key : keys) {
-                    if (t == key[0] && mc.screen != null) mc.screen.keyPressed(key[1], 0, 0);
-                }
-                if (t == 14) shot(mc, "astral_k_wake");
-                if (t == 39) shot(mc, "astral_k_blade");
-                if (t == 56) shot(mc, "astral_k_why");
-                if (t == 96) shot(mc, "astral_k_oath");
-                if (t == 112) shot(mc, "astral_k_sworn");
-                if (t == 118 && mc.screen != null) mc.screen.onClose();
-                if (t == 130) shot(mc, "astral_k_reforge1");
-                if (t == 150) shot(mc, "astral_k_reforge2");
-                if (t > 150 && !dreaming && astralWoke < 0) astralWoke = tick;
-            }
-            if (astralWoke >= 0 && tick == astralWoke + 15) shot(mc, "astral_woke");
-            if (tick == 1100) mc.stop();
-            return;
-        }
-        if (DevAutoTest.QUEST) {
-            opts.setCameraType(CameraType.FIRST_PERSON);
-            var sensei = mc.level.getEntitiesOfClass(com.soulless.npc.SenseiEntity.class, mc.player.getBoundingBox().inflate(6)).stream().findFirst().orElse(null);
-            if (sensei != null && com.soulless.client.ClientState.parryKnown && questSparShot < 0) questSparShot = tick + 45;
-            if (tick == questSparShot) shot(mc, "quest_spar");
-            if (tick == questSparShot + 60) shot(mc, "quest_spar2");
-            boolean chestNear = false;
-            var pos = mc.player.blockPosition();
-            for (var bp : net.minecraft.core.BlockPos.betweenClosed(pos.offset(-12, -3, -16), pos.offset(4, 6, 2))) {
-                if (mc.level.getBlockState(bp).is(net.minecraft.world.level.block.Blocks.CHEST)) {
-                    chestNear = true;
-                    break;
-                }
-            }
-            if (chestNear && questShrineShot < 0) questShrineShot = tick + 30;
-            if (tick == questShrineShot) shot(mc, "quest_shrine");
-            boolean scroll = mc.player.getInventory().contains(new net.minecraft.world.item.ItemStack(com.soulless.registry.ModItems.FAMILY_SCROLL.get()));
-            if (scroll && questBookShot < 0) {
-                questBookShot = tick + 50;
-            }
-            if (tick == questBookShot - 10) com.soulless.client.FamilyScrollScreen.open();
-            if (tick == questBookShot) shot(mc, "quest_scroll");
-            if (tick == questBookShot + 5 && mc.screen != null) mc.screen.onClose();
-            if (tick == 1600) mc.stop();
-            return;
-        }
         if (DevAutoTest.RENEGADE) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             var him = mc.level.getEntitiesOfClass(com.soulless.boss.RenegadeEntity.class, mc.player.getBoundingBox().inflate(40)).stream().findFirst().orElse(null);
@@ -214,36 +137,6 @@ public final class DevAutoTestClient {
             opts.setCameraType(mc.player.getVehicle() != null ? (rgSeizeShots % 2 == 0 ? CameraType.THIRD_PERSON_FRONT : CameraType.THIRD_PERSON_BACK) : CameraType.FIRST_PERSON);
             if (mc.player.getVehicle() != null && tick % 4 == 0 && rgSeizeShots < 40) shot(mc, String.format("renegade_seize_%03d", rgSeizeShots++));
             if (tick == 4400) mc.stop();
-            return;
-        }
-        if (DevAutoTest.DOJO) {
-            opts.setCameraType(CameraType.FIRST_PERSON);
-            opts.hideGui = tick < 240;
-            for (int[] s : new int[][]{{70, 0}, {120, 1}, {170, 2}, {220, 3}}) {
-                if (tick == s[0]) shot(mc, "dojo_" + s[1]);
-            }
-            if (tick == 245 || tick == 360) {
-                var v = mc.level.getEntitiesOfClass(com.soulless.npc.SenseiEntity.class, mc.player.getBoundingBox().inflate(6))
-                        .stream().findFirst().orElse(null);
-                if (v != null) mc.gameMode.interact(mc.player, v, net.minecraft.world.InteractionHand.MAIN_HAND);
-            }
-            // the dialogue: Space finishes the typing / turns the page, digits choose
-            int space = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE, one = org.lwjgl.glfw.GLFW.GLFW_KEY_1;
-            int[][] keys = {{255, space}, {265, space}, {268, space}, {280, one}, {288, space}, {300, one}, {306, space},
-                    {320, one + 1}, {324, space}, {326, space}, {328, space}, {340, one + 1}, {370, space}, {385, one + 2}};
-            for (int[] k : keys) {
-                if (tick == k[0] && mc.screen != null) mc.screen.keyPressed(k[1], 0, 0);
-            }
-            if (tick == 238) shot(mc, "dojo_4");
-            if (tick == 250) shot(mc, "dojo_dialog_typing");
-            if (tick == 260) shot(mc, "dojo_dialog_1");
-            if (tick == 275) shot(mc, "dojo_dialog_2");
-            if (tick == 295) shot(mc, "dojo_dialog_who");
-            if (tick == 312) shot(mc, "dojo_dialog_greet");
-            if (tick == 330) shot(mc, "dojo_dialog_learn");
-            if (tick == 378) shot(mc, "dojo_dialog_greet2");
-
-            if (tick == 430) mc.stop();
             return;
         }
         if (DevAutoTest.BOSS) {

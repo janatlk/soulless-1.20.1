@@ -38,24 +38,10 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         super(SoulForgedTier.INSTANCE, damageModifier, ATTACK_SPEED_MODIFIER, properties);
     }
 
-    /** The sensei's wooden Training Katana: the same moves, no magic (no harakiri, no blessing, no oath). */
-    public boolean isTraining() {
+    /** It never wears: the blade that grows with its owner is never thrown away. */
+    @Override
+    public boolean isDamageable(ItemStack stack) {
         return false;
-    }
-
-    /** Never worn away to nothing by any path: it stops one short, and {@link #inventoryTick} breaks it in two. */
-    @Override
-    public <T extends net.minecraft.world.entity.LivingEntity> int damageItem(ItemStack stack, int amount, T entity, Consumer<T> onBroken) {
-        if (isTraining()) return amount;
-        return Math.max(0, Math.min(amount, stack.getMaxDamage() - 1 - stack.getDamageValue()));
-    }
-
-    @Override
-    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slot, boolean selected) {
-        if (!isTraining() && !level.isClientSide && entity instanceof net.minecraft.server.level.ServerPlayer p && stack.isDamageableItem()
-                && stack.getDamageValue() >= stack.getMaxDamage() - 1 && p.getInventory().getItem(slot) == stack) {
-            p.getInventory().setItem(slot, KatanaOath.shatter(p, stack));
-        }
     }
 
     /**
@@ -96,10 +82,10 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
         tooltip.add(line(k + "d.parry.2", ChatFormatting.GRAY, v(KatanaParry.STUN_TICKS / 20), v(Math.round((KatanaParry.BONUS - 1) * 100)),
                 v(KatanaParry.BLESSING_TICKS / 20)));
         tooltip.add(line(k + "d.ritual.title", ChatFormatting.LIGHT_PURPLE, key));
-        tooltip.add(line(k + "d.ritual.1", ChatFormatting.GRAY, v(fmt(KitsuneRitual.SELF_DAMAGE / 2))));
-        tooltip.add(line(k + "d.ritual.2", ChatFormatting.GRAY, v(KitsuneRitual.BLESSING_SECONDS), v(Math.round(KitsuneRitual.LIFESTEAL * 100)),
-                v(Math.round(KitsuneRitual.MISS_CHANCE * 100))));
-        tooltip.add(line(k + "d.ritual.cd", ChatFormatting.DARK_GRAY, v(KitsuneRitual.COOLDOWN_TICKS / 20)));
+        tooltip.add(line(k + "d.ritual.1", ChatFormatting.GRAY, v(fmt(ResonanceRitual.SELF_DAMAGE / 2))));
+        tooltip.add(line(k + "d.ritual.2", ChatFormatting.GRAY, v(ResonanceRitual.BLESSING_SECONDS), v(Math.round(ResonanceRitual.LIFESTEAL * 100)),
+                v(Math.round(ResonanceRitual.MISS_CHANCE * 100))));
+        tooltip.add(line(k + "d.ritual.cd", ChatFormatting.DARK_GRAY, v(ResonanceRitual.COOLDOWN_TICKS / 20)));
         tooltip.add(Component.empty());
         tooltip.add(Component.translatable(k + "lore").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
     }
@@ -144,6 +130,6 @@ public class SoulKatanaItem extends SwordItem implements GeoItem {
 
     @Override
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-        consumer.accept(new KatanaClientExtensions(isTraining()));
+        consumer.accept(new KatanaClientExtensions(false));
     }
 }

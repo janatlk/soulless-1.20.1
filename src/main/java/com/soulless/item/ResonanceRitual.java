@@ -34,7 +34,7 @@ import java.util.UUID;
 
 /**
  * The katana's ability (R): the player kneels, turns the blade on themselves and drives it through their own
- * belly - losing three hearts, which can kill them ("died with honour") - to receive the Kitsune's blessing (ModEffects.KITSUNE_BLESSING):
+ * belly - losing three hearts, which can kill them ("died with honour") - to receive the Kitsune's blessing (ModEffects.SOUL_RESONANCE):
  * <ul>
  *   <li>the katana moves 25% faster, and its thrust dashes further;</li>
  *   <li>its hits heal 5% of the damage dealt;</li>
@@ -45,7 +45,7 @@ import java.util.UUID;
  * The animation is client.KatanaAnim's "ritual" (KatanaAnimPacket step 3; -1 stops it).
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
-public final class KitsuneRitual {
+public final class ResonanceRitual {
     public static final int RITUAL = 3, STOP = -1;
     /** Ritual length and the tick the blade goes in (client.KatanaPoses "ritual" timeline). */
     public static final int TOTAL = 46, STAB_AT = 19;
@@ -65,14 +65,6 @@ public final class KitsuneRitual {
 
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem item) || !player.isAlive() || player.isSpectator()) return;
-        if (item.isTraining()) {
-            player.displayClientMessage(Component.translatable("message.soulless.training_no_ritual"), true);
-            return;
-        }
-        if (!com.soulless.npc.SenseiQuest.knowsHarakiri(player)) {
-            player.displayClientMessage(Component.translatable("message.soulless.harakiri_unknown"), true);
-            return;
-        }
         if (isActive(player) || player.getCooldowns().isOnCooldown(item)) return;
         if (!player.onGround() || player.isInWater()) {
             player.displayClientMessage(Component.translatable("message.soulless.ritual_ground"), true);
@@ -110,7 +102,7 @@ public final class KitsuneRitual {
         }
         // the blessing's fox fire flickers around everyone who carries it
         for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
-            if (p.tickCount % 3 == 0 && p.hasEffect(ModEffects.KITSUNE_BLESSING.get())) {
+            if (p.tickCount % 3 == 0 && p.hasEffect(ModEffects.SOUL_RESONANCE.get())) {
                 // on a ring around the legs, so it never sits in front of the player's own eyes
                 double a = p.getRandom().nextDouble() * Math.PI * 2, r = 0.55 + p.getRandom().nextDouble() * 0.15;
                 p.serverLevel().sendParticles(ParticleTypes.SOUL_FIRE_FLAME, p.getX() + Math.cos(a) * r, p.getY() + 0.1 + p.getRandom().nextDouble() * 0.8,
@@ -132,9 +124,9 @@ public final class KitsuneRitual {
             com.soulless.Achievements.grant(player, "died_with_honour");
             return;
         }
-        player.addEffect(new MobEffectInstance(ModEffects.KITSUNE_BLESSING.get(), BLESSING_SECONDS * 20, 0, false, true, true));
+        player.addEffect(new MobEffectInstance(ModEffects.SOUL_RESONANCE.get(), BLESSING_SECONDS * 20, 0, false, true, true));
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KATANA_HIT.get(), SoundSource.PLAYERS, 0.5F, 0.6F);
-        level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.KITSUNE_BLESSING.get(), SoundSource.PLAYERS, 0.6F, 1.0F);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SOUL_RESONANCE.get(), SoundSource.PLAYERS, 0.6F, 1.0F);
         // the burst itself is drawn on each client (client.KatanaRitualFx.stab); a few souls rise from the ground
         Vec3 c = player.position().add(0, 0.2, 0);
         level.sendParticles(ParticleTypes.SOUL, c.x, c.y, c.z, 8, 0.6, 0.1, 0.6, 0.03);
@@ -156,7 +148,7 @@ public final class KitsuneRitual {
             player.displayClientMessage(Component.translatable("message.soulless.ritual_broken"), true);
             return;
         }
-        if (player.hasEffect(ModEffects.KITSUNE_BLESSING.get()) && isPhysical(src) && player.getRandom().nextFloat() < MISS_CHANCE) {
+        if (player.hasEffect(ModEffects.SOUL_RESONANCE.get()) && isPhysical(src) && player.getRandom().nextFloat() < MISS_CHANCE) {
             event.setCanceled(true);
             ServerLevel level = player.serverLevel();
             level.sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY() + 1, player.getZ(), 6, 0.3, 0.4, 0.3, 0.02);
@@ -182,7 +174,7 @@ public final class KitsuneRitual {
     @SubscribeEvent
     public static void onDamage(LivingDamageEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer p && p != event.getEntity()
-                && p.hasEffect(ModEffects.KITSUNE_BLESSING.get()) && event.getAmount() > 0) {
+                && p.hasEffect(ModEffects.SOUL_RESONANCE.get()) && event.getAmount() > 0) {
             p.heal(event.getAmount() * LIFESTEAL);
         }
     }
@@ -192,5 +184,5 @@ public final class KitsuneRitual {
         ACTIVE.remove(event.getEntity().getUUID());
     }
 
-    private KitsuneRitual() {}
+    private ResonanceRitual() {}
 }

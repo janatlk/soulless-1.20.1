@@ -79,7 +79,7 @@ public final class AbilityHud implements IGuiOverlay {
             if (since >= 0 && since < window) g.fill(px, y, px + SLOT, y + SLOT, 0x66FFFFFF);   // the window is open
         }
 
-        var blessing = player.getEffect(com.soulless.registry.ModEffects.KITSUNE_BLESSING.get());
+        var blessing = player.getEffect(com.soulless.registry.ModEffects.SOUL_RESONANCE.get());
         if (blessing != null) {
             int bx = px + SLOT + 4;
             g.fill(bx, y, bx + SLOT, y + SLOT, 0x99001A33);

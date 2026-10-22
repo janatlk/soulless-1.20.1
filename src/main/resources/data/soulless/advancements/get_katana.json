@@ -28,5 +28,5 @@
       }
     }
   },
-  "parent": "soulless:sensei_student"
+  "parent": "soulless:root"
 }

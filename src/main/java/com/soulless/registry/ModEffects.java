@@ -13,8 +13,8 @@ public final class ModEffects {
 
     public static final RegistryObject<MobEffect> SOUL_CURSE = EFFECTS.register("soul_curse", SoulCurseEffect::new);
     public static final RegistryObject<MobEffect> STUN = EFFECTS.register("stun", StunEffect::new);
-    public static final RegistryObject<MobEffect> KITSUNE_BLESSING = EFFECTS.register("kitsune_blessing",
-            com.soulless.effect.KitsuneBlessingEffect::new);
+    public static final RegistryObject<MobEffect> SOUL_RESONANCE = EFFECTS.register("soul_resonance",
+            com.soulless.effect.SoulResonanceEffect::new);
 
     private ModEffects() {}
 }

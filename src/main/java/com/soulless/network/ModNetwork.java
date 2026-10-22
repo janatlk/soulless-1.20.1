@@ -50,9 +50,6 @@ public final class ModNetwork {
         CHANNEL.messageBuilder(DialogueShowPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(DialogueShowPacket::encode).decoder(DialogueShowPacket::decode)
                 .consumerMainThread(DialogueShowPacket::handle).add();
-        CHANNEL.messageBuilder(QuestSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(QuestSyncPacket::encode).decoder(QuestSyncPacket::decode)
-                .consumerMainThread(QuestSyncPacket::handle).add();
         CHANNEL.messageBuilder(DialogueChoicePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(DialogueChoicePacket::encode).decoder(DialogueChoicePacket::decode)
                 .consumerMainThread(DialogueChoicePacket::handle).add();

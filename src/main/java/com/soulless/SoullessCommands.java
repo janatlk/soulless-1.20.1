@@ -41,15 +41,6 @@ public final class SoullessCommands {
                                 .executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), null))
                                 .then(Commands.literal("on").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), true)))
                                 .then(Commands.literal("off").executes(ctx -> zones(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets"), false)))))
-                .then(Commands.literal("dojo")
-                        .requires(src -> src.hasPermission(2))
-                        .executes(ctx -> {
-                            var p = ctx.getSource().getPlayerOrException();
-                            net.minecraft.core.BlockPos o = p.blockPosition().offset(-6, 0, 4);
-                            com.soulless.world.SenseiDojoPiece.buildAt(p.serverLevel(), o);
-                            ctx.getSource().sendSuccess(() -> Component.literal("Dojo built at " + o.toShortString()), true);
-                            return 1;
-                        }))
                 .then(Commands.literal("arena")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> CombatTrial.start(ctx.getSource().getPlayerOrException(), 1))
@@ -117,27 +108,6 @@ public final class SoullessCommands {
                             ctx.getSource().sendSuccess(() -> Component.translatable("command.soulless.altar"), true);
                             return 1;
                         }))
-                .then(Commands.literal("shrine")
-                        .requires(src -> src.hasPermission(2))
-                        .executes(ctx -> {
-                            var p = ctx.getSource().getPlayerOrException();
-                            net.minecraft.core.BlockPos o = p.blockPosition().offset(-6, -1, 3);
-                            com.soulless.world.AbandonedShrinePiece.buildAt(p.serverLevel(), o);
-                            ctx.getSource().sendSuccess(() -> Component.literal("Shrine built at " + o.toShortString()), true);
-                            return 1;
-                        }))
-                .then(Commands.literal("sensei")
-                        .requires(src -> src.hasPermission(2))
-                        .then(Commands.literal("reset").executes(ctx -> {
-                            var p = ctx.getSource().getPlayerOrException();
-                            var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
-                            for (String f : new String[]{"sensei.met", com.soulless.npc.SenseiQuest.STUDENT, com.soulless.npc.SenseiQuest.PARRY,
-                                    com.soulless.npc.SenseiQuest.CLEANSE, com.soulless.npc.SenseiQuest.CLEANSED, com.soulless.npc.SenseiQuest.SHRINE,
-                                    com.soulless.npc.SenseiQuest.BLADE, com.soulless.npc.SenseiQuest.KILLS}) flags.remove(f);
-                            com.soulless.npc.SenseiQuest.syncParry(p);
-                            ctx.getSource().sendSuccess(() -> Component.literal("Sensei training reset"), false);
-                            return 1;
-                        })))
                 .then(Commands.literal("renegade")
                         .requires(src -> src.hasPermission(2))
                         .executes(ctx -> {
@@ -149,61 +119,7 @@ public final class SoullessCommands {
                             flags.remove(com.soulless.boss.RenegadeEncounter.DUE);
                             flags.remove(com.soulless.boss.RenegadeEncounter.DEFEATED);
                             flags.remove(com.soulless.boss.RenegadeEncounter.DREAM);   // no more coming in sleep
-                            flags.remove(com.soulless.npc.SenseiQuest.HARAKIRI);
-                            com.soulless.npc.SenseiQuest.syncParry(ctx.getSource().getPlayerOrException());
                             ctx.getSource().sendSuccess(() -> Component.literal("Renegade reset"), false);
-                            return 1;
-                        })))
-                .then(Commands.literal("katana")
-                        .requires(src -> src.hasPermission(2))
-                        .then(Commands.literal("reset").executes(ctx -> {
-                            // the whole Legendary Katana branch from the start: sensei, Kitsune's oath, the Renegade
-                            var p = ctx.getSource().getPlayerOrException();
-                            var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(p);
-                            for (String k : new java.util.ArrayList<>(flags.getAllKeys())) {
-                                if (k.startsWith("sensei.") || k.startsWith("kitsune.") || k.startsWith("renegade.")) flags.remove(k);
-                            }
-                            if (com.soulless.world.Astral.in(p)) com.soulless.world.Astral.leave(p);
-                            var inv = p.getInventory();
-                            for (int i = 0; i < inv.getContainerSize(); i++) {
-                                var it = inv.getItem(i).getItem();
-                                if (it == com.soulless.registry.ModItems.SOUL_KATANA.get() || it == com.soulless.registry.ModItems.BROKEN_KATANA.get()
-                                        || it == com.soulless.registry.ModItems.TRAINING_KATANA.get() || it == com.soulless.registry.ModItems.FAMILY_SCROLL.get()) {
-                                    inv.setItem(i, net.minecraft.world.item.ItemStack.EMPTY);
-                                }
-                            }
-                            com.soulless.npc.SenseiQuest.syncParry(p);
-                            ctx.getSource().sendSuccess(() -> Component.literal("Legendary Katana branch reset"), false);
-                            return 1;
-                        })))
-                .then(Commands.literal("astral")
-                        .requires(src -> src.hasPermission(2))
-                        .executes(ctx -> {
-                            // straight into the dream (bringing the broken blade, given if missing)
-                            var p = ctx.getSource().getPlayerOrException();
-                            var blade = new net.minecraft.world.item.ItemStack(com.soulless.registry.ModItems.BROKEN_KATANA.get());
-                            if (!p.getInventory().contains(blade)) p.getInventory().add(blade);
-                            com.soulless.world.Astral.enter(p, null);
-                            return 1;
-                        })
-                        .then(Commands.literal("leave").executes(ctx -> {
-                            com.soulless.world.Astral.leave(ctx.getSource().getPlayerOrException());
-                            return 1;
-                        })))
-                .then(Commands.literal("oath")
-                        .requires(src -> src.hasPermission(2))
-                        .then(Commands.literal("reset").executes(ctx -> {
-                            var flags = com.soulless.npc.dialogue.DialogueContext.playerFlags(ctx.getSource().getPlayerOrException());
-                            flags.remove(com.soulless.item.KatanaOath.SWORN);
-                            flags.remove(com.soulless.item.KatanaOath.REFUSED);
-                            flags.remove(com.soulless.item.KatanaOath.FREED);
-                            ctx.getSource().sendSuccess(() -> Component.literal("Oath reset"), false);
-                            return 1;
-                        }))
-                        .then(Commands.literal("free").executes(ctx -> {
-                            com.soulless.npc.dialogue.DialogueContext.playerFlags(ctx.getSource().getPlayerOrException())
-                                    .putBoolean(com.soulless.item.KatanaOath.FREED, true);
-                            ctx.getSource().sendSuccess(() -> Component.literal("Kitsune freed (oath no longer punishes)"), false);
                             return 1;
                         })))
                 .then(Commands.literal("resetcd")

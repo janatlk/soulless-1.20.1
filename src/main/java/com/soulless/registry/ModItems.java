@@ -24,21 +24,6 @@ public final class ModItems {
             () -> new com.soulless.item.SoulRingItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));
 
 
-    public static final RegistryObject<Item> SENSEI_SPAWN_EGG = ITEMS.register("sensei_spawn_egg",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.SENSEI, 0x2B2420, 0xB3343A, new Item.Properties()));
-
-    /** The sensei's wooden blade: the katana's moves, no magic (STORY_KATANA.md act 1). */
-    public static final RegistryObject<Item> TRAINING_KATANA = ITEMS.register("training_katana",
-            () -> new com.soulless.item.TrainingKatanaItem(new Item.Properties().stacksTo(1).durability(600)));
-
-    /** The Scroll of the Family History, from the abandoned shrine: read it (right click). */
-    public static final RegistryObject<Item> FAMILY_SCROLL = ITEMS.register("family_scroll",
-            () -> new com.soulless.item.FamilyScrollItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
-
-    /** The sensei's ancestral blade, snapped; Kitsune mends it in the astral. */
-    public static final RegistryObject<Item> BROKEN_KATANA = ITEMS.register("broken_katana",
-            () -> new com.soulless.item.BrokenKatanaItem(new Item.Properties().stacksTo(1).fireResistant().rarity(Rarity.EPIC)));
-
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 

@@ -89,11 +89,7 @@ public final class KatanaParry {
 
     public static void tryStart(ServerPlayer player) {
         if (!(player.getMainHandItem().getItem() instanceof SoulKatanaItem) || !player.isAlive() || player.isSpectator()) return;
-        if (KitsuneRitual.isActive(player) || KatanaCombat.isCutting(player)) return;
-        if (!com.soulless.npc.SenseiQuest.canParry(player)) {
-            player.displayClientMessage(Component.translatable("message.soulless.parry_unknown"), true);
-            return;
-        }
+        if (ResonanceRitual.isActive(player) || KatanaCombat.isCutting(player)) return;
         long now = player.level().getGameTime();
         Long last = STARTED.get(player.getUUID());
         if (last != null && now - last < WHIFF_COOLDOWN && !CAUGHT.contains(player.getUUID())) return;
@@ -195,10 +191,9 @@ public final class KatanaParry {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.25F, 1.9F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), com.soulless.registry.ModSounds.KATANA_HIT.get(), SoundSource.PLAYERS, 0.5F, 1.3F);
         // the Kitsune smiles on a clean parry: a few seconds of her blessing (a longer one already running is kept)
-        MobEffectInstance blessing = player.getEffect(ModEffects.KITSUNE_BLESSING.get());
-        boolean wooden = player.getMainHandItem().getItem() instanceof SoulKatanaItem k && k.isTraining();
-        if (!wooden && (blessing == null || blessing.getDuration() < BLESSING_TICKS)) {
-            player.addEffect(new MobEffectInstance(ModEffects.KITSUNE_BLESSING.get(), BLESSING_TICKS, 0, false, true, true));
+        MobEffectInstance blessing = player.getEffect(ModEffects.SOUL_RESONANCE.get());
+        if ((blessing == null || blessing.getDuration() < BLESSING_TICKS)) {
+            player.addEffect(new MobEffectInstance(ModEffects.SOUL_RESONANCE.get(), BLESSING_TICKS, 0, false, true, true));
         }
         if (attacker instanceof LivingEntity l && !isBoss(l)) {
             l.addEffect(new MobEffectInstance(ModEffects.STUN.get(), l instanceof Player ? PLAYER_STUN_TICKS : STUN_TICKS, 0));

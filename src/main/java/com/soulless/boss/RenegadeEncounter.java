@@ -3,7 +3,6 @@ package com.soulless.boss;
 import net.minecraft.world.item.ItemStack;
 
 import com.soulless.Soulless;
-import com.soulless.item.KatanaOath;
 import com.soulless.npc.dialogue.DialogueContext;
 import com.soulless.registry.ModEntities;
 import net.minecraft.ChatFormatting;
@@ -37,13 +36,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * The first meeting with the Renegade (STORY_KATANA.md, act 6). A couple of minutes after Kitsune reforges the blade,
- * somewhere quiet in the overworld, dark smoke gathers round the player, a voice speaks, and they are pulled into the
+ * The Renegade, called by his summoning item (item.RenegadeSigilItem). Dark smoke gathers round the player, a voice speaks, and they are pulled into the
  * dark astral (data dimension soulless:dark_astral: an empty black sky, an invisible floor). He rises, says his piece
  * and attacks (RenegadeEntity). The player cannot die there: a blow that would kill leaves half a heart and ends the
  * fight - he scoffs and leaves; he comes again some minutes later. Beaten, he kneels, swears it is not over and
- * vanishes. Either way the player wakes where they stood. Harakiri (R) is not known yet in this fight: the sensei
- * teaches it afterwards.
+ * vanishes. Either way the player wakes where they stood.
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class RenegadeEncounter {
@@ -54,8 +51,6 @@ public final class RenegadeEncounter {
     public static final String DREAM = "renegade.dream";
     /** Player data: the katana he holds while it burns him (given back if anything goes wrong in between). */
     private static final String HELD = "soulless_renegade_held";
-    private static final long PENDING = -1;
-    private static final int FIRST_DELAY = 200, RETRY_DELAY = 6000;
     private static final int FLOOR_Y = 99, FLOOR_RADIUS = com.soulless.world.RenegadeArena.RADIUS;
     private static final Vec3 ARRIVE = new Vec3(0.5, FLOOR_Y + 1, 8.5), HIM = new Vec3(0.5, FLOOR_Y + 1, -6.5);
     private static final String TAG = "soulless_renegade";
@@ -86,24 +81,6 @@ public final class RenegadeEncounter {
 
     public static boolean in(Player p) {
         return p.level().dimension() == LEVEL;
-    }
-
-    /** Called when Kitsune has reforged the blade for the oath: he will come for it. */
-    public static void schedule(ServerPlayer p, int delay) {
-        CompoundTag f = DialogueContext.playerFlags(p);
-        if (f.getBoolean(DEFEATED)) return;
-        f.putLong(DUE, p.serverLevel().getGameTime() + delay);
-    }
-
-    /** The oath given: he does not come yet - he waits for the player to wake from that dream (see {@link #woke}). */
-    public static void scheduleFirst(ServerPlayer p) {
-        CompoundTag f = DialogueContext.playerFlags(p);
-        if (!f.getBoolean(DEFEATED)) f.putLong(DUE, PENDING);
-    }
-
-    /** Woken from the astral: if the oath was just given, he sets out now - the first coming is part of the story. */
-    public static void woke(ServerPlayer p) {
-        if (DialogueContext.playerFlags(p).getLong(DUE) == PENDING) schedule(p, FIRST_DELAY);
     }
 
     /** Ticks of the loss scene (from the blow that would have killed): when he takes the blade, when it burns him,
@@ -212,7 +189,7 @@ public final class RenegadeEncounter {
 
     /** Into the dark from a bed: he is already waiting. */
     public static void beginDream(ServerPlayer p) {
-        if (FIGHTS.containsKey(p.getUUID()) || in(p) || com.soulless.world.Astral.in(p)) return;
+        if (FIGHTS.containsKey(p.getUUID()) || in(p)) return;
         net.minecraft.core.BlockPos bed = p.getSleepingPos().orElse(p.blockPosition());
         p.stopSleepInBed(true, true);
         Vec3 wake = Vec3.atBottomCenterOf(bed).add(0, 0.6, 0);
@@ -228,7 +205,7 @@ public final class RenegadeEncounter {
 
     /** Start the meeting now (also /soulless renegade). */
     public static void begin(ServerPlayer p) {
-        if (FIGHTS.containsKey(p.getUUID()) || in(p) || com.soulless.world.Astral.in(p)) return;
+        if (FIGHTS.containsKey(p.getUUID()) || in(p)) return;
         CompoundTag d = new CompoundTag();
         d.putString("Dim", p.level().dimension().location().toString());
         d.putDouble("X", p.getX());
@@ -254,21 +231,11 @@ public final class RenegadeEncounter {
             leave(p);
             return;
         }
-        // beaten once, he comes in sleep: before the dream of Kitsune could
+        // beaten once, he comes in sleep
         if (p.isSleeping() && p.getSleepTimer() == 50 && dreamDue(p)) {
             beginDream(p);
             return;
         }
-        if (p.tickCount % 20 != 0) return;
-        CompoundTag flags = DialogueContext.playerFlags(p);
-        if (flags.getBoolean(DEFEATED) || flags.getBoolean(DREAM) || !KatanaOath.sworn(p)) return;
-        long due = flags.getLong(DUE);
-        if (due <= 0) return;   // not set out yet: only the oath's waking sends him
-        if (p.serverLevel().getGameTime() < due) return;
-        // somewhere quiet: on the ground, awake, not in water, not just hurt, not in the astral
-        if (!p.onGround() || p.isSleeping() || p.isInWater() || p.isSpectator()
-                || com.soulless.world.Astral.in(p) || p.tickCount - p.getLastHurtByMobTimestamp() < 200) return;
-        begin(p);
     }
 
     private static void fightTick(ServerPlayer p, Fight f) {
@@ -422,7 +389,6 @@ public final class RenegadeEncounter {
         if (f == null) return;
         f.bar.removeAllPlayers();
         if (f.him != null) f.him.discard();
-        if (event.getEntity() instanceof ServerPlayer p) schedule(p, RETRY_DELAY);
     }
 
     @Nullable

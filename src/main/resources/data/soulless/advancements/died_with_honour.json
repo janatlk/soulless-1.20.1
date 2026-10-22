@@ -19,5 +19,5 @@
       "trigger": "minecraft:impossible"
     }
   },
-  "parent": "soulless:kitsune_ritual"
+  "parent": "soulless:soul_resonance"
 }
