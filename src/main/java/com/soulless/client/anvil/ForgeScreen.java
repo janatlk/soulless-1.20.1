@@ -67,6 +67,16 @@ public class ForgeScreen extends Screen {
         return top + i * BIG;
     }
 
+    /** The back button sits right over the chain's first link. */
+    private int backX() {
+        return (int) (width / 2F - 150 - BIG);
+    }
+
+    private int backY() {
+        int n = category == Category.SOULS ? meltable().size() : category == null ? 0 : SoulAnvilRecipes.in(category).size();
+        return (int) (cy(0, Math.max(1, n)) - BIG - 26);
+    }
+
     /** Labels stand in one column right of the chain. */
     private int labelX() {
         return (int) (width / 2F - 150 + BIG * 2 + 10);
@@ -86,7 +96,7 @@ public class ForgeScreen extends Screen {
         Component head = category == null ? title : Component.translatable("anvil.soulless.category." + category.name().toLowerCase());
         g.drawString(font, head, (int) cx(0, 1) - 30, 16, AnvilStyle.SOUL, false);
         g.drawString(font, Component.translatable("anvil.soulless.souls", SoulVessels.total(p)), width - 120, 16, AnvilStyle.TEXT, false);
-        if (category != null) AnvilStyle.button(g, font, Component.translatable("anvil.soulless.back"), 12, 12, 60, mx, my, true);
+        if (category != null) AnvilStyle.button(g, font, Component.translatable("anvil.soulless.back"), backX(), backY(), 60, mx, my, true);
 
         Component hoverName = null;
         List<Component> hoverLines = null;
@@ -232,7 +242,8 @@ public class ForgeScreen extends Screen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         var p = minecraft.player;
-        if (category != null && mx >= 12 && mx < 72 && my >= 12 && my < 30) {
+        // back: the button over the chain, or a right click anywhere
+        if (category != null && (button == 1 || mx >= backX() && mx < backX() + 60 && my >= backY() && my < backY() + 18)) {
             AnvilStyle.click();
             if (picked != null || meltSlot >= 0) {
                 picked = null;
