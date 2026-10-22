@@ -43,22 +43,20 @@
       fill(x0 + i, y0 + j, 1, 1, rgb(k, k + 1, k + 4 + sheen));
     }
   };
-  scales(0, 0, 128, 64, 20);               // TOP
-  scales(0, 64, 128, 64, 22);              // SIDE, with one row of photophores along it
+  // the hide: a CC0 reptile skin (RooMan93, OpenGameArt) darkened to near-black with a cold sheen - prep_hide.py
+  // writes it as raw RGBA, 128 x 192: the top, the sides and the belly
+  const hideRaw = require('fs').readFileSync('C:/Users/janat/GameMakerProjects/minecraftmod/tools/leviathan/hide_rgba.bin');
+  const hideImg = new ImageData(new Uint8ClampedArray(hideRaw), 128, 192);
+  g.putImageData(hideImg, 0, 0, 0, 0, 128, 128);                  // TOP and SIDE
+  const bellyImg = g.createImageData(128, 64);
+  bellyImg.data.set(new Uint8ClampedArray(hideRaw.subarray(128 * 128 * 4)));
+  g.putImageData(bellyImg, 128, 0);                                // BELLY
   for (let x = 3; x < 128; x += 8) {
     // a small cold light with a faint halo
     fill(x - 1, 95, 3, 3, rgb(48, 62, 78));
     fill(x, 95, 1, 3, rgb(120, 150, 175));
     fill(x - 1, 96, 3, 1, rgb(120, 150, 175));
     fill(x, 96, 1, 1, '#f2fbff');
-  }
-  // BELLY: plates of dark slate, each lit along its front edge and shadowed at its back
-  for (let i = 0; i < 128; i++) for (let j = 0; j < 64; j++) {
-    const v = j % 8;
-    let k = 36 - v * 1.6 + (rnd() - 0.5) * 3;
-    if (v === 0) k += 10;
-    if (v === 7) k -= 12;
-    fill(128 + i, j, 1, 1, rgb(k, k + 3, k + 9));
   }
   // LID: the eye's doors - dark plates with seams
   for (let i = 0; i < 64; i++) for (let j = 0; j < 64; j++) {
@@ -71,11 +69,17 @@
     const stain = Math.sin(i * 1.7 + j * 0.9) > 0.7 ? -18 : 0;
     fill(192 + i, 64 + j, 1, 1, rgb(112 + f * 88 + edge + stain, 96 + f * 80 + edge + stain, 62 + f * 66 + edge + stain));
   }
-  // GUM: wet, pale cold flesh with darker veins and glints
+  // GUM: the inside of the maw - deep sea-blue flesh in ridges (as a palate's), each ridge lit along its crest,
+  // dark wet grooves between, glints of slime
   for (let i = 0; i < 48; i++) for (let j = 0; j < 48; j++) {
-    const vein = Math.abs(Math.sin(i * 0.35 + Math.sin(j * 0.25) * 2)) < 0.12 ? -26 : 0;
-    const k = 120 + (rnd() - 0.5) * 14 + vein + (rnd() < 0.02 ? 50 : 0);
-    fill(208 + i, 64 + j, 1, 1, rgb(k - 30, k + 14, k + 44));
+    const ridge = (j + Math.round(Math.sin(i * 0.3) * 1.5)) % 5;
+    let r = 52, gg = 104, b = 160;
+    if (ridge === 0) { r = 118; gg = 176; b = 222; }
+    else if (ridge === 1) { r = 84; gg = 142; b = 196; }
+    else if (ridge === 4) { r = 26; gg = 56; b = 98; }
+    const n = (rnd() - 0.5) * 10;
+    const glint = rnd() < 0.015 ? 60 : 0;
+    fill(208 + i, 64 + j, 1, 1, rgb(r + n + glint, gg + n + glint, b + n + glint));
   }
   // EYE: a compound eye - a dark socket ring, four amber cells, each glowing from its centre with a catch-light
   fill(192, 80, 16, 16, rgb(28, 14, 6));
