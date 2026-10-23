@@ -59,7 +59,7 @@ public record AnvilActionPacket(BlockPos pos, int action, String arg, int n) {
                 }
             }
             case RESET -> {
-                if (!be.held().isEmpty() && Upgrades.tier(be.held()) > 0) {
+                if (!be.held().isEmpty() && !Upgrades.picked(be.held()).isEmpty()) {
                     Upgrades.reset(p, be.held());
                     be.heldChanged();
                     level.playSound(null, pos, SoundEvents.GRINDSTONE_USE, SoundSource.BLOCKS, 1.0F, 0.8F);

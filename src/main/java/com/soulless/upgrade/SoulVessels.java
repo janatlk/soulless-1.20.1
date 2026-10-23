@@ -30,6 +30,9 @@ public final class SoulVessels {
         List<ItemStack> out = new ArrayList<>();
         for (ItemStack s : player.getInventory().items) if (s.getItem() instanceof SoulVesselItem) out.add(s);
         for (ItemStack s : player.getInventory().offhand) if (s.getItem() instanceof SoulVesselItem) out.add(s);
+        // the Soul Ring worn in a ring slot holds souls too
+        ItemStack ring = com.soulless.item.SoulRingItem.worn(player);
+        if (!ring.isEmpty() && !out.contains(ring)) out.add(ring);
         return out;
     }
 
@@ -59,7 +62,7 @@ public final class SoulVessels {
         while (given < n) {
             ItemStack into = target(player);
             if (into == null) break;
-            int room = Math.min(n - given, SoulVesselItem.MAX - SoulVesselItem.souls(into));
+            int room = Math.min(n - given, SoulVesselItem.max(into) - SoulVesselItem.souls(into));
             SoulVesselItem.set(into, SoulVesselItem.souls(into) + room);
             given += room;
         }
@@ -72,7 +75,7 @@ public final class SoulVessels {
         int bestN = -1, ties = 0;
         for (ItemStack s : vessels(player)) {
             int n = SoulVesselItem.souls(s);
-            if (n >= SoulVesselItem.MAX) continue;
+            if (n >= SoulVesselItem.max(s)) continue;
             if (n > bestN) {
                 best = s;
                 bestN = n;

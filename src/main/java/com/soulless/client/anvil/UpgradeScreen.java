@@ -51,6 +51,10 @@ public class UpgradeScreen extends Screen {
         return width / 2F + 60;
     }
 
+    private float freeX(int option, int options) {
+        return treeX() + (option - (options - 1) / 2F) * (COL + 6);
+    }
+
     private float nodeX(int option, int options) {
         return treeX() + (option - (options - 1) / 2F) * COL;
     }
@@ -101,7 +105,31 @@ public class UpgradeScreen extends Screen {
         }
 
         List<Component> tip = null;
-        if (tree == null) {
+        var free = Upgrades.free(s);
+        if (free != null) {
+            g.drawCenteredString(font, Component.translatable("anvil.soulless.free_title"), (int) treeX(), height / 2 - 56, AnvilStyle.GOLD);
+            for (int o = 0; o < free.size(); o++) {
+                var f = free.get(o);
+                float x = freeX(o, free.size()), y = height / 2F;
+                boolean has = Upgrades.has(s, f.id()), can = !has && (souls >= f.souls() || p.getAbilities().instabuild);
+                boolean hover = AnvilStyle.inDiamond(mx, my, x, y, NODE);
+                int rim = has ? AnvilStyle.SOUL : can ? AnvilStyle.alpha(AnvilStyle.SOUL, 0.5F + 0.5F * AnvilStyle.pulse()) : AnvilStyle.RIM;
+                AnvilStyle.diamond(g, x, y, NODE, hover ? AnvilStyle.FILL_HOVER : AnvilStyle.FILL, rim, has ? AnvilStyle.SOUL_DIM : 0);
+                g.blit(com.soulless.Soulless.id("textures/gui/upgrade/" + f.id() + ".png"), (int) x - 8, (int) y - 8, 0, 0, 16, 16, 16, 16);
+                g.drawCenteredString(font, has ? "\u2714" : String.valueOf(f.souls()), (int) x, (int) y + 24,
+                        has ? AnvilStyle.SOUL : can ? AnvilStyle.SOUL : AnvilStyle.SHORT);
+                if (hover) {
+                    tip = new ArrayList<>();
+                    tip.add(Component.translatable("upgrade.soulless." + f.id()).withStyle(has ? ChatFormatting.AQUA : ChatFormatting.WHITE));
+                    for (var line : font.getSplitter().splitLines(Component.translatable("upgrade.soulless." + f.id() + ".desc"), 220,
+                            net.minecraft.network.chat.Style.EMPTY))
+                        tip.add(Component.literal(line.getString()).withStyle(ChatFormatting.GRAY));
+                    tip.add(has ? Component.translatable("anvil.soulless.owned").withStyle(ChatFormatting.AQUA)
+                            : Component.translatable(can ? "anvil.soulless.buy" : "anvil.soulless.need", f.souls()).withStyle(can ? ChatFormatting.AQUA : ChatFormatting.RED));
+                }
+            }
+            g.drawCenteredString(font, Component.translatable("anvil.soulless.free_note"), (int) treeX(), height / 2 + 44, AnvilStyle.DIM);
+        } else if (tree == null) {
             g.drawString(font, Component.translatable("anvil.soulless.no_tree"), (int) treeX() - 80, height / 2 - 4, AnvilStyle.DIM, false);
         } else {
             int n = tree.size();
@@ -153,6 +181,7 @@ public class UpgradeScreen extends Screen {
         int by = buttonsY(), bx = width / 2 - 225;
         int refund = 0;
         if (tree != null) for (int t = 0; t < bought; t++) refund += tree.tiers().get(t).souls() / 2;
+        if (free != null) for (var f : free) if (Upgrades.has(s, f.id())) refund += f.souls() / 2;
         AnvilStyle.button(g, font, Component.translatable("anvil.soulless.reset", refund), bx, by, 140, mx, my, bought > 0);
         AnvilStyle.button(g, font, Component.translatable("anvil.soulless.melt_here", SoulAnvilRecipes.salvageValue(s)), bx + 155, by, 140, mx, my,
                 SoulAnvilRecipes.salvageable(s));
@@ -166,6 +195,16 @@ public class UpgradeScreen extends Screen {
         if (s.isEmpty()) return super.mouseClicked(mx, my, button);
         UpgradeTree tree = Upgrades.tree(s);
         int bought = Upgrades.tier(s);
+        var free = Upgrades.free(s);
+        if (free != null) {
+            for (int o = 0; o < free.size(); o++) {
+                if (AnvilStyle.inDiamond(mx, my, freeX(o, free.size()), height / 2F, NODE)) {
+                    AnvilStyle.click();
+                    ModNetwork.sendToServer(new AnvilActionPacket(pos, AnvilActionPacket.BUY, "", o));
+                    return true;
+                }
+            }
+        }
         if (tree != null && bought < tree.size()) {
             UpgradeTree.Tier tier = tree.tiers().get(bought);
             for (int o = 0; o < tier.options().size(); o++) {

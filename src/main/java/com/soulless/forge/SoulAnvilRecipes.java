@@ -67,6 +67,11 @@ public final class SoulAnvilRecipes {
             new Recipe("soul_vessel", Category.ACCESSORY, ModItems.SOUL_VESSEL::get, 0, List.of(
                     new Cost(ModItems.WRAITH_IRON_INGOT::get, 3),
                     new Cost(() -> Items.GLASS_BOTTLE, 1))),
+            // the Soul Ring: a vessel's making and three diamonds; it holds 1000
+            new Recipe("soul_ring", Category.ACCESSORY, ModItems.SOUL_RING::get, 0, List.of(
+                    new Cost(ModItems.WRAITH_IRON_INGOT::get, 3),
+                    new Cost(() -> Items.GLASS_BOTTLE, 1),
+                    new Cost(() -> Items.DIAMOND, 3))),
             new Recipe("eye_of_lament", Category.SUMMON, ModItems.EYE_OF_LAMENT::get, 30, List.of(
                     new Cost(() -> Items.NETHERITE_SCRAP, 2),
                     new Cost(() -> Items.ENDER_EYE, 1),
@@ -108,7 +113,7 @@ public final class SoulAnvilRecipes {
     /** Can be melted down into souls at the anvil: anything it forges that holds souls (not summons or the vessel). */
     public static boolean salvageable(ItemStack stack) {
         Recipe r = of(stack);
-        return r != null && r.category != Category.SUMMON && !stack.is(ModItems.SOUL_VESSEL.get());
+        return r != null && r.category != Category.SUMMON && !(stack.getItem() instanceof com.soulless.item.SoulVesselItem);
     }
 
     /** What salvaging gives: half of every soul spent on it, forging and upgrades. */

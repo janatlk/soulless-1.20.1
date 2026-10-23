@@ -77,7 +77,7 @@ public class SoulAnvilBlock extends BaseEntityBlock {
 
     /** What may be laid on the anvil: an artifact with upgrades, or one the anvil can melt into souls. */
     public static boolean workable(ItemStack stack) {
-        return Upgrades.tree(stack) != null || SoulAnvilRecipes.salvageable(stack);
+        return Upgrades.tree(stack) != null || Upgrades.free(stack) != null || SoulAnvilRecipes.salvageable(stack);
     }
 
     @Override

@@ -37,7 +37,16 @@ public class SoulVesselItem extends Item {
     }
 
     public static void set(ItemStack stack, int n) {
-        stack.getOrCreateTag().putInt(TAG, Mth.clamp(n, 0, MAX));
+        stack.getOrCreateTag().putInt(TAG, Mth.clamp(n, 0, max(stack)));
+    }
+
+    /** How many souls this holds (the Soul Ring more than a vessel). */
+    public int capacity() {
+        return MAX;
+    }
+
+    public static int max(ItemStack stack) {
+        return stack.getItem() instanceof SoulVesselItem v ? v.capacity() : MAX;
     }
 
     @Override
@@ -67,7 +76,7 @@ public class SoulVesselItem extends Item {
 
     @Override
     public int getBarWidth(ItemStack stack) {
-        return Math.round(13F * souls(stack) / MAX);
+        return Math.round(13F * souls(stack) / max(stack));
     }
 
     @Override
@@ -77,12 +86,12 @@ public class SoulVesselItem extends Item {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return souls(stack) >= MAX;
+        return souls(stack) >= max(stack);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.soulless.vessel.souls", souls(stack), MAX).withStyle(ChatFormatting.AQUA));
+        tooltip.add(Component.translatable("tooltip.soulless.vessel.souls", souls(stack), max(stack)).withStyle(ChatFormatting.AQUA));
         tooltip.add(Component.translatable("tooltip.soulless.vessel.catch").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.soulless.vessel.ward", Component.translatable("hud.soulless.rmb"), WARD_COST,
                 WARD_TICKS / 20, COOLDOWN / 20).withStyle(ChatFormatting.DARK_AQUA));

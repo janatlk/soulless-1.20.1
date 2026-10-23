@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 /**
  * The Leviathan's armour (helmet from its head, scaled chest, leggings and boots), forged at the Soul Anvil from its
  * scales. Worn, it is drawn with its own model (client.LeviathanArmorModel) on the textures under textures/armor.
- * The numbers are netherite's for now.
+ * Each piece one point of armour better than netherite's.
  */
 public class LeviathanArmorItem extends ArmorItem {
     public static final ArmorMaterial MATERIAL = new ArmorMaterial() {
@@ -31,10 +31,10 @@ public class LeviathanArmorItem extends ArmorItem {
         @Override
         public int getDefenseForType(Type type) {
             return switch (type) {
-                case HELMET -> 3;
-                case CHESTPLATE -> 8;
-                case LEGGINGS -> 6;
-                case BOOTS -> 3;
+                case HELMET -> 4;
+                case CHESTPLATE -> 9;
+                case LEGGINGS -> 7;
+                case BOOTS -> 4;
             };
         }
 
@@ -84,6 +84,7 @@ public class LeviathanArmorItem extends ArmorItem {
                 .withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
         lines.add(net.minecraft.network.chat.Component.translatable("tooltip.soulless.deep_dash.desc",
                 com.soulless.ability.DeepDash.COOLDOWN_TICKS / 20).withStyle(net.minecraft.ChatFormatting.GRAY));
+        com.soulless.upgrade.Upgrades.describePicked(stack, lines);
     }
 
     @Override

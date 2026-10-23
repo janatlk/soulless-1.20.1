@@ -44,19 +44,28 @@ public final class DeepDash {
                 && p.getItemBySlot(EquipmentSlot.FEET).is(ModItems.LEVIATHAN_BOOTS.get());
     }
 
+    /** The rest after a dash: 12 s, 1.5 s less for each Quick Breath on the pieces worn. */
+    public static int cooldown(net.minecraft.world.entity.player.Player p) {
+        return COOLDOWN_TICKS - 30 * com.soulless.upgrade.Upgrades.worn(p, com.soulless.upgrade.Upgrades.DASH_COOLDOWN);
+    }
+
     public static void tryStart(ServerPlayer p) {
         if (!worn(p) || ACTIVE.containsKey(p.getUUID())) return;
         var item = ModItems.LEVIATHAN_CHESTPLATE.get();
         if (p.getCooldowns().isOnCooldown(item)) {
-            int s = (int) Math.ceil(p.getCooldowns().getCooldownPercent(item, 0) * COOLDOWN_TICKS / 20F);
+            int s = (int) Math.ceil(p.getCooldowns().getCooldownPercent(item, 0) * cooldown(p) / 20F);
             p.displayClientMessage(Component.translatable("message.soulless.dash_cooldown", s), true);
             return;
         }
         boolean wet = p.isInWater();
         Vec3 dir = p.getLookAngle();
         if (!wet) dir = new Vec3(dir.x, Math.max(dir.y, 0.25), dir.z).normalize();
-        ACTIVE.put(p.getUUID(), new Dash(dir.scale(wet ? 1.9 : 1.1), new int[]{wet ? DASH_TICKS : 4}, new HashSet<>()));
-        p.getCooldowns().addCooldown(item, COOLDOWN_TICKS);
+        // the anvil's upgrades, counted over the pieces worn (each up to 4)
+        int water = com.soulless.upgrade.Upgrades.worn(p, com.soulless.upgrade.Upgrades.DASH_WATER),
+                land = com.soulless.upgrade.Upgrades.worn(p, com.soulless.upgrade.Upgrades.DASH_LAND);
+        double reach = wet ? 1 + 0.15 * water : 1 + 0.25 * land;
+        ACTIVE.put(p.getUUID(), new Dash(dir.scale((wet ? 1.9 : 1.1) * reach), new int[]{wet ? DASH_TICKS : 4}, new HashSet<>()));
+        p.getCooldowns().addCooldown(item, cooldown(p));
         p.level().playSound(null, p.blockPosition(), wet ? SoundEvents.WARDEN_SONIC_CHARGE : SoundEvents.PLAYER_ATTACK_SWEEP,
                 SoundSource.PLAYERS, 1.2F, wet ? 1.4F : 0.7F);
         p.level().playSound(null, p.blockPosition(), SoundEvents.ELDER_GUARDIAN_FLOP, SoundSource.PLAYERS, 0.8F, 1.3F);
@@ -96,7 +105,7 @@ public final class DeepDash {
         var box = p.getBoundingBox().inflate(1.2);
         for (LivingEntity e : com.soulless.combat.Hitboxes.struck(level, box, e -> e != p && e.isAlive(), x -> x.getBoundingBox().intersects(box))) {
             if (!d.hit.add(e.getUUID())) continue;
-            e.hurt(p.damageSources().playerAttack(p), DAMAGE);
+            e.hurt(p.damageSources().playerAttack(p), DAMAGE + 2.5F * com.soulless.upgrade.Upgrades.worn(p, com.soulless.upgrade.Upgrades.DASH_DAMAGE));
             Vec3 side = e.position().subtract(p.position());
             side = new Vec3(side.x, 0, side.z);
             if (side.lengthSqr() < 1e-4) side = new Vec3(-d.dir.z, 0, d.dir.x);

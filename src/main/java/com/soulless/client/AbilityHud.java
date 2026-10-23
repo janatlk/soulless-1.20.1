@@ -30,7 +30,7 @@ public final class AbilityHud implements IGuiOverlay {
             float cd = player.getCooldowns().getCooldownPercent(chest, partialTick);
             int dx = width / 2 - 91 - 8 - SLOT - (player.getOffhandItem().isEmpty() ? 0 : 29);
             slot(g, mc.font, dx, height - SLOT - 2, com.soulless.client.ClientModEvents.DASH_KEY.getTranslatedKeyMessage(), cd,
-                    Mth.ceil(cd * com.soulless.ability.DeepDash.COOLDOWN_TICKS / 20F), 0xFF6FE6F5);
+                    Mth.ceil(cd * com.soulless.ability.DeepDash.cooldown(player) / 20F), 0xFF6FE6F5);
         }
         if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem katana) {
             katana(g, mc.font, player, katana, partialTick, width, height);

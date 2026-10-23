@@ -71,10 +71,31 @@ public final class BossIntro {
         return true;
     }
 
+    /** Ends the shot now: the view back to the player, the camera stand gone. A shot cut short by leaving the world
+     * or changing dimension would otherwise leave the camera on a stand in a level that is no more. */
+    private static void stop() {
+        var mc = Minecraft.getInstance();
+        id = -1;
+        if (cam != null) {
+            if (mc.getCameraEntity() == cam && mc.player != null) mc.setCameraEntity(mc.player);
+            if (mc.level != null && cam.level() == mc.level) mc.level.removeEntity(cam.getId(), Entity.RemovalReason.DISCARDED);
+            cam = null;
+        }
+    }
+
     @SubscribeEvent
     public static void onLeave(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) {
-        id = -1;
-        cam = null;
+        stop();
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(net.minecraftforge.client.event.ClientPlayerNetworkEvent.Clone event) {
+        stop();   // a new player entity (death, a dimension change)
+    }
+
+    @SubscribeEvent
+    public static void onUnload(net.minecraftforge.event.level.LevelEvent.Unload event) {
+        if (event.getLevel().isClientSide()) stop();
     }
 
     /** 0..1: how far into the shot (eased in, eased out). */

@@ -44,6 +44,27 @@ public final class Upgrades {
                     UpgradeTree.Tier.of(700, FORGED_HUNGER, FORGED_SPLIT),
                     UpgradeTree.Tier.of(1000, FORGED_CURSE, FORGED_WEIGHT))));
 
+    /** The Leviathan armour's upgrades: not a path but a set, any of them bought once on each piece (in any order);
+     * Breath of the Deep counts them over the four pieces worn (ability.DeepDash). */
+    public static final String DASH_WATER = "dash.water", DASH_LAND = "dash.land", DASH_COOLDOWN = "dash.cooldown", DASH_DAMAGE = "dash.damage";
+    public record Free(String id, int souls) {}
+    private static final List<Free> ARMOR_FREE = List.of(new Free(DASH_WATER, 60), new Free(DASH_LAND, 160),
+            new Free(DASH_COOLDOWN, 120), new Free(DASH_DAMAGE, 70));
+
+    /** The free upgrades this item can take (null: none - it has a tree, or nothing). */
+    public static List<Free> free(ItemStack stack) {
+        return stack.getItem() instanceof com.soulless.item.LeviathanArmorItem ? ARMOR_FREE : null;
+    }
+
+    /** How many of the pieces this player wears have the option. */
+    public static int worn(Player player, String option) {
+        int n = 0;
+        for (var s : new net.minecraft.world.entity.EquipmentSlot[]{net.minecraft.world.entity.EquipmentSlot.HEAD,
+                net.minecraft.world.entity.EquipmentSlot.CHEST, net.minecraft.world.entity.EquipmentSlot.LEGS, net.minecraft.world.entity.EquipmentSlot.FEET})
+            if (has(player.getItemBySlot(s), option)) n++;
+        return n;
+    }
+
     public static UpgradeTree tree(ItemStack stack) {
         for (var e : TREES.entrySet()) {
             if (stack.is(e.getKey().get())) return e.getValue();
@@ -110,6 +131,12 @@ public final class Upgrades {
 
     /** Why a tier option cannot be bought right now (null: it can). */
     public static String refusal(Player player, ItemStack stack, int option) {
+        List<Free> free = free(stack);
+        if (free != null) {
+            if (option < 0 || option >= free.size() || has(stack, free.get(option).id())) return "maxed";
+            if (!player.getAbilities().instabuild && SoulVessels.total(player) < free.get(option).souls()) return "souls";
+            return null;
+        }
         UpgradeTree tree = tree(stack);
         int tier = tier(stack);
         if (tree == null || tier >= tree.size()) return "maxed";
@@ -122,6 +149,16 @@ public final class Upgrades {
     /** Buys the next tier with the given option, paying from the player's vessels. */
     public static boolean buy(ServerPlayer player, ItemStack stack, int option) {
         if (refusal(player, stack, option) != null) return false;
+        List<Free> free = free(stack);
+        if (free != null) {
+            Free f = free.get(option);
+            if (!player.getAbilities().instabuild) SoulVessels.take(player, f.souls());
+            addInvested(stack, f.souls());
+            List<String> picked = picked(stack);
+            picked.add(f.id());
+            setPicked(stack, picked);
+            return true;
+        }
         UpgradeTree.Tier t = tree(stack).tiers().get(tier(stack));
         if (!player.getAbilities().instabuild) SoulVessels.take(player, t.souls());
         addInvested(stack, t.souls());
@@ -134,9 +171,14 @@ public final class Upgrades {
     /** Takes every upgrade off the item and gives back half the souls they cost (what does not fit is lost). */
     public static int reset(ServerPlayer player, ItemStack stack) {
         UpgradeTree tree = tree(stack);
-        if (tree == null) return 0;
+        List<Free> free = free(stack);
+        if (tree == null && free == null) return 0;
         int spent = 0, n = tier(stack);
-        for (int i = 0; i < n; i++) spent += tree.tiers().get(i).souls();
+        if (free != null) {
+            for (Free f : free) if (has(stack, f.id())) spent += f.souls();
+        } else {
+            for (int i = 0; i < n; i++) spent += tree.tiers().get(i).souls();
+        }
         setPicked(stack, List.of());
         CompoundTag d = stack.getOrCreateTag().getCompound(TAG);
         d.putInt(INVESTED, Math.max(0, d.getInt(INVESTED) - spent));
