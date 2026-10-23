@@ -117,21 +117,55 @@ public final class KatanaCombat {
         return new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
     }
 
+    /** A target's hit boxes: its own, and for a mob of many parts (the Leviathan's long body) each part's. */
+    private static List<AABB> boxes(LivingEntity t) {
+        List<AABB> out = new ArrayList<>();
+        out.add(t.getBoundingBox());
+        if (t.isMultipartEntity() && t.getParts() != null) for (var part : t.getParts()) out.add(part.getBoundingBox());
+        return out;
+    }
+
+    /** Everything that could be hit in {@code box}: what stands in it, and big mobs of many parts reaching into it. */
+    private static List<LivingEntity> candidates(net.minecraft.world.entity.player.Player player, AABB box) {
+        List<LivingEntity> out = new ArrayList<>(player.level().getEntitiesOfClass(LivingEntity.class, box, t -> canHit(player, t)));
+        for (LivingEntity t : player.level().getEntitiesOfClass(LivingEntity.class, box.inflate(48), t -> t.isMultipartEntity() && canHit(player, t))) {
+            if (!out.contains(t) && boxes(t).stream().anyMatch(b -> b.intersects(box))) out.add(t);
+        }
+        return out;
+    }
+
+    /** Clear sight to a box (not just to the mob's own eyes - a part can be far from them). */
+    private static boolean sees(net.minecraft.world.entity.player.Player player, AABB b) {
+        Vec3 eye = player.getEyePosition();
+        return player.level().clip(new net.minecraft.world.level.ClipContext(eye, b.getCenter(), net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE, player)).getType() == net.minecraft.world.phys.HitResult.Type.MISS;
+    }
+
     /** What a cut made now would hit: everything in the arc in front (shared with the zones overlay). */
     public static List<LivingEntity> cutTargets(net.minecraft.world.entity.player.Player player) {
         Vec3 c = player.position();
         Vec3 facing = facing(player);
         AABB box = new AABB(c.x - CUT_REACH, c.y - 0.6, c.z - CUT_REACH, c.x + CUT_REACH, c.y + player.getBbHeight() + 0.8, c.z + CUT_REACH);
         List<LivingEntity> hit = new ArrayList<>();
-        for (LivingEntity t : player.level().getEntitiesOfClass(LivingEntity.class, box, t -> canHit(player, t))) {
-            // nearest point of the target's box, so big mobs are hit at their edge
-            AABB b = t.getBoundingBox();
+        for (LivingEntity t : candidates(player, box)) {
+            // nearest point of the target's nearest box (one of its parts, for a long body), so big mobs are hit at their edge
+            AABB b = null;
+            double bd = Double.MAX_VALUE;
+            for (AABB x : boxes(t)) {
+                if (!x.intersects(box)) continue;
+                double dd = new Vec3(Mth.clamp(c.x, x.minX, x.maxX) - c.x, 0, Mth.clamp(c.z, x.minZ, x.maxZ) - c.z).lengthSqr();
+                if (dd < bd) {
+                    bd = dd;
+                    b = x;
+                }
+            }
+            if (b == null) continue;
             double nx = Mth.clamp(c.x, b.minX, b.maxX), nz = Mth.clamp(c.z, b.minZ, b.maxZ);
             Vec3 to = new Vec3(nx - c.x, 0, nz - c.z);
             double d = to.length();
             if (d > CUT_REACH) continue;
             if (d > 0.8 && Math.acos(Mth.clamp(to.normalize().dot(facing), -1, 1)) > CUT_HALF_ANGLE) continue;
-            if (!player.hasLineOfSight(t)) continue;
+            if (t.isMultipartEntity() ? !sees(player, b) : !player.hasLineOfSight(t)) continue;
             hit.add(t);
         }
         return hit;
@@ -150,14 +184,16 @@ public final class KatanaCombat {
         Vec3 from = line[0], to = line[1];
         LivingEntity best = null;
         double bestDist = Double.MAX_VALUE;
-        for (LivingEntity t : player.level().getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1.0), t -> canHit(player, t))) {
-            AABB b = t.getBoundingBox().inflate(THRUST_RADIUS);
-            Vec3 at = b.contains(from) ? from : b.clip(from, to).orElse(null);
-            if (at == null || !player.hasLineOfSight(t)) continue;
-            double d = at.distanceToSqr(from);
-            if (d < bestDist) {
-                bestDist = d;
-                best = t;
+        for (LivingEntity t : candidates(player, new AABB(from, to).inflate(1.0))) {
+            for (AABB box : boxes(t)) {
+                AABB b = box.inflate(THRUST_RADIUS);
+                Vec3 at = b.contains(from) ? from : b.clip(from, to).orElse(null);
+                if (at == null || (t.isMultipartEntity() ? !sees(player, box) : !player.hasLineOfSight(t))) continue;
+                double d = at.distanceToSqr(from);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = t;
+                }
             }
         }
         return best;

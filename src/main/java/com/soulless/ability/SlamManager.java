@@ -192,9 +192,10 @@ public final class SlamManager {
 
         float radius = radius(player.getMainHandItem());
         AABB box = new AABB(center, center).inflate(radius, 3.0, radius);
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator() && !com.soulless.pet.TamedFox.isPetOf(e, player))) {
+        Vec3 blast = center;
+        for (LivingEntity target : com.soulless.combat.Hitboxes.struck(level, box, e -> e != player && e.isAlive() && !e.isSpectator() && !com.soulless.pet.TamedFox.isPetOf(e, player),
+                e -> inBlast(blast, e, radius))) {
             if (target.isAlliedTo(player) || (target instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
-            if (!inBlast(center, target, radius)) continue;
             target.invulnerableTime = 0;
             Vec3 keep = target.getDeltaMovement();
             SoulBonus.abilityDamage(() -> target.hurt(level.damageSources().playerAttack(player), DAMAGE));

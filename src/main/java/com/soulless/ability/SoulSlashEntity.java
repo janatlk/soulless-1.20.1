@@ -126,12 +126,14 @@ public class SoulSlashEntity extends Entity {
         Vec3 across = across(dir);
         Vec3 up = across.cross(dir);
         AABB box = getBoundingBox().inflate(HALF_WIDTH + 1, HEIGHT, HALF_WIDTH + 1).expandTowards(v.scale(-1));
-        for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player && e.isAlive() && !e.isSpectator() && !com.soulless.pet.TamedFox.isPetOf(e, player))) {
-            if (struck.contains(t.getId()) || t.isAlliedTo(player) || (t instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
+        java.util.function.Predicate<net.minecraft.world.entity.Entity> inWave = t -> {   // the target, or a part of it, in the wave
             Vec3 rel = t.position().add(0, t.getBbHeight() / 2, 0).subtract(position());
             double side = rel.dot(across), along = rel.dot(dir), rise = rel.dot(up);
-            if (Math.abs(side) > HALF_WIDTH + t.getBbWidth() / 2 || along < -SPEED - 0.5 - t.getBbWidth() / 2 || along > 0.8 + t.getBbWidth() / 2) continue;
-            if (Math.abs(rise) > HEIGHT / 2 + t.getBbHeight() / 2) continue;
+            return Math.abs(side) <= HALF_WIDTH + t.getBbWidth() / 2 && along >= -SPEED - 0.5 - t.getBbWidth() / 2 && along <= 0.8 + t.getBbWidth() / 2
+                    && Math.abs(rise) <= HEIGHT / 2 + t.getBbHeight() / 2;
+        };
+        for (LivingEntity t : com.soulless.combat.Hitboxes.struck(level, box, e -> e != player && e.isAlive() && !e.isSpectator() && !com.soulless.pet.TamedFox.isPetOf(e, player), inWave)) {
+            if (struck.contains(t.getId()) || t.isAlliedTo(player) || (t instanceof TamableAnimal pet && pet.isOwnedBy(player))) continue;
             struck.add(t.getId());
             float damage = damageFor(power()) * (com.soulless.upgrade.Upgrades.has(player.getMainHandItem(), com.soulless.upgrade.Upgrades.FORGED_SPLIT) ? SPLIT_MULT : 1);
             t.invulnerableTime = 0;
