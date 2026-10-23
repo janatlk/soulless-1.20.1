@@ -20,9 +20,14 @@ public final class ClientModEvents {
     public static final KeyMapping SLAM_KEY = new KeyMapping("key.soulless.slam", KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, "key.categories.soulless");
 
+    /** The Scaled Chestplate's Breath of the Deep. */
+    public static final KeyMapping DASH_KEY = new KeyMapping("key.soulless.dash", KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V, "key.categories.soulless");
+
     @SubscribeEvent
     public static void onKeys(RegisterKeyMappingsEvent event) {
         event.register(SLAM_KEY);
+        event.register(DASH_KEY);
     }
 
     @SubscribeEvent

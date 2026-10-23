@@ -96,6 +96,11 @@ public final class ClientForgeEvents {
                 && mc.options.keyAttack.isDown()) {
             katanaAttack(mc);
         }
+        while (ClientModEvents.DASH_KEY.consumeClick()) {
+            if (player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).is(com.soulless.registry.ModItems.LEVIATHAN_CHESTPLATE.get())) {
+                ModNetwork.sendToServer(new com.soulless.network.DeepDashPacket());
+            }
+        }
         while (ClientModEvents.SLAM_KEY.consumeClick()) {
             if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem katana) {
                 // the katana's ability: the Kitsune ritual (the server checks everything again)

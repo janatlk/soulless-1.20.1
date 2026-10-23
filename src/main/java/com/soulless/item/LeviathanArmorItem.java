@@ -78,6 +78,12 @@ public class LeviathanArmorItem extends ArmorItem {
                                 java.util.List<net.minecraft.network.chat.Component> lines, net.minecraft.world.item.TooltipFlag flag) {
         lines.add(net.minecraft.network.chat.Component.translatable("tooltip.soulless.leviathan_armor")
                 .withStyle(net.minecraft.ChatFormatting.DARK_PURPLE, net.minecraft.ChatFormatting.ITALIC));
+        if (getType() == Type.CHESTPLATE) {
+            lines.add(net.minecraft.network.chat.Component.translatable("tooltip.soulless.deep_dash")
+                    .withStyle(net.minecraft.ChatFormatting.AQUA));
+            lines.add(net.minecraft.network.chat.Component.translatable("tooltip.soulless.deep_dash.desc",
+                    com.soulless.ability.DeepDash.COOLDOWN_TICKS / 20).withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
     }
 
     @Override
