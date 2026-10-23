@@ -82,16 +82,16 @@ public class LeviathanEntity extends Monster implements GeoEntity {
 
     /** Balanced for after the Reaper: its prey wields the Soul Forged and wears diamond or netherite (on full
      * netherite with Protection IV a bite still takes two hearts, the grab four). */
-    private static final float BITE_DAMAGE = 17, RAM_DAMAGE = 7, GRAB_DAMAGE = 22, BREATH_DAMAGE = 4, TAIL_DAMAGE = 10, VORTEX_DAMAGE = 6;
+    private static final float BITE_DAMAGE = 17, RAM_DAMAGE = 7, GRAB_DAMAGE = 22, BREATH_DAMAGE = 3, TAIL_DAMAGE = 10, VORTEX_DAMAGE = 6;
     /** Spent, it takes this much more damage. */
     private static final float EXHAUSTED_TAKEN = 1.35F;
     /** The breath: how long the bubbles come first (the warning - the aim follows its prey closely), how long it
      * lasts in all, how far it reaches (ticks, blocks); the beam then turns at most BREATH_TURN degrees a tick, so a
      * player swimming across it gets out of it, and blocks stop it - a pillar is cover. */
     private static final int BUBBLES = 36, BREATH_TICKS = 126, BREATH_RANGE = 30;
-    private static final float BREATH_TURN = 0.9F;
+    private static final float BREATH_TURN = 0.7F;
     /** The breath's cone: its half-angle (degrees). */
-    private static final float BREATH_CONE = 8F;
+    private static final float BREATH_CONE = 7F;
     /** How long it takes to die (the death animation's length), ticks. */
     private static final int DEATH_TICKS = 110;
     private final ServerBossEvent bar = new ServerBossEvent(net.minecraft.network.chat.Component.translatable("entity.soulless.leviathan"),
@@ -680,7 +680,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             if (off < 0.9 + along * Math.tan(Math.toRadians(BREATH_CONE))) {   // inside the cone
                 p.invulnerableTime = 0;
                 p.hurt(damageSources().dragonBreath(), BREATH_DAMAGE);
-                p.addEffect(new MobEffectInstance(MobEffects.WITHER, 50, 1));
+                p.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 0));
             }
         }
     }
