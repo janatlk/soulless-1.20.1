@@ -33,6 +33,7 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onParticles(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SOUL_EMBER.get(), SoulEmberParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.ABYSS_BREATH.get(), AbyssBreathParticle.Provider::new);
         event.registerSpriteSet(ModParticles.SOUL_WISP.get(), SoulWisp.Sprites::new);
         event.registerSpriteSet(ModParticles.GOLD_EMBER.get(), SoulEmberParticle.Provider::new);
         event.registerSpriteSet(ModParticles.BLOOD_EMBER.get(), s -> new RenegadeParticle.Provider(s, RenegadeParticle.Kind.EMBER));

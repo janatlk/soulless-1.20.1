@@ -90,6 +90,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
      * player swimming across it gets out of it, and blocks stop it - a pillar is cover. */
     private static final int BUBBLES = 36, BREATH_TICKS = 126, BREATH_RANGE = 30;
     private static final float BREATH_TURN = 0.9F;
+    /** The breath's cone: its half-angle (degrees). */
+    private static final float BREATH_CONE = 8F;
     /** How long it takes to die (the death animation's length), ticks. */
     private static final int DEATH_TICKS = 110;
     private final ServerBossEvent bar = new ServerBossEvent(net.minecraft.network.chat.Component.translatable("entity.soulless.leviathan"),
@@ -648,16 +650,20 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         var hit = level().clip(new net.minecraft.world.level.ClipContext(from, from.add(dir.scale(reach)),
                 net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, this));
         if (hit.getType() != net.minecraft.world.phys.HitResult.Type.MISS) reach = hit.getLocation().distanceTo(from);
-        for (double d = 1; d < reach; d += fire ? 0.8 : 1.2) {
-            Vec3 p = from.add(dir.scale(d));
-            double spread = 0.12 + d * 0.025;
-            if (fire) {
-                sl.sendParticles(ParticleTypes.DRAGON_BREATH, p.x, p.y, p.z, 2, spread, spread, spread, 0.01);
-                if (random.nextInt(3) == 0) sl.sendParticles(ParticleTypes.WITCH, p.x, p.y, p.z, 1, spread, spread, spread, 0);
-            } else {
-                sl.sendParticles(ParticleTypes.BUBBLE, p.x, p.y, p.z, 3, spread, spread, spread, 0.15);
-            }
+        // a cone of puffs thrown from the jaws (client.AbyssBreathParticle), each with its own speed and slant, so
+        // the breath bursts, slows, swells and churns as a real one does; the warning is a sputter of bubbles
+        Vec3 up = Math.abs(dir.y) > 0.95 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
+        Vec3 sideA = dir.cross(up).normalize(), sideB = dir.cross(sideA).normalize();
+        int n = fire ? 14 : 5;
+        for (int i = 0; i < n; i++) {
+            double a = random.nextDouble() * Math.PI * 2, r = Math.tan(Math.toRadians(fire ? BREATH_CONE : 14)) * Math.sqrt(random.nextDouble());
+            Vec3 v = dir.add(sideA.scale(Math.cos(a) * r)).add(sideB.scale(Math.sin(a) * r)).normalize()
+                    .scale(fire ? 2.2 + random.nextDouble() * 1.3 : 0.5 + random.nextDouble() * 0.4);
+            Vec3 o = from.add(v.normalize().scale(0.6));
+            sl.sendParticles(fire ? com.soulless.registry.ModParticles.ABYSS_BREATH.get() : ParticleTypes.BUBBLE,
+                    o.x, o.y, o.z, 0, v.x, v.y, v.z, 1);
         }
+        if (fire && random.nextInt(2) == 0) sl.sendParticles(ParticleTypes.BUBBLE_COLUMN_UP, from.x, from.y, from.z, 3, 0.6, 0.6, 0.6, 0.1);
         if (!fire) {
             if (phaseTicks % 6 == 0) level().playSound(null, BlockPos.containing(from), SoundEvents.BUBBLE_COLUMN_UPWARDS_AMBIENT, SoundSource.HOSTILE, 2F, 0.6F);
             return;
@@ -671,7 +677,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             double along = c.dot(dir);
             if (along < 0 || along > reach) continue;
             double off = c.subtract(dir.scale(along)).length();
-            if (off < 1.1 + along * 0.03) {
+            if (off < 0.9 + along * Math.tan(Math.toRadians(BREATH_CONE))) {   // inside the cone
                 p.invulnerableTime = 0;
                 p.hurt(damageSources().dragonBreath(), BREATH_DAMAGE);
                 p.addEffect(new MobEffectInstance(MobEffects.WITHER, 50, 1));

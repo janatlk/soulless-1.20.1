@@ -24,5 +24,8 @@ public final class ModParticles {
     public static final RegistryObject<SimpleParticleType> CRIMSON_BURST = PARTICLES.register("crimson_burst", () -> new SimpleParticleType(true));
     public static final RegistryObject<SimpleParticleType> ASH_FLAKE = PARTICLES.register("ash_flake", () -> new SimpleParticleType(false));
 
+    /** A puff of the Leviathan's breath (client.AbyssBreathParticle, tools/gen_breath_particles.py). */
+    public static final RegistryObject<SimpleParticleType> ABYSS_BREATH = PARTICLES.register("abyss_breath", () -> new SimpleParticleType(true));
+
     private ModParticles() {}
 }
