@@ -69,7 +69,7 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             e.bend[i * 2 + 1] += (bendY - e.bend[i * 2 + 1]) * ease;
             bendX = e.bend[i * 2];
             bendY = e.bend[i * 2 + 1];
-            float amp = (2.5F + 7F * f) * (0.7F + 0.6F * effort) * (1 - 0.5F * roar);
+            float amp = (1F + 6F * f) * effort * (1 - 0.5F * roar);
             float wave = Mth.sin(ph * 1.5F - i * 0.55F) * amp + Mth.sin(t * 0.21F - i * 1.3F) * f * (0.6F + 1.4F * mood);
             float rise = Mth.sin(ph * 0.9F - i * 0.4F + 1.3F) * (0.8F + 2.6F * f) + Mth.sin(t * 0.037F - i * 0.25F) * 1.5F * f;
             // a roar heaves the front of the body: rearing back, then thrown forward, and rolling back down it
@@ -105,22 +105,20 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             head.setRotX(head.getRotX() + BEND_PITCH * e.gazePitch * d * (1 - roar));
         }
 
-        // the crown of tentacles breathes with it: the whole crown opens on the in-breath and closes on the out (the idle
-        // animation's 4 s), each arm rolling a wave down to its tip, plus a sway of its own
-        float breath = t * Mth.TWO_PI / 80F;
+        // the crown's breathing and curling are keyframed (the idle); on top: a drift of each arm's own, the swim
+        // sweeping them back and a roar flaring them wide
         for (int a = 0; a < ARMS; a++) {
             float side = a % 2 == 0 ? 1 : -1, up = a < 2 ? 1 : a < 4 ? 0.3F : -1;
             for (int k = 0; k < ARM_LINKS; k++) {
                 float f = (k + 1f) / ARM_LINKS;
-                float open = Mth.sin(breath - k * 0.45F) * (5F + 11F * f);
-                float sway = Mth.sin(t * 0.07F + a * 1.7F - k * 0.7F) * (3F + 8F * f);
+                float sway = Mth.sin(t * 0.07F + a * 1.7F - k * 0.7F) * (1F + 3F * f);
                 float lift = Mth.sin(t * 0.055F + a * 2.3F - k * 0.6F) * (3F + 6F * f);
                 // a curl that creeps along the arm on its own slow clock: the tips coil in and uncoil
                 float curl = Mth.sin(t * 0.045F + a * 0.9F) * k * 4F + Mth.sin(t * 0.17F + a * 3.1F - k) * 1.5F * f;
                 // swimming hard sweeps them back; a roar flares the crown wide
                 float back = effort * 10F * f, flare = roar * (24F - k * 3F);
-                add("arm_" + a + "_" + k, (lift + curl - open * up * 0.6F - back * up) * d,
-                        (sway + (open + flare) * side - back * side * 0.4F) * d, 0);
+                add("arm_" + a + "_" + k, (lift + curl - back * up) * d,
+                        (sway + flare * side - back * side * 0.4F) * d, 0);
             }
         }
 
@@ -199,13 +197,22 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
                 }
                 // each link carries only its share of the bend (the chain adds them up toward the tip)
                 float share = 1F / links;
-                add("whisker_" + w + "_" + k, s[k * 4] * share * Mth.DEG_TO_RAD, s[k * 4 + 1] * share * Mth.DEG_TO_RAD, 0);
+                addRest("whisker_" + w + "_" + k, s[k * 4] * share * Mth.DEG_TO_RAD, s[k * 4 + 1] * share * Mth.DEG_TO_RAD, 0);
             }
         }
     }
 
-    /** Adds to the bone's rest pose (and to whatever the keyframes did this frame). */
+    /** Adds to whatever the keyframes did this frame: for bones the idle keys every frame (body, tail fin, arms). */
     private void add(String name, float x, float y, float z) {
+        CoreGeoBone b = getAnimationProcessor().getBone(name);
+        if (b == null) return;
+        b.setRotX(b.getRotX() + x);
+        b.setRotY(b.getRotY() + y);
+        b.setRotZ(b.getRotZ() + z);
+    }
+
+    /** Sets the bone to its rest pose plus this: for bones no animation keys (the whiskers). */
+    private void addRest(String name, float x, float y, float z) {
         CoreGeoBone b = getAnimationProcessor().getBone(name);
         if (b == null) return;
         var rest = b.getInitialSnapshot();

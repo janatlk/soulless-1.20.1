@@ -37,6 +37,34 @@
     key(idle, 'tongue', 'rotation', t, tg, 0, 0);
   }
 
+  // the whole body coils in a slow S that rolls back to the tail; every body bone is keyed (so the game adds its
+  // swimming on top of these instead of replacing them)
+  const TAU = Math.PI * 2;
+  for (let i = 0; i < 12; i++) {
+    const f = (i + 1) / 12;
+    for (let s = 0; s <= 12; s++) {
+      const t = s * 0.5, w = TAU * t / 6;
+      key(idle, 'body_' + i, 'rotation', t, Math.sin(w * 2 - i * 0.7 + 1) * (2 + 4 * f), Math.sin(w - i * 0.55) * (5 + 9 * f), Math.sin(w - i * 0.55 - 1.2) * 4 * f);
+    }
+  }
+  for (let s = 0; s <= 12; s++) {
+    const t = s * 0.5, w = TAU * t / 6;
+    key(idle, 'tail_fin', 'rotation', t, Math.sin(w * 2 - 6) * 10, Math.sin(w - 7.2) * 30, 0);
+  }
+  // the crown: each arm curls from its root to its tip and uncurls, out of step with its neighbours, and the whole
+  // crown opens on the in-breath (1.6-2.7 s) and draws in on the out-breath
+  for (let a = 0; a < 6; a++) {
+    const side = a % 2 === 0 ? 1 : -1, up = a < 2 ? 1 : a < 4 ? 0.3 : -1;
+    for (let k = 0; k < 5; k++) {
+      for (let s = 0; s <= 12; s++) {
+        const t = s * 0.5, w = TAU * t / 6;
+        const open = Math.sin(w - 0.9 - k * 0.35) * (8 + 6 * k);
+        const curl = Math.sin(w * 2 + a * 1.9 - k * 0.9) * (6 + 5 * k);
+        key(idle, `arm_${a}_${k}`, 'rotation', t, curl - open * up * 0.5, (open + Math.sin(w * 3 + a) * 4) * side, 0);
+      }
+    }
+  }
+
   // roar
   const roar = anim('roar', 2.6, false);
   for (const [t, j] of [[0, 0], [0.4, 10], [0.65, -52], [0.9, -58], [1.5, -55], [1.9, -40], [2.2, -14], [2.6, 0]])
