@@ -97,7 +97,7 @@ public final class ClientForgeEvents {
             katanaAttack(mc);
         }
         while (ClientModEvents.DASH_KEY.consumeClick()) {
-            if (player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).is(com.soulless.registry.ModItems.LEVIATHAN_CHESTPLATE.get())) {
+            if (com.soulless.ability.DeepDash.worn(player)) {
                 ModNetwork.sendToServer(new com.soulless.network.DeepDashPacket());
             }
         }

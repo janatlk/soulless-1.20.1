@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Breath of the Deep, the Scaled Chestplate's ability (V): the Leviathan's own charge. In water the wearer shoots
+ * Breath of the Deep, the whole Leviathan set's ability (V): the Leviathan's own charge. In water the wearer shoots
  * forward along their gaze some ten blocks, striking and throwing aside whatever they pass through; on land it is a
  * short leap. Then it rests (the chestplate's cooldown).
  */
@@ -36,8 +36,12 @@ public final class DeepDash {
 
     private static final Map<UUID, Dash> ACTIVE = new HashMap<>();
 
-    public static boolean worn(ServerPlayer p) {
-        return p.getItemBySlot(EquipmentSlot.CHEST).is(ModItems.LEVIATHAN_CHESTPLATE.get());
+    /** The whole Leviathan set worn. */
+    public static boolean worn(net.minecraft.world.entity.player.Player p) {
+        return p.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.LEVIATHAN_HELMET.get())
+                && p.getItemBySlot(EquipmentSlot.CHEST).is(ModItems.LEVIATHAN_CHESTPLATE.get())
+                && p.getItemBySlot(EquipmentSlot.LEGS).is(ModItems.LEVIATHAN_LEGGINGS.get())
+                && p.getItemBySlot(EquipmentSlot.FEET).is(ModItems.LEVIATHAN_BOOTS.get());
     }
 
     public static void tryStart(ServerPlayer p) {
@@ -57,6 +61,20 @@ public final class DeepDash {
                 SoundSource.PLAYERS, 1.2F, wet ? 1.4F : 0.7F);
         p.level().playSound(null, p.blockPosition(), SoundEvents.ELDER_GUARDIAN_FLOP, SoundSource.PLAYERS, 0.8F, 1.3F);
     }
+
+    /** Each piece worn: 5% less damage taken in water or rain. */
+    @SubscribeEvent
+    public static void onHurt(net.minecraftforge.event.entity.living.LivingHurtEvent event) {
+        LivingEntity e = event.getEntity();
+        if (!e.isInWaterOrRain()) return;
+        int n = 0;
+        for (EquipmentSlot s : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            if (e.getItemBySlot(s).getItem() instanceof com.soulless.item.LeviathanArmorItem) n++;
+        }
+        if (n > 0) event.setAmount(event.getAmount() * (1 - PER_PIECE * n));
+    }
+
+    public static final float PER_PIECE = 0.05F;
 
     @SubscribeEvent
     public static void onTick(TickEvent.PlayerTickEvent event) {

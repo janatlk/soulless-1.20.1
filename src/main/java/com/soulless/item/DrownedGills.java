@@ -44,9 +44,19 @@ public final class DrownedGills {
     /** The air each wearer has left on land (the game would refill it every tick otherwise). */
     private static final Map<UUID, Integer> AIR = new HashMap<>();
 
+    /** Durability: one point for every 10 s it works in the water (about 3 hours); mended with prismarine crystals
+     * at an anvil. Worn out (one point left) it stops working until mended, but never breaks. */
+    public static final int DURABILITY = 1080;
+
+    /** The gills the player wears (Curios necklace slot, or anywhere in the inventory), not worn out; or empty. */
+    public static ItemStack stack(Player player) {
+        ItemStack s = CURIOS ? CuriosCompat.find(player, ModItems.DROWNED_GILLS.get())
+                : player.getInventory().items.stream().filter(i -> i.is(ModItems.DROWNED_GILLS.get())).findFirst().orElse(ItemStack.EMPTY);
+        return s.isEmpty() || s.getDamageValue() >= s.getMaxDamage() - 1 ? ItemStack.EMPTY : s;
+    }
+
     public static boolean worn(Player player) {
-        if (CURIOS) return CuriosCompat.wearing(player, ModItems.DROWNED_GILLS.get());
-        return player.getInventory().items.stream().anyMatch(s -> s.is(ModItems.DROWNED_GILLS.get()));
+        return !stack(player).isEmpty();
     }
 
     @SubscribeEvent
@@ -71,6 +81,13 @@ public final class DrownedGills {
         if (!on) {
             AIR.remove(p.getUUID());
             return;
+        }
+        // wear: a point every 10 s in the water
+        if (wet && p.tickCount % 200 == 0) {
+            ItemStack g = stack(p);
+            g.setDamageValue(g.getDamageValue() + 1);
+            if (g.getDamageValue() >= g.getMaxDamage() - 1)
+                p.displayClientMessage(Component.translatable("message.soulless.gills_worn").withStyle(ChatFormatting.RED), true);
         }
         if (wet || p.isInWaterOrRain()) {
             p.setAirSupply(p.getMaxAirSupply());
@@ -100,11 +117,19 @@ public final class DrownedGills {
         }
 
         @Override
+        public boolean isValidRepairItem(ItemStack stack, ItemStack repair) {
+            return repair.is(net.minecraft.world.item.Items.PRISMARINE_CRYSTALS);
+        }
+
+        @Override
         public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
             tooltip.add(Component.translatable("item.soulless.drowned_gills.desc").withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC));
             tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.water", Math.round(SWIM_BONUS * 100)).withStyle(ChatFormatting.AQUA));
             tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.hunt", Math.round(HUNT_BONUS * 100)).withStyle(ChatFormatting.DARK_PURPLE));
             tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.land").withStyle(ChatFormatting.RED));
+            if (stack.getDamageValue() >= stack.getMaxDamage() - 1)
+                tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.worn").withStyle(ChatFormatting.RED));
+            tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.repair").withStyle(ChatFormatting.DARK_GRAY));
             tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.slot").withStyle(ChatFormatting.DARK_GRAY));
         }
     }

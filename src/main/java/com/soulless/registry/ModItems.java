@@ -51,7 +51,7 @@ public final class ModItems {
 
     /** The Drowned One's Gills: breath in the water, none out of it (item.DrownedGills). */
     public static final RegistryObject<Item> DROWNED_GILLS = ITEMS.register("drowned_gills",
-            () -> new com.soulless.item.DrownedGills.GillsItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
+            () -> new com.soulless.item.DrownedGills.GillsItem(new Item.Properties().durability(com.soulless.item.DrownedGills.DURABILITY).rarity(Rarity.EPIC)));
 
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);

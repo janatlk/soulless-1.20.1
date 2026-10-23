@@ -10,5 +10,10 @@ final class CuriosCompat {
         return CuriosApi.getCuriosInventory(entity).map(inv -> inv.findFirstCurio(item).isPresent()).orElse(false);
     }
 
+    static net.minecraft.world.item.ItemStack find(LivingEntity entity, Item item) {
+        return CuriosApi.getCuriosInventory(entity).resolve().flatMap(inv -> inv.findFirstCurio(item))
+                .map(r -> r.stack()).orElse(net.minecraft.world.item.ItemStack.EMPTY);
+    }
+
     private CuriosCompat() {}
 }
