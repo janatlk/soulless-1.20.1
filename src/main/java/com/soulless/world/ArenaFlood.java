@@ -21,7 +21,8 @@ import java.util.Set;
  * can leave pockets of air in it, which water placed by worldgen never flows into, and loose stuff - gravel, sand,
  * dirt, clay - drops into it down the shaft or is laid on its floor. When a player first comes into an arena (each
  * session), every air block and every block a shovel digs that is joined to its water, inside its walls, becomes
- * water - a flood fill from the middle, a few thousand blocks a tick.
+ * water - a flood fill from the middle, a few thousand blocks a tick. The first time ever a player comes into an
+ * arena, its Leviathan is put in it (once per arena per world - Spawned).
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class ArenaFlood {
@@ -50,6 +51,17 @@ public final class ArenaFlood {
             for (var piece : start.getPieces()) {
                 if (!(piece instanceof DrownedSoulsStructure.Piece p) || !DONE.add(p.centre().asLong())) continue;
                 BlockPos mid = p.centre().offset(0, (DrownedSoulsStructure.ARENA_TOP_Y + DrownedSoulsStructure.ARENA_BOTTOM_Y) / 2, 0);
+                Spawned spawned = level.getDataStorage().computeIfAbsent(Spawned::load, Spawned::new, "soulless_leviathans");
+                if (spawned.arenas.add(p.centre().asLong())) {
+                    spawned.setDirty();
+                    var lev = com.soulless.registry.ModEntities.LEVIATHAN.get().create(level);
+                    if (lev != null) {
+                        lev.moveTo(mid.getX() + 0.5, mid.getY(), mid.getZ() + 0.5, level.random.nextFloat() * 360, 0);
+                        lev.setHome(mid);
+                        lev.setPersistenceRequired();
+                        level.addFreshEntity(lev);
+                    }
+                }
                 job = new Job(level, p.centre(), new ArrayDeque<>(), new HashSet<>());
                 job.open.add(mid.asLong());
                 job.seen.add(mid.asLong());
@@ -74,6 +86,23 @@ public final class ArenaFlood {
                 if (q.getY() < bottom || q.getY() > top || dx * dx + dz * dz > r * r) continue;
                 if (j.seen.add(q.asLong())) j.open.add(q.asLong());
             }
+        }
+    }
+
+    /** The arenas whose Leviathan has been put in them already (by centre), kept with the world. */
+    public static final class Spawned extends net.minecraft.world.level.saveddata.SavedData {
+        final Set<Long> arenas = new HashSet<>();
+
+        static Spawned load(net.minecraft.nbt.CompoundTag tag) {
+            Spawned s = new Spawned();
+            for (long l : tag.getLongArray("Arenas")) s.arenas.add(l);
+            return s;
+        }
+
+        @Override
+        public net.minecraft.nbt.CompoundTag save(net.minecraft.nbt.CompoundTag tag) {
+            tag.putLongArray("Arenas", arenas.stream().mapToLong(Long::longValue).toArray());
+            return tag;
         }
     }
 

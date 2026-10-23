@@ -123,6 +123,11 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private int roarCooldown = 200;
 
     @Nullable private BlockPos home;
+
+    /** Where it roams round while no one is near (its arena's middle). */
+    public void setHome(BlockPos p) {
+        home = p;
+    }
     /** Where it is swimming to, and how long until it picks somewhere else. */
     private Vec3 goal;
     private int goalTicks;
@@ -831,23 +836,38 @@ public class LeviathanEntity extends Monster implements GeoEntity {
 
     /** Its spoils: a chest in the middle of the arena's floor (or where it died, out of an arena). */
     private void dropChest(ServerLevel sl) {
-        BlockPos at = blockPosition();
-        var structure = sl.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
-                .get(com.soulless.Soulless.id("drowned_souls"));
-        if (structure != null) {
-            var start = sl.structureManager().getStructureWithPieceAt(at, structure);
-            for (var piece : start.isValid() ? start.getPieces() : java.util.List.<net.minecraft.world.level.levelgen.structure.StructurePiece>of())
-                if (piece instanceof com.soulless.world.DrownedSoulsStructure.Piece p)
-                    at = p.centre().offset(0, com.soulless.world.DrownedSoulsStructure.ARENA_BOTTOM_Y, 0);
-        }
-        // up from the floor to the first block it can stand in
-        for (int i = 0; i < 40 && !(sl.getBlockState(at).canBeReplaced() && !sl.getBlockState(at.below()).canBeReplaced()); i++)
+        // where it died: down to the floor under it (or up out of stone it sank into)
+        BlockPos at = head.blockPosition();
+        for (int i = 0; i < 64 && !(sl.getBlockState(at).canBeReplaced() && !sl.getBlockState(at.below()).canBeReplaced()); i++)
             at = sl.getBlockState(at).canBeReplaced() ? at.below() : at.above();
         sl.setBlock(at, net.minecraft.world.level.block.Blocks.CHEST.defaultBlockState()
                 .setValue(net.minecraft.world.level.block.ChestBlock.WATERLOGGED, sl.getFluidState(at).is(net.minecraft.tags.FluidTags.WATER)), 3);
         if (sl.getBlockEntity(at) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest)
             chest.setLootTable(com.soulless.Soulless.id("chests/leviathan"), random.nextLong());
         sl.sendParticles(ParticleTypes.SCULK_SOUL, at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, 30, 0.6, 0.6, 0.6, 0.05);
+        sl.playSound(null, at, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 2F, 0.6F);
+        CHEST_GLOW.add(new ChestGlow(sl, Vec3.atBottomCenterOf(at), new int[]{40}));
+    }
+
+    /** The light round its spoils for two seconds after: souls and violet sparks spiralling up round the chest. */
+    private record ChestGlow(ServerLevel level, Vec3 at, int[] left) {}
+
+    private static final java.util.List<ChestGlow> CHEST_GLOW = new java.util.ArrayList<>();
+
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || CHEST_GLOW.isEmpty()) return;
+        CHEST_GLOW.removeIf(g -> {
+            int t = 40 - g.left[0];
+            for (int k = 0; k < 3; k++) {
+                double a = t * 0.35 + k * Math.PI * 2 / 3, r = 0.9 - t * 0.012, y = t * 0.05;
+                double x = g.at.x + Math.cos(a) * r, z = g.at.z + Math.sin(a) * r;
+                g.level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, x, g.at.y + 0.2 + y, z, 1, 0, 0, 0, 0);
+                g.level.sendParticles(ParticleTypes.END_ROD, x, g.at.y + 0.6 + y, z, 1, 0.02, 0.05, 0.02, 0.01);
+            }
+            if (t % 4 == 0) g.level.sendParticles(ParticleTypes.BUBBLE_COLUMN_UP, g.at.x, g.at.y + 0.5, g.at.z, 6, 0.4, 0.2, 0.4, 0.05);
+            return --g.left[0] <= 0;
+        });
     }
 
     @Override
