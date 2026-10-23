@@ -72,10 +72,8 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             float amp = (1F + 6F * f) * effort * (1 - 0.5F * roar);
             float wave = Mth.sin(ph * 1.5F - i * 0.55F) * amp + Mth.sin(t * 0.21F - i * 1.3F) * f * (0.6F + 1.4F * mood);
             float rise = Mth.sin(ph * 0.9F - i * 0.4F + 1.3F) * (0.8F + 2.6F * f) + Mth.sin(t * 0.037F - i * 0.25F) * 1.5F * f;
-            // a roar heaves the front of the body: rearing back, then thrown forward, and rolling back down it
-            float heave = i < 5 ? roar * (5 - i) * 1.6F * Mth.sin(Math.min(1, roar * 2) * Mth.PI - 0.6F) : 0;
             float roll = Mth.sin(ph * 1.5F - i * 0.55F - 1.2F) * (1.5F + 3F * f) * (0.5F + 0.5F * effort);
-            add("body_" + i, (rise + heave + BEND_PITCH * bendX) * d, (wave + BEND_YAW * bendY) * d, roll * d);
+            add("body_" + i, (rise + BEND_PITCH * bendX) * d, (wave + BEND_YAW * bendY) * d, roll * d);
             prevYaw = yaw;
             prevPitch = pitch;
             front = c;
@@ -88,14 +86,16 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
 
         // the head is never still: it glances about, and turns its gaze toward the nearest player near it
         CoreGeoBone head = getAnimationProcessor().getBone("head");
+        // reared up as a dragon (its body upright), the head bends far down to look at its prey
+        boolean dragon = e.fightPose() == 3;
         if (head != null) {
             float gy = Mth.sin(t * 0.031F) * 6 + Mth.sin(t * 0.083F + 2) * 3, gp = Mth.sin(t * 0.027F + 1) * 4;
-            var pl = e.level().getNearestPlayer(e, 28);
+            var pl = e.level().getNearestPlayer(e, 40);
             if (pl != null) {
                 var to = pl.getEyePosition(state.getPartialTick()).subtract(e.getEyePosition(state.getPartialTick()));
                 float want = Mth.wrapDegrees((float) (Mth.atan2(to.z, to.x) * Mth.RAD_TO_DEG) - 90 - Mth.rotLerp(pt, e.yRotO, e.getYRot()));
                 gy = Mth.clamp(want, -35, 35);
-                gp = Mth.clamp((float) (-Mth.atan2(to.y, to.horizontalDistance()) * Mth.RAD_TO_DEG) - e.getXRot(), -20, 20);
+                gp = Mth.clamp((float) (-Mth.atan2(to.y, to.horizontalDistance()) * Mth.RAD_TO_DEG) - e.getXRot(), dragon ? -85 : -20, dragon ? 85 : 20);
             }
             float k = 1 - (float) Math.pow(0.9, dtLive);
             e.gazeYaw += (gy - e.gazeYaw) * k;
@@ -115,8 +115,8 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
                 float lift = Mth.sin(t * 0.055F + a * 2.3F - k * 0.6F) * (3F + 6F * f);
                 // a curl that creeps along the arm on its own slow clock: the tips coil in and uncoil
                 float curl = Mth.sin(t * 0.045F + a * 0.9F) * k * 4F + Mth.sin(t * 0.17F + a * 3.1F - k) * 1.5F * f;
-                // swimming hard sweeps them back; a roar flares the crown wide
-                float back = effort * 10F * f, flare = roar * (24F - k * 3F);
+                // swimming hard sweeps them back (the roar's flare is keyframed)
+                float back = effort * 10F * f, flare = 0;
                 add("arm_" + a + "_" + k, (lift + curl - back * up) * d,
                         (sway + flare * side - back * side * 0.4F) * d, 0);
             }
@@ -154,7 +154,8 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
     /** How far into its roar it is (0..1, 0 when not roaring), from the roar controller; it rises fast and fades. */
     private float roarAmount(LeviathanEntity e, long id, float t) {
         var ctrl = e.getAnimatableInstanceCache().getManagerForId(id).getAnimationControllers().get("roar");
-        boolean on = ctrl != null && ctrl.getAnimationState() == software.bernie.geckolib.core.animation.AnimationController.State.RUNNING;
+        boolean on = ctrl != null && ctrl.getAnimationState() == software.bernie.geckolib.core.animation.AnimationController.State.RUNNING
+                && ctrl.getCurrentAnimation() != null && ctrl.getCurrentAnimation().animation().name().endsWith("roar");
         if (!on) {
             e.roarStart = Float.NaN;
             return 0;

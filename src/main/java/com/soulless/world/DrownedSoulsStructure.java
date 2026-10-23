@@ -52,6 +52,8 @@ public class DrownedSoulsStructure extends Structure {
     /** Depth below the sea floor of the catacombs' floor and of the arena's lowest point. */
     private static final int CATA = SHAFT_DEPTH + ROOM_H + 2, BOTTOM = CATA + 3 + ARENA_H;
     public static final String LOOT = "chests/drowned_souls";
+    /** The arena's roof and lowest point, relative to the sea floor at the centre (ArenaFlood). */
+    public static final int ARENA_TOP_Y = -CATA - 3, ARENA_BOTTOM_Y = -BOTTOM;
 
     public DrownedSoulsStructure(StructureSettings settings) {
         super(settings);
@@ -83,6 +85,11 @@ public class DrownedSoulsStructure extends Structure {
             super(ModStructures.DROWNED_SOULS_PIECE.get(), 0, new BoundingBox(centre.getX() - ARENA_R - 3, centre.getY() - BOTTOM - 4,
                     centre.getZ() - ARENA_R - 3, centre.getX() + ARENA_R + 3, centre.getY() + 12, centre.getZ() + ARENA_R + 3));
             this.centre = centre;
+        }
+
+        /** The shaft's mouth on the sea floor. */
+        public BlockPos centre() {
+            return centre;
         }
 
         public Piece(StructurePieceSerializationContext ctx, CompoundTag tag) {

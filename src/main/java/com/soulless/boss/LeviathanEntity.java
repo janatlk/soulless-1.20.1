@@ -1,9 +1,21 @@
 package com.soulless.boss;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerBossEvent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.BossEvent;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MoverType;
@@ -23,13 +35,18 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 /**
- * The Leviathan of the Abyss, the boss of the City of Drowned Souls: a 40-block eel crowned with tentacles. For now it
- * only swims (the fight comes later):
+ * The Leviathan of the Abyss, the boss of the City of Drowned Souls: a 40-block eel crowned with tentacles.
  * <ul>
  *   <li>it keeps to open water - every place it heads for has water all round it, it looks ahead and turns away
  *       from walls and the sea floor, and bubble columns do not drag it;</li>
- *   <li>alone, it roams in slow wide loops round its home; a player in the water nearby draws it - it circles them,
- *       closing in and drawing off, and roars now and then;</li>
+ *   <li>alone, it roams in slow wide loops round its home. A player in the water nearby is hunted, in a cycle:
+ *       it circles them (roaring now and then - the roar slows and darkens everyone near), coils, charges through
+ *       them biting (its body rams whoever it passes), and swims off to come round again;</li>
+ *   <li>every third time round it rears up like a dragon instead - body upright, tail writhing below, crown spread -
+ *       and breathes at its prey: bubbles first, then a beam of violet breath that follows them, a little behind;</li>
+ *   <li>twice a fight (at two thirds and one third of its health) it takes its prey from below: it speeds up and
+ *       circles them, dives under them, rises at them with its jaw wide - this cannot be dodged - seizes them,
+ *       shakes them in its jaws, and only then bites down and flings them away;</li>
  *   <li>its body is hit along its whole length: a head part and twelve body parts (LeviathanPart) laid along the
  *       path its head has swum, as a serpent's body follows its head.</li>
  * </ul>
@@ -39,7 +56,24 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.leviathan.idle");
     private static final RawAnimation BITE = RawAnimation.begin().thenPlay("animation.leviathan.bite");
     private static final RawAnimation ROAR = RawAnimation.begin().thenPlay("animation.leviathan.roar");
+    private static final RawAnimation LUNGE = RawAnimation.begin().thenLoop("animation.leviathan.grab_lunge");
+    private static final RawAnimation THRASH = RawAnimation.begin().thenLoop("animation.leviathan.grab_thrash");
+    private static final RawAnimation BREATH = RawAnimation.begin().thenLoop("animation.leviathan.breath");
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    /** The pose the fight shows (0 none, 1 rising at its prey with the jaw wide, 2 shaking it, 3 the dragon's breath). */
+    private static final EntityDataAccessor<Integer> POSE = SynchedEntityData.defineId(LeviathanEntity.class, EntityDataSerializers.INT);
+
+    private enum Phase { ROAM, CIRCLE, COIL, CHARGE, RECOVER, REAR, BREATHE, GRAB_RUSH, GRAB_DIVE, GRAB_RISE, GRAB_HOLD }
+
+    private static final float BITE_DAMAGE = 12, RAM_DAMAGE = 6, GRAB_DAMAGE = 18, BREATH_DAMAGE = 4;
+    /** The breath: how long the bubbles come first, how long it lasts in all, how far it reaches (ticks, blocks). */
+    private static final int BUBBLES = 30, BREATH_TICKS = 140, BREATH_RANGE = 30;
+    private final ServerBossEvent bar = new ServerBossEvent(net.minecraft.network.chat.Component.translatable("entity.soulless.leviathan"),
+            BossEvent.BossBarColor.BLUE, BossEvent.BossBarOverlay.NOTCHED_10);
+    private Phase phase = Phase.ROAM;
+    private int phaseTicks, grabsDone, ramCooldown, cycles;
+    private Vec3 chargeAim, breathAim;
+    @Nullable private ServerPlayer held;
 
     /** Body segments: how far behind the neck each one's centre lies, and its size (blocks). */
     private static final int SEGMENTS = 12;
@@ -50,7 +84,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     /** Where the neck has been, newest first, a point every tick (the body is laid along it). */
     private final java.util.ArrayDeque<Vec3> trail = new java.util.ArrayDeque<>();
     private Player prey;
-    private float circleAngle;
+    private float circleAngle, circleDir = 1;
     private int roarCooldown = 200;
 
     @Nullable private BlockPos home;
@@ -116,12 +150,28 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     protected void registerGoals() {}
 
     @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        entityData.define(POSE, 0);
+    }
+
+    /** The pose the fight shows (client.LeviathanModel: 3 is the dragon's breath - the head looks far up or down). */
+    public int fightPose() {
+        return entityData.get(POSE);
+    }
+
+    @Override
     public void tick() {
         super.tick();
         if (home == null) home = blockPosition();
         setNoGravity(isInWater());
-        if (!level().isClientSide) swim();
+        if (!level().isClientSide) {
+            swim();
+            bar.setProgress(getHealth() / getMaxHealth());
+            if (tickCount % 10 == 0) updateBar();
+        }
         layBody();
+        if (!level().isClientSide) attackWithBody();
         if (level().isClientSide) {
             // the body always faces where it swims (no mob body lag on the client)
             yBodyRot = getYRot();
@@ -159,45 +209,328 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             move(MoverType.SELF, getDeltaMovement());
             return;
         }
-        // a player in the water close by draws it: it circles them, now nearer, now further off
-        if (prey == null || !prey.isAlive() || prey.isSpectator() || prey.distanceToSqr(this) > 48 * 48 || !prey.isInWater()) {
-            prey = level().getNearestPlayer(this, 32);
-            if (prey != null && (!prey.isInWater() || prey.isSpectator())) prey = null;
+        hunt();
+        boolean free = phase == Phase.GRAB_RISE || phase == Phase.GRAB_HOLD || phase == Phase.CHARGE
+                || phase == Phase.REAR || phase == Phase.BREATHE;   // nothing turns it aside
+        boolean blocked = !free && !openWater(position().add(Vec3.directionFromRotation(getXRot(), getYRot()).scale(6)), 2);
+        if (phase == Phase.ROAM && (goal == null || blocked || --goalTicks <= 0 || position().distanceToSqr(goal) < 16)) {
+            Vec3 g = pickGoal(home == null ? position() : Vec3.atCenterOf(home), 8, 26, 6, 10);
+            if (g == null) g = pickGoal(position(), 4, 14, 4, 8);   // home is no good: anywhere open close by
+            goal = g != null ? g : position().add(0, 4, 0);
+            goalTicks = 240;
         }
-        boolean blocked = !openWater(position().add(Vec3.directionFromRotation(getXRot(), getYRot()).scale(6)), 2);
-        if (prey != null) {
-            circleAngle += 0.012F;
-            double r = 12 + 5 * Math.sin(tickCount * 0.01);
-            Vec3 c = prey.position().add(Math.cos(circleAngle) * r, 3 + 2 * Math.sin(tickCount * 0.017), Math.sin(circleAngle) * r);
-            goal = openWater(c, 2) ? c : goal;
-            if (--roarCooldown <= 0 && distanceToSqr(prey) < 22 * 22) {
-                roar();
-                roarCooldown = 300 + random.nextInt(300);
-            } else if (random.nextInt(90) == 0 && distanceToSqr(prey) < 16 * 16) {
-                triggerAnim("roar", "bite");   // snaps at the water as it passes
-            }
+        if (blocked && phase != Phase.ROAM) {   // a wall ahead: swing round toward open water, then carry on
+            Vec3 g = pickGoal(position(), 6, 14, 0, 8);
+            if (g != null) goal = g;
         }
-        if (goal == null || blocked || --goalTicks <= 0 || position().distanceToSqr(goal) < 16) {
-            if (prey == null || blocked) {
-                Vec3 g = pickGoal(home == null ? position() : Vec3.atCenterOf(home), 8, 26, 6, 10);
-                if (g == null) g = pickGoal(position(), 4, 14, 4, 8);   // home is no good: anywhere open close by
-                goal = g != null ? g : position().add(0, 4, 0);
-                goalTicks = 240;
-            }
-        }
+        if (goal == null) goal = position();
+        float speed = switch (phase) {
+            case ROAM -> 0.28F;
+            case CIRCLE -> 0.45F;
+            case COIL -> 0.12F;
+            case CHARGE -> 0.95F;
+            case RECOVER -> 0.5F;
+            case REAR -> 0.4F;
+            case BREATHE -> 0.02F;
+            case GRAB_RUSH -> 0.8F;
+            case GRAB_DIVE -> 0.85F;
+            case GRAB_RISE -> 1.15F;
+            case GRAB_HOLD -> 0.35F;
+        };
+        float turnRate = switch (phase) {
+            case COIL -> 6F;
+            case GRAB_RISE -> 14F;
+            case CHARGE -> 1.5F;
+            case REAR -> 5F;
+            case BREATHE -> 1.2F;
+            case GRAB_RUSH, GRAB_DIVE -> 4F;
+            default -> blocked ? 4F : 2.6F;
+        };
         Vec3 to = goal.subtract(position());
         float wantYaw = (float) (Mth.atan2(to.z, to.x) * Mth.RAD_TO_DEG) - 90;
         float wantPitch = (float) (-Mth.atan2(to.y, to.horizontalDistance()) * Mth.RAD_TO_DEG);
-        // the sea floor close below: lift
-        if (!level().getFluidState(blockPosition().below(3)).is(net.minecraft.tags.FluidTags.WATER)) wantPitch = Math.min(wantPitch, -18);
-        setYRot(Mth.approachDegrees(getYRot(), wantYaw, blocked ? 4F : 2.2F));
-        setXRot(Mth.approach(getXRot(), Mth.clamp(wantPitch, -35, 35), 1.4F));
+        // the sea floor close below: lift (unless it is going for its prey anyway)
+        if (!free && !level().getFluidState(blockPosition().below(3)).is(net.minecraft.tags.FluidTags.WATER)) wantPitch = Math.min(wantPitch, -18);
+        float maxPitch = phase == Phase.GRAB_RISE || phase == Phase.GRAB_DIVE || phase == Phase.REAR || phase == Phase.BREATHE ? 80 : 35;
+        setYRot(Mth.approachDegrees(getYRot(), wantYaw, phase == Phase.BREATHE ? 3F : turnRate));
+        setXRot(Mth.approach(getXRot(), Mth.clamp(wantPitch, -maxPitch, maxPitch), turnRate * 0.7F + (phase == Phase.REAR ? 2 : 0)));
         yBodyRot = getYRot();
         yHeadRot = getYRot();
-        float speed = prey != null ? 0.38F : 0.28F;
         Vec3 dir = Vec3.directionFromRotation(getXRot(), getYRot()).scale(speed);
         setDeltaMovement(getDeltaMovement().scale(0.6).add(dir.scale(0.4)));
         move(MoverType.SELF, getDeltaMovement());
+    }
+
+    // ------------------------------------------------------------------ the fight
+
+    /** Where its jaws close: just before the head. */
+    public Vec3 mouth() {
+        return head.position().add(0, head.getBbHeight() / 2, 0).add(Vec3.directionFromRotation(getXRot(), getYRot()).scale(1.6));
+    }
+
+    private void setPhase(Phase p) {
+        phase = p;
+        phaseTicks = 0;
+        entityData.set(POSE, p == Phase.GRAB_RISE ? 1 : p == Phase.GRAB_HOLD ? 2 : p == Phase.REAR || p == Phase.BREATHE ? 3 : 0);
+    }
+
+    private boolean huntable(@Nullable Player p) {
+        return p != null && p.isAlive() && !p.isSpectator() && !p.isCreative() && p.isInWater() && p.distanceToSqr(this) < 56 * 56;
+    }
+
+    /** The fight's cycle; sets where it swims to ({@code goal}). */
+    private void hunt() {
+        phaseTicks++;
+        if (ramCooldown > 0) ramCooldown--;
+        if (phase == Phase.GRAB_HOLD) {
+            hold();
+            return;
+        }
+        boolean grabbing = phase == Phase.GRAB_RUSH || phase == Phase.GRAB_DIVE || phase == Phase.GRAB_RISE;
+        // a grab, once begun, follows its prey anywhere; otherwise only into the water
+        if (grabbing ? prey == null || !prey.isAlive() || prey.isSpectator() : !huntable(prey)) {
+            Player next = level().getNearestPlayer(this, 40);
+            prey = huntable(next) ? next : null;
+            if (prey == null) {
+                if (phase != Phase.ROAM) setPhase(Phase.ROAM);
+                return;
+            }
+            if (phase == Phase.ROAM) setPhase(Phase.CIRCLE);
+        }
+        Vec3 at = prey.position().add(0, prey.getBbHeight() / 2, 0);
+        // twice a fight: the grab from below
+        float hp = getHealth() / getMaxHealth();
+        if (!grabbing && (phase == Phase.CIRCLE || phase == Phase.RECOVER) && (grabsDone == 0 && hp < 2 / 3F || grabsDone == 1 && hp < 1 / 3F)) {
+            grabsDone++;
+            setPhase(Phase.GRAB_RUSH);
+            roar();
+            level().playSound(null, blockPosition(), SoundEvents.ELDER_GUARDIAN_CURSE, SoundSource.HOSTILE, 4F, 0.5F);
+        }
+        switch (phase) {
+            case CIRCLE -> {
+                circle(at, 13 + 4 * Math.sin(tickCount * 0.02), 0.016F);
+                if (--roarCooldown <= 0 && distanceToSqr(prey) < 24 * 24) {
+                    roar();
+                    roarCooldown = 260 + random.nextInt(200);
+                }
+                if (phaseTicks > 90 + random.nextInt(60)) {
+                    // every third time round: rear up and breathe, if there is room above
+                    boolean room = openWater(position().add(0, 10, 0), 2) && openWater(position().add(0, 18, 0), 2);
+                    setPhase(++cycles % 3 == 0 && room ? Phase.REAR : Phase.COIL);
+                }
+            }
+            case COIL -> {   // slows and swings its head round onto its prey
+                goal = at;
+                if (phaseTicks >= 16) {
+                    chargeAim = at.add(prey.getDeltaMovement().scale(10));
+                    setPhase(Phase.CHARGE);
+                    level().playSound(null, blockPosition(), SoundEvents.RAVAGER_ROAR, SoundSource.HOSTILE, 3F, 0.5F);
+                }
+            }
+            case CHARGE -> {
+                // straight through where its prey was, a little past
+                Vec3 fwd = Vec3.directionFromRotation(getXRot(), getYRot());
+                goal = chargeAim.add(fwd.scale(12));
+                double d = mouth().distanceToSqr(at);
+                if (d < 7 * 7 && phaseTicks % 20 == 1) triggerAnim("roar", "bite");
+                if (d < 3.2 * 3.2 && prey.hurtTime == 0) {
+                    prey.hurt(damageSources().mobAttack(this), BITE_DAMAGE);
+                    prey.knockback(1.2, -fwd.x, -fwd.z);
+                    level().playSound(null, prey.blockPosition(), SoundEvents.EVOKER_FANGS_ATTACK, SoundSource.HOSTILE, 2F, 0.6F);
+                }
+                if (phaseTicks > 45 || position().subtract(chargeAim).dot(fwd) > 10) {
+                    setPhase(Phase.RECOVER);
+                    goal = pickGoal(at, 18, 26, 2, 8);
+                }
+            }
+            case RECOVER -> {
+                if (goal == null || phaseTicks > 50 || position().distanceToSqr(goal) < 16) {
+                    circleDir = random.nextBoolean() ? 1 : -1;
+                    circleAngle = (float) Math.atan2(getZ() - at.z, getX() - at.x);
+                    setPhase(Phase.CIRCLE);
+                }
+            }
+            case REAR -> {   // straight up, so its body hangs below it
+                Vec3 flat = new Vec3(at.x - getX(), 0, at.z - getZ()).normalize();
+                goal = position().add(flat.scale(1.5)).add(0, 12, 0);
+                if (phaseTicks >= 26) {
+                    breathAim = at;
+                    setPhase(Phase.BREATHE);
+                    level().playSound(null, blockPosition(), SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE, 5F, 0.4F);
+                }
+            }
+            case BREATHE -> {
+                // upright, turned toward its prey; the breath's aim follows them, a little behind
+                Vec3 flat = new Vec3(at.x - getX(), 0, at.z - getZ()).normalize();
+                goal = position().add(flat.scale(1.5)).add(0, 12, 0);
+                breathAim = breathAim.lerp(at, phaseTicks < BUBBLES ? 0.3 : 0.06);
+                breathe(phaseTicks >= BUBBLES);
+                if (phaseTicks >= BREATH_TICKS) {
+                    setPhase(Phase.RECOVER);
+                    goal = pickGoal(at, 16, 24, 0, 8);
+                }
+            }
+            case GRAB_RUSH -> {   // faster and tighter round its prey
+                circle(at, 10, 0.05F);
+                if (phaseTicks > 60) setPhase(Phase.GRAB_DIVE);
+            }
+            case GRAB_DIVE -> {   // under it
+                Vec3 below = null;
+                for (int depth = 16; depth >= 6 && below == null; depth -= 2) {
+                    Vec3 p = at.add(0, -depth, 0);
+                    if (openWater(p, 2)) below = p;
+                }
+                goal = below != null ? below : at.add(0, -6, 0);
+                if (position().distanceToSqr(goal) < 5 * 5 || phaseTicks > 70) {
+                    setPhase(Phase.GRAB_RISE);
+                    level().playSound(null, blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.HOSTILE, 3F, 0.6F);
+                }
+            }
+            case GRAB_RISE -> {   // up at it, homing: it cannot be dodged
+                goal = at;
+                if (mouth().distanceToSqr(at) < 3.5 * 3.5 || phaseTicks > 34) seize();
+            }
+            default -> {}
+        }
+    }
+
+    private void circle(Vec3 at, double r, float rate) {
+        circleAngle += rate * circleDir;
+        Vec3 c = at.add(Math.cos(circleAngle) * r, 2 + 2 * Math.sin(tickCount * 0.03), Math.sin(circleAngle) * r);
+        goal = openWater(c, 2) ? c : goal != null ? goal : c;
+    }
+
+    /** From its mouth toward {@code breathAim}: first a stream of bubbles, then the violet breath, which burns. */
+    private void breathe(boolean fire) {
+        if (!(level() instanceof ServerLevel sl)) return;
+        Vec3 from = mouth();
+        Vec3 dir = breathAim.subtract(from);
+        if (dir.lengthSqr() < 1e-4) return;
+        dir = dir.normalize();
+        int reach = fire ? BREATH_RANGE : 8;
+        for (double d = 1; d < reach; d += fire ? 0.8 : 1.2) {
+            Vec3 p = from.add(dir.scale(d));
+            double spread = 0.15 + d * 0.04;
+            if (fire) {
+                sl.sendParticles(ParticleTypes.DRAGON_BREATH, p.x, p.y, p.z, 2, spread, spread, spread, 0.01);
+                if (random.nextInt(3) == 0) sl.sendParticles(ParticleTypes.WITCH, p.x, p.y, p.z, 1, spread, spread, spread, 0);
+            } else {
+                sl.sendParticles(ParticleTypes.BUBBLE, p.x, p.y, p.z, 3, spread, spread, spread, 0.15);
+            }
+        }
+        if (!fire) {
+            if (phaseTicks % 6 == 0) level().playSound(null, BlockPos.containing(from), SoundEvents.BUBBLE_COLUMN_UPWARDS_AMBIENT, SoundSource.HOSTILE, 2F, 0.6F);
+            return;
+        }
+        if (phaseTicks % 8 == 0) level().playSound(null, BlockPos.containing(from), SoundEvents.ENDER_DRAGON_SHOOT, SoundSource.HOSTILE, 3F, 0.5F);
+        if (phaseTicks % 10 != 0) return;
+        // whoever is in the beam: close to the line from the mouth, within its reach
+        for (Player p : level().getEntitiesOfClass(Player.class, new AABB(from, from).inflate(BREATH_RANGE))) {
+            if (p.isSpectator() || p.isCreative()) continue;
+            Vec3 c = p.position().add(0, p.getBbHeight() / 2, 0).subtract(from);
+            double along = c.dot(dir);
+            if (along < 0 || along > BREATH_RANGE) continue;
+            double off = c.subtract(dir.scale(along)).length();
+            if (off < 1.4 + along * 0.05) {
+                p.invulnerableTime = 0;
+                p.hurt(damageSources().dragonBreath(), BREATH_DAMAGE);
+                p.addEffect(new MobEffectInstance(MobEffects.WITHER, 60, 0));
+            }
+        }
+    }
+
+    private void seize() {
+        if (!(prey instanceof ServerPlayer sp)) {
+            setPhase(Phase.RECOVER);
+            return;
+        }
+        held = sp;
+        setPhase(Phase.GRAB_HOLD);
+        level().playSound(null, sp.blockPosition(), SoundEvents.EVOKER_FANGS_ATTACK, SoundSource.HOSTILE, 3F, 0.4F);
+        level().playSound(null, sp.blockPosition(), SoundEvents.PLAYER_HURT_DROWN, SoundSource.HOSTILE, 2F, 0.8F);
+    }
+
+    /** It holds its prey in its jaws, shaking it, swimming on - then bites down and lets it go, still flying. */
+    private void hold() {
+        if (held == null || !held.isAlive() || held.isSpectator() || held.level() != level()) {
+            held = null;
+            setPhase(Phase.RECOVER);
+            return;
+        }
+        Vec3 fwd = Vec3.directionFromRotation(getXRot(), getYRot());
+        // swims on upward and onward, weaving (the thrash on the client wrenches the head)
+        Vec3 side = new Vec3(-fwd.z, 0, fwd.x).normalize();
+        goal = position().add(fwd.scale(10)).add(side.scale(Math.sin(phaseTicks * 0.4) * 6)).add(0, 2, 0);
+        if (!openWater(goal, 2)) {
+            Vec3 g = pickGoal(position(), 6, 12, 2, 6);
+            if (g != null) goal = g;
+        }
+        Vec3 m = mouth();
+        held.teleportTo(m.x, m.y - held.getBbHeight() / 2, m.z);
+        held.setDeltaMovement(Vec3.ZERO);
+        held.fallDistance = 0;
+        if (phaseTicks % 10 == 0) level().playSound(null, held.blockPosition(), SoundEvents.PLAYER_HURT_DROWN, SoundSource.HOSTILE, 1.5F, 0.7F + random.nextFloat() * 0.3F);
+        if (phaseTicks >= 50) {
+            ServerPlayer p = held;
+            held = null;
+            p.invulnerableTime = 0;
+            p.hurt(damageSources().mobAttack(this), GRAB_DAMAGE);
+            Vec3 fling = fwd.scale(1.6).add(side.scale(Math.signum(Math.sin(phaseTicks * 0.4)) * 0.6)).add(0, 0.6, 0);
+            p.setDeltaMovement(fling);
+            p.hurtMarked = true;
+            level().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.HOSTILE, 2F, 0.5F);
+            setPhase(Phase.RECOVER);
+            goal = pickGoal(position(), 18, 26, 0, 8);
+        }
+    }
+
+    /** Whoever its body passes through while it charges or rises is rammed. */
+    private void attackWithBody() {
+        if (ramCooldown > 0 || !(phase == Phase.CHARGE || phase == Phase.GRAB_RISE || phase == Phase.GRAB_RUSH)) return;
+        for (LeviathanPart part : parts) {
+            for (Player p : level().getEntitiesOfClass(Player.class, part.getBoundingBox().inflate(0.3))) {
+                if (p == held || p.isSpectator() || p.isCreative()) continue;
+                if (p.hurt(damageSources().mobAttack(this), RAM_DAMAGE)) {
+                    Vec3 away = p.position().subtract(part.position()).normalize();
+                    p.setDeltaMovement(p.getDeltaMovement().add(away.scale(0.9)));
+                    p.hurtMarked = true;
+                    ramCooldown = 10;
+                }
+            }
+        }
+    }
+
+    /** The roar: everyone near is slowed and the water goes dark round them. */
+    public void roar() {
+        triggerAnim("roar", "roar");
+        if (level().isClientSide) return;
+        level().playSound(null, blockPosition(), SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE, 5F, 0.5F);
+        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(24))) {
+            if (p.isSpectator() || p.isCreative()) continue;
+            p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 70, 1));
+            p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 90, 0));
+        }
+    }
+
+    private void updateBar() {
+        for (ServerPlayer p : new java.util.ArrayList<>(bar.getPlayers())) {
+            if (!p.isAlive() || p.level() != level() || p.distanceToSqr(this) > 72 * 72) bar.removePlayer(p);
+        }
+        for (Player p : level().players()) {
+            if (p instanceof ServerPlayer sp && p.distanceToSqr(this) < 56 * 56 && (phase != Phase.ROAM || p.isInWater())) bar.addPlayer(sp);
+        }
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        super.remove(reason);
+        bar.removeAllPlayers();
+    }
+
+    @Override
+    public void stopSeenByPlayer(ServerPlayer player) {
+        super.stopSeenByPlayer(player);
+        bar.removePlayer(player);
     }
 
     /** Lays the head part before the neck and the body parts along the path the neck has swum. */
@@ -284,12 +617,15 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         if (home != null) tag.put("Home", NbtUtils.writeBlockPos(home));
+        tag.putInt("Grabs", grabsDone);
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         if (tag.contains("Home")) home = NbtUtils.readBlockPos(tag.getCompound("Home"));
+        grabsDone = tag.getInt("Grabs");
+        if (hasCustomName()) bar.setName(getDisplayName());
     }
 
     @Override
@@ -297,10 +633,13 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         controllers.add(new AnimationController<>(this, "main", 6, state -> state.setAndContinue(IDLE)));
         controllers.add(new AnimationController<>(this, "roar", 4, state -> software.bernie.geckolib.core.object.PlayState.STOP)
                 .triggerableAnim("roar", ROAR).triggerableAnim("bite", BITE));
-    }
-
-    public void roar() {
-        triggerAnim("roar", "roar");
+        // added last, so the fight's poses win over the others
+        controllers.add(new AnimationController<>(this, "pose", 4, state -> switch (entityData.get(POSE)) {
+            case 1 -> state.setAndContinue(LUNGE);
+            case 2 -> state.setAndContinue(THRASH);
+            case 3 -> state.setAndContinue(BREATH);
+            default -> software.bernie.geckolib.core.object.PlayState.STOP;
+        }));
     }
 
     @Override

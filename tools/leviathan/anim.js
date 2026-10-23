@@ -4,8 +4,10 @@
 //
 //   idle - 6 s: an uneven breath (a long slow in-breath, a held moment, a quick out-breath, a small second sigh),
 //          the jaw tasting the water, the head never quite still, the tongue lolling
-//   roar - 2.6 s: a wind-up, the roar with the skull shaking hard and dying down, then a growl that fades
-//   bite - 1.0 s: a cocked head, a lunge with the jaw flung open, a hard snap and a recoil
+//   roar - 2.6 s: coils back, throws the whole front forward with the crown fanned out, shakes, sinks back
+//   bite - 1.0 s: the neck kinks into an S, the whole front strikes, the jaw snaps shut
+//   breath - reared up as a dragon breathing (loops): crown spread, tail writhing below
+//   grab_lunge / grab_thrash - the rise from below at its prey, and the shaking of it in its jaws (loops)
 (() => {
   Animation.all.slice().forEach(a => a.remove(false));
   const bone = n => Group.all.find(g => g.name === n);
@@ -65,29 +67,101 @@
     }
   }
 
-  // roar
+  // a track sampled from a function every `step` seconds over [0, len]
+  const sample = (a, b, ch, len, step, fn) => {
+    for (let t = 0; t <= len + 1e-6; t += step) {
+      const r = Math.round(t * 100) / 100, v = fn(r);
+      key(a, b, ch, r, v[0], v[1], v[2]);
+    }
+  };
+  const ease = (t, a, b) => t <= a ? 0 : t >= b ? 1 : (1 - Math.cos(Math.PI * (t - a) / (b - a))) / 2;
+  const bell = (t, a, m, b) => t <= a || t >= b ? 0 : t < m ? ease(t, a, m) : 1 - ease(t, m, b);
+
+  // roar - 2.6 s: it coils back on itself (neck drawn up and back, crown pressed flat), throws the whole front of the
+  // body forward with the jaw flung wide, the skull shaking and the crown flared like a fan, then sinks back growling
   const roar = anim('roar', 2.6, false);
-  for (const [t, j] of [[0, 0], [0.4, 10], [0.65, -52], [0.9, -58], [1.5, -55], [1.9, -40], [2.2, -14], [2.6, 0]])
-    key(roar, 'jaw', 'rotation', t, j, 0, 0);
-  const head = [[0, 0, 0, 0], [0.4, 14, 0, 0], [0.65, -18, 0, 0]];
-  for (let t = 0.75, s = 1; t < 1.9; t += 0.1, s = -s) {   // the shake, dying down
-    const a = 5 * (1.9 - t) / 1.15 + 1;
-    head.push([Math.round(t * 100) / 100, -16, a * s, a * 0.8 * s]);
+  const wind = t => bell(t, 0, 0.45, 0.7), blast = t => ease(t, 0.5, 0.75) * (1 - ease(t, 1.8, 2.6));
+  const shake = t => t < 0.7 || t > 1.9 ? 0 : Math.sin((t - 0.7) * 38) * (1.9 - t) / 1.2;
+  sample(roar, 'jaw', 'rotation', 2.6, 0.05, t => [8 * wind(t) - 58 * blast(t) + 6 * Math.sin(t * 30) * blast(t), 0, 0]);
+  sample(roar, 'head', 'rotation', 2.6, 0.05, t => [16 * wind(t) - 22 * blast(t), 9 * shake(t), 7 * shake(t)]);
+  sample(roar, 'tongue', 'rotation', 2.6, 0.1, t => [-26 * blast(t) + 8 * Math.sin(t * 9) * blast(t), 0, 0]);
+  for (let i = 0; i < 12; i++) {
+    const k = Math.max(0, 1 - i / 6), lag = i * 0.04;
+    sample(roar, 'body_' + i, 'rotation', 2.6, 0.1, t => [(14 * wind(t - lag) - 12 * blast(t - lag)) * k,
+      Math.sin(t * 4 - i * 0.6) * (3 + i * 0.8) * (1 - k * 0.5), Math.sin(t * 4 - i * 0.6 - 1) * 3]);
   }
-  head.push([2.0, -8, 0, 0], [2.6, 0, 0, 0]);
-  for (const [t, x, y, z] of head) key(roar, 'head', 'rotation', t, x, y, z);
-  for (const [t, x] of [[0, 0], [0.65, -20], [1.0, -8], [1.4, -24], [2.0, 0], [2.6, 0]]) key(roar, 'tongue', 'rotation', t, x, 0, 0);
-  for (const [t, v] of [[0, 1], [0.4, 1.14], [0.65, 1.05], [1.0, 1.1], [1.5, 1.07], [2.0, 1.02], [2.6, 1]]) {
-    [['body_0', 1], ['body_1', 0.8], ['body_2', 0.55], ['body_3', 0.3]].forEach(([b, k]) => {
-      const s = 1 + (v - 1) * k;
-      key(roar, b, 'scale', t, s, s, 1);
-    });
+  sample(roar, 'body_0', 'scale', 2.6, 0.1, t => { const s = 1 + 0.06 * wind(t) + 0.14 * blast(t); return [s, s, 1]; });
+  sample(roar, 'body_1', 'scale', 2.6, 0.1, t => { const s = 1 + 0.04 * wind(t) + 0.09 * blast(t); return [s, s, 1]; });
+  sample(roar, 'tail_fin', 'rotation', 2.6, 0.1, t => [0, Math.sin(t * 7) * (10 + 25 * blast(t)), 0]);
+  for (let a = 0; a < 6; a++) {
+    const side = a % 2 === 0 ? 1 : -1, up = a < 2 ? 1 : a < 4 ? 0.3 : -1;
+    for (let k = 0; k < 5; k++) {
+      sample(roar, `arm_${a}_${k}`, 'rotation', 2.6, 0.1, t => [
+        (12 * wind(t) - 14 * blast(t)) * up + Math.sin(t * 11 + a + k) * 5 * blast(t),
+        (-14 * wind(t) + (30 - k * 4) * blast(t)) * side, 0]);
+    }
   }
 
-  // bite
+  // bite - 1.0 s: the neck kinks back into an S, the head cocks, then the whole front strikes forward, the jaw
+  // flung open and slammed shut, the crown swept back by the lunge; a shudder after
   const bite = anim('bite', 1.0, false);
-  for (const [t, j] of [[0, 0], [0.2, 6], [0.38, -50], [0.48, 12], [0.6, 4], [1.0, 0]]) key(bite, 'jaw', 'rotation', t, j, 0, 0);
-  for (const [t, x, z] of [[0, 0, 0], [0.2, 10, -6], [0.38, -12, 4], [0.48, 8, 0], [0.7, -2, 0], [1.0, 0, 0]]) key(bite, 'head', 'rotation', t, x, 0, z);
+  const cock = t => bell(t, 0, 0.22, 0.36), strike = t => bell(t, 0.26, 0.4, 0.7);
+  sample(bite, 'jaw', 'rotation', 1.0, 0.04, t => [6 * cock(t) - 55 * bell(t, 0.22, 0.36, 0.46) + 10 * bell(t, 0.44, 0.5, 0.7), 0, 0]);
+  sample(bite, 'head', 'rotation', 1.0, 0.04, t => [14 * cock(t) - 16 * strike(t) + 4 * Math.sin(t * 40) * bell(t, 0.46, 0.55, 0.9), 0, -8 * cock(t) + 5 * strike(t)]);
+  for (let i = 0; i < 6; i++) {
+    const k = 1 - i / 6, sgn = i % 2 === 0 ? 1 : -1;
+    sample(bite, 'body_' + i, 'rotation', 1.0, 0.04, t => [(10 * cock(t) - 12 * strike(t)) * k, sgn * 10 * cock(t) * k, 0]);
+  }
+  for (let a = 0; a < 6; a++) {
+    const side = a % 2 === 0 ? 1 : -1, up = a < 2 ? 1 : a < 4 ? 0.3 : -1;
+    for (let k = 0; k < 5; k++) sample(bite, `arm_${a}_${k}`, 'rotation', 1.0, 0.08, t => [(18 + k * 4) * strike(t) * up, -(16 + k * 3) * strike(t) * side, 0]);
+  }
+
+  // grab_lunge - loops while it rises at its prey from below: jaw at full gape, head thrown up, crown swept back
+  // flat along the neck, the body straight and rippling hard
+  const lunge = anim('grab_lunge', 1.0, true);
+  sample(lunge, 'jaw', 'rotation', 1.0, 0.1, t => [-62 + 4 * Math.sin(t * Math.PI * 4), 0, 0]);
+  sample(lunge, 'head', 'rotation', 1.0, 0.1, t => [-14 + 3 * Math.sin(t * Math.PI * 2), 3 * Math.sin(t * Math.PI * 4), 0]);
+  sample(lunge, 'tongue', 'rotation', 1.0, 0.1, t => [-28, 0, 0]);
+  for (let i = 0; i < 12; i++) sample(lunge, 'body_' + i, 'rotation', 1.0, 0.1, t => [0, Math.sin(t * Math.PI * 4 - i * 0.7) * (2 + i * 1.2), 0]);
+  sample(lunge, 'tail_fin', 'rotation', 1.0, 0.1, t => [0, Math.sin(t * Math.PI * 4 - 8.4) * 35, 0]);
+  for (let a = 0; a < 6; a++) {
+    const side = a % 2 === 0 ? 1 : -1, up = a < 2 ? 1 : a < 4 ? 0.3 : -1;
+    for (let k = 0; k < 5; k++) sample(lunge, `arm_${a}_${k}`, 'rotation', 1.0, 0.1, t => [(26 + k * 3) * up, (-22 - k * 3 + 3 * Math.sin(t * Math.PI * 4 + a)) * side, 0]);
+  }
+
+  // grab_thrash - loops while it holds its prey: the jaw clamped, the head wrenched hard left and right, the neck
+  // whipping the other way, the crown flailing
+  const thrash = anim('grab_thrash', 1.0, true);
+  const sw = t => Math.sin(t * Math.PI * 4);   // two wrenches a second each way
+  sample(thrash, 'jaw', 'rotation', 1.0, 0.05, t => [4 + 3 * Math.abs(sw(t)), 0, 0]);
+  sample(thrash, 'head', 'rotation', 1.0, 0.05, t => [-6 + 5 * Math.abs(sw(t)), 38 * sw(t), 16 * sw(t)]);
+  for (let i = 0; i < 8; i++) {
+    const k = 1 - i / 8;
+    sample(thrash, 'body_' + i, 'rotation', 1.0, 0.05, t => [3 * Math.sin(t * Math.PI * 8 - i), -22 * k * Math.sin(t * Math.PI * 4 - i * 0.5), 10 * k * sw(t)]);
+  }
+  sample(thrash, 'tail_fin', 'rotation', 1.0, 0.1, t => [0, 30 * Math.sin(t * Math.PI * 4 - 3), 0]);
+  for (let a = 0; a < 6; a++) {
+    const side = a % 2 === 0 ? 1 : -1;
+    for (let k = 0; k < 5; k++) sample(thrash, `arm_${a}_${k}`, 'rotation', 1.0, 0.05, t => [14 * Math.sin(t * Math.PI * 6 + a * 1.3 - k * 0.8), (20 * Math.sin(t * Math.PI * 4 + a - k * 0.6)) * side, 0]);
+  }
+
+  // breath - loops while it stands reared up like a dragon breathing at its prey: the neck held, the jaw wide and
+  // trembling, the crown spread wide like a collar, and the body below writhing in a wave that never stops
+  const br = anim('breath', 2.0, true);
+  const w2 = t => t * Math.PI;   // one wave a second... two a loop
+  sample(br, 'jaw', 'rotation', 2.0, 0.1, t => [-50 + 3 * Math.sin(t * 30), 0, 0]);
+  sample(br, 'tongue', 'rotation', 2.0, 0.1, t => [-22 + 4 * Math.sin(t * 12), 0, 0]);
+  for (let i = 0; i < 12; i++) {
+    const f = Math.max(0, (i - 2) / 9);
+    sample(br, 'body_' + i, 'rotation', 2.0, 0.1, t => [Math.sin(w2(t) * 2 - i * 0.8 + 1) * 6 * f, Math.sin(w2(t) * 2 - i * 0.7) * (2 + 16 * f), Math.sin(w2(t) * 2 - i * 0.7 - 1) * 5 * f]);
+  }
+  sample(br, 'tail_fin', 'rotation', 2.0, 0.1, t => [Math.sin(w2(t) * 2 - 9) * 10, Math.sin(w2(t) * 2 - 8.4) * 40, 0]);
+  for (let a = 0; a < 6; a++) {
+    const side = a % 2 === 0 ? 1 : -1, up = a < 2 ? 1 : a < 4 ? 0.3 : -1;
+    for (let k = 0; k < 5; k++) sample(br, `arm_${a}_${k}`, 'rotation', 2.0, 0.1, t => [
+      -up * (14 + k * 3) + Math.sin(w2(t) * 2 + a - k * 0.7) * 4, side * (38 - k * 5 + Math.sin(w2(t) * 3 + a * 1.4 - k) * 5), 0]);
+  }
 
   return Animation.all.map(a => a.name + '/' + a.length);
 })()

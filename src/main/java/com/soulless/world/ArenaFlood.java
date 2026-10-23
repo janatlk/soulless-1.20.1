@@ -1,0 +1,80 @@
+package com.soulless.world;
+
+import com.soulless.Soulless;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Floods the Drowned Souls arena's air pockets. Worldgen that runs after the arena is built (features from the
+ * chunks round it) can leave pockets of air in it, and water placed by worldgen never flows into them. When a
+ * player first comes into an arena, every air block joined to its water, inside the arena's walls, becomes water -
+ * a flood fill from the middle, a few thousand blocks a tick.
+ */
+@Mod.EventBusSubscriber(modid = Soulless.MODID)
+public final class ArenaFlood {
+    private static final ResourceKey<Structure> KEY = ResourceKey.create(Registries.STRUCTURE, Soulless.id("drowned_souls"));
+    private static final int BUDGET = 6000;
+    /** Arenas flooded (or flooding) this session, by centre. */
+    private static final Set<Long> DONE = new HashSet<>();
+    private static Job job;
+
+    private record Job(ServerLevel level, BlockPos centre, ArrayDeque<Long> open, Set<Long> seen) {}
+
+    @SubscribeEvent
+    public static void onTick(TickEvent.LevelTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level)) return;
+        if (job != null && job.level == level) {
+            step(job);
+            if (job.open.isEmpty()) job = null;
+            return;
+        }
+        if (job != null || level.getGameTime() % 40 != 0) return;
+        var structure = level.registryAccess().registryOrThrow(Registries.STRUCTURE).get(KEY);
+        if (structure == null) return;
+        for (var player : level.players()) {
+            var start = level.structureManager().getStructureWithPieceAt(player.blockPosition(), structure);
+            if (!start.isValid()) continue;
+            for (var piece : start.getPieces()) {
+                if (!(piece instanceof DrownedSoulsStructure.Piece p) || !DONE.add(p.centre().asLong())) continue;
+                BlockPos mid = p.centre().offset(0, (DrownedSoulsStructure.ARENA_TOP_Y + DrownedSoulsStructure.ARENA_BOTTOM_Y) / 2, 0);
+                job = new Job(level, p.centre(), new ArrayDeque<>(), new HashSet<>());
+                job.open.add(mid.asLong());
+                job.seen.add(mid.asLong());
+                return;
+            }
+        }
+    }
+
+    private static void step(Job j) {
+        BlockState water = Blocks.WATER.defaultBlockState();
+        int r = DrownedSoulsStructure.ARENA_R + 1;
+        int top = j.centre.getY() + DrownedSoulsStructure.ARENA_TOP_Y + 1, bottom = j.centre.getY() + DrownedSoulsStructure.ARENA_BOTTOM_Y;
+        for (int n = 0; n < BUDGET && !j.open.isEmpty(); n++) {
+            BlockPos p = BlockPos.of(j.open.poll());
+            if (!j.level.isLoaded(p)) continue;
+            BlockState s = j.level.getBlockState(p);
+            if (s.isAir()) j.level.setBlock(p, water, 2);
+            else if (!s.getFluidState().is(net.minecraft.tags.FluidTags.WATER)) continue;
+            for (var d : net.minecraft.core.Direction.values()) {
+                BlockPos q = p.relative(d);
+                int dx = q.getX() - j.centre.getX(), dz = q.getZ() - j.centre.getZ();
+                if (q.getY() < bottom || q.getY() > top || dx * dx + dz * dz > r * r) continue;
+                if (j.seen.add(q.asLong())) j.open.add(q.asLong());
+            }
+        }
+    }
+
+    private ArenaFlood() {}
+}
