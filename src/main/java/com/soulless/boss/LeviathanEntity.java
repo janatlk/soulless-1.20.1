@@ -52,6 +52,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * </ul>
  * The model's motion is client.LeviathanModel.
  */
+@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = com.soulless.Soulless.MODID)
 public class LeviathanEntity extends Monster implements GeoEntity {
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.leviathan.idle");
     private static final RawAnimation BITE = RawAnimation.begin().thenPlay("animation.leviathan.bite");
@@ -106,6 +107,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private boolean bitThisCharge;
     private Vec3 chargeAim, breathAim;
     @Nullable private ServerPlayer held;
+    /** Where the held prey last had room (they are kept there when its jaws pass through stone). */
+    @Nullable private Vec3 heldSafe;
 
     /** Body segments: how far behind the neck each one's centre lies, and its size (blocks). */
     private static final int SEGMENTS = 12;
@@ -292,7 +295,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         float wantPitch = (float) (-Mth.atan2(to.y, to.horizontalDistance()) * Mth.RAD_TO_DEG);
         // the sea floor close below: lift (unless it is going for its prey anyway)
         if (!free && !level().getFluidState(blockPosition().below(3)).is(net.minecraft.tags.FluidTags.WATER)) wantPitch = Math.min(wantPitch, -18);
-        float maxPitch = phase == Phase.GRAB_RISE || phase == Phase.GRAB_DIVE || phase == Phase.REAR || phase == Phase.BREATHE ? 80 : 35;
+        float maxPitch = phase == Phase.GRAB_RISE || phase == Phase.GRAB_DIVE || phase == Phase.REAR || phase == Phase.BREATHE ? 80
+                : phase == Phase.COIL || phase == Phase.CHARGE || phase == Phase.TURN ? 65 : 45;
         setYRot(Mth.approachDegrees(getYRot(), wantYaw, phase == Phase.BREATHE ? 3F : turnRate));
         setXRot(Mth.approach(getXRot(), Mth.clamp(wantPitch, -maxPitch, maxPitch), turnRate * 0.7F + (phase == Phase.REAR ? 2 : 0)));
         yBodyRot = getYRot();
@@ -348,12 +352,6 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         if (tailCooldown > 0) tailCooldown--;
         if (vortexCooldown > 0) vortexCooldown--;
         tickVortex();
-        // staying on the sea floor out of its way does not work: after a few seconds there a whirlpool comes for them
-        floorTicks = onFloor(prey) ? floorTicks + 1 : 0;
-        if (floorTicks > 70 && vortexAt == null && !grabbing) {
-            startVortex(at);
-            floorTicks = 0;
-        }
         // twice a fight, opening stages II and III: the grab from below (it waits for a free moment to begin it)
         boolean free = phase == Phase.CIRCLE || phase == Phase.RECOVER || phase == Phase.TURN || phase == Phase.EXHAUSTED;
         if (!grabbing && free && grabsDone < stage - 1) {
@@ -621,6 +619,15 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         vortexCooldown = stage == 3 ? 120 : 200;
     }
 
+    /** Whoever it holds in its jaws cannot be smothered in a wall it swims by. */
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void onHeldHurt(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+        if (!event.getSource().is(net.minecraft.world.damagesource.DamageTypes.IN_WALL)) return;
+        for (LeviathanEntity l : event.getEntity().level().getEntitiesOfClass(LeviathanEntity.class, event.getEntity().getBoundingBox().inflate(16))) {
+            if (l.held == event.getEntity()) event.setCanceled(true);
+        }
+    }
+
     /** Spent (after a great attack), it takes more damage - the window to strike. */
     @Override
     public boolean hurt(net.minecraft.world.damagesource.DamageSource source, float amount) {
@@ -630,7 +637,10 @@ public class LeviathanEntity extends Monster implements GeoEntity {
 
     private void circle(Vec3 at, double r, float rate) {
         circleAngle += rate * circleDir;
-        Vec3 c = at.add(Math.cos(circleAngle) * r, 2 + 2 * Math.sin(tickCount * 0.03), Math.sin(circleAngle) * r);
+        // above its prey or below it, changing every few seconds - so each charge comes slanting down or up at them
+        // (at prey on the floor, always from above)
+        double lift = onFloor(prey) ? 8 : 7.5 * Math.sin(tickCount * 0.025 + circleDir);
+        Vec3 c = at.add(Math.cos(circleAngle) * r, lift, Math.sin(circleAngle) * r);
         goal = openWater(c, 2) ? c : goal != null ? goal : c;
     }
 
@@ -718,18 +728,23 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         // swims on upward and onward, weaving (the thrash on the client wrenches the head)
         Vec3 side = new Vec3(-fwd.z, 0, fwd.x).normalize();
         goal = position().add(fwd.scale(10)).add(side.scale(Math.sin(phaseTicks * 0.13) * 6)).add(0, 2, 0);
-        if (!openWater(goal, 2)) {
-            Vec3 g = pickGoal(position(), 6, 12, 2, 6);
+        // open water only: a wall ahead turns it aside
+        if (!openWater(goal, 3) || !openWater(position().add(fwd.scale(5)), 2)) {
+            Vec3 g = pickGoal(position(), 6, 14, 0, 8);
             if (g != null) goal = g;
         }
+        // the prey stays in its jaws only where there is room for them; else where they last had it
         Vec3 m = mouth();
-        held.teleportTo(m.x, m.y - held.getBbHeight() / 2, m.z);
+        Vec3 spot = new Vec3(m.x, m.y - held.getBbHeight() / 2, m.z);
+        if (level().noCollision(held, held.getBoundingBox().move(spot.subtract(held.position())))) heldSafe = spot;
+        if (heldSafe != null) held.teleportTo(heldSafe.x, heldSafe.y, heldSafe.z);
         held.setDeltaMovement(Vec3.ZERO);
         held.fallDistance = 0;
         if (phaseTicks % 10 == 0) level().playSound(null, held.blockPosition(), SoundEvents.PLAYER_HURT_DROWN, SoundSource.HOSTILE, 1.5F, 0.7F + random.nextFloat() * 0.3F);
         if (phaseTicks >= 50) {
             ServerPlayer p = held;
             held = null;
+            heldSafe = null;
             p.invulnerableTime = 0;
             p.hurt(damageSources().mobAttack(this), GRAB_DAMAGE);
             p.addEffect(new MobEffectInstance(MobEffects.WITHER, 80, 1));
@@ -926,7 +941,10 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             if (side.lengthSqr() < 1e-4) side = new Vec3(1, 0, 0);
             float f = (i + 1F) / SEGMENTS;
             double off = Math.sin(wavePhase - i * 0.6) * (0.1 + 1.5 * f * f) * waveStrength;
-            Vec3 o = side.normalize().scale(off);
+            // and up and down, slower and out of step with the side-to-side: an eel's, not a snake's
+            Vec3 lift = side.normalize().cross(dir.normalize());
+            double rise = Math.sin(wavePhase * 0.7 - i * 0.5 + 1.3) * (0.05 + 1.1 * f * f) * waveStrength;
+            Vec3 o = side.normalize().scale(off).add(lift.scale(rise));
             p.setPos(p.getX() + o.x, p.getY() + o.y, p.getZ() + o.z);
         }
     }
