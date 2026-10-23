@@ -56,6 +56,16 @@ public final class ModItems {
     /** Opens the Soul Altar. */
     public static final RegistryObject<Item> ABYSSAL_HEART = material("abyssal_heart", Rarity.EPIC, true);
 
+    /** The Leviathan's armour, forged at the Soul Anvil from its scales (item.LeviathanArmorItem). */
+    public static final RegistryObject<Item> LEVIATHAN_HELMET = leviathanArmor("leviathan_helmet", net.minecraft.world.item.ArmorItem.Type.HELMET);
+    public static final RegistryObject<Item> LEVIATHAN_CHESTPLATE = leviathanArmor("leviathan_chestplate", net.minecraft.world.item.ArmorItem.Type.CHESTPLATE);
+    public static final RegistryObject<Item> LEVIATHAN_LEGGINGS = leviathanArmor("leviathan_leggings", net.minecraft.world.item.ArmorItem.Type.LEGGINGS);
+    public static final RegistryObject<Item> LEVIATHAN_BOOTS = leviathanArmor("leviathan_boots", net.minecraft.world.item.ArmorItem.Type.BOOTS);
+
+    private static RegistryObject<Item> leviathanArmor(String name, net.minecraft.world.item.ArmorItem.Type type) {
+        return ITEMS.register(name, () -> new com.soulless.item.LeviathanArmorItem(type, new Item.Properties().fireResistant().rarity(Rarity.EPIC)));
+    }
+
     private static RegistryObject<Item> material(String name, Rarity rarity, boolean foil) {
         return ITEMS.register(name, () -> new SoulMaterialItem(new Item.Properties().fireResistant().rarity(rarity), foil));
     }

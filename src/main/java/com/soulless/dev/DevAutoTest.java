@@ -52,6 +52,8 @@ public final class DevAutoTest {
     public static final boolean FORGE = ENABLED && System.getenv("SOULLESS_FORGE") != null;
     /** SOULLESS_STRUCT=1: the Drowned Souls arena and the altar shrine built in front of the camera; a seeking eye's flight and fall. */
     public static final boolean STRUCT = ENABLED && System.getenv("SOULLESS_STRUCT") != null;
+    /** SOULLESS_ARMOR=1: the Leviathan armour worn (front and back) and its page at the Soul Anvil. */
+    public static final boolean ARMOR = ENABLED && System.getenv("SOULLESS_ARMOR") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -103,7 +105,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE && !STRUCT) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE && !STRUCT && !ARMOR) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -241,6 +243,23 @@ public final class DevAutoTest {
         }
         if (FORGE) {
             forgeTick(p);
+            return;
+        }
+        if (ARMOR) {
+            if (tick == 20) {
+                p.setGameMode(GameType.SURVIVAL);
+                p.getInventory().clearContent();
+                p.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new ItemStack(ModItems.LEVIATHAN_HELMET.get()));
+                p.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new ItemStack(ModItems.LEVIATHAN_CHESTPLATE.get()));
+                p.setItemSlot(net.minecraft.world.entity.EquipmentSlot.LEGS, new ItemStack(ModItems.LEVIATHAN_LEGGINGS.get()));
+                p.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new ItemStack(ModItems.LEVIATHAN_BOOTS.get()));
+                p.getInventory().add(new ItemStack(ModItems.LEVIATHAN_SCALE.get(), 3));
+                p.getInventory().add(new ItemStack(net.minecraft.world.item.Items.NETHERITE_CHESTPLATE));
+                p.getInventory().add(new ItemStack(ModItems.WRAITH_IRON_INGOT.get(), 4));
+                p.getInventory().add(new ItemStack(ModItems.SOUL_RING.get()));
+                p.getInventory().add(new ItemStack(ModItems.ABYSSAL_HEART.get()));
+                p.serverLevel().setBlock(p.blockPosition().relative(p.getDirection(), 3), com.soulless.registry.ModBlocks.SOUL_ANVIL.get().defaultBlockState(), 3);
+            }
             return;
         }
         if (RENEGADE) {

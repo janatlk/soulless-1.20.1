@@ -65,7 +65,7 @@ public class UpgradeScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float partial) {
-        g.fill(0, 0, width, height, 0x90000000);
+        g.fill(0, 0, width, height, 0xD8000000);
         var p = minecraft.player;
         ItemStack s = held();
         if (s.isEmpty()) return;

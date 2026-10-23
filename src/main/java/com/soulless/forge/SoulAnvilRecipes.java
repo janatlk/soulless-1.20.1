@@ -47,6 +47,23 @@ public final class SoulAnvilRecipes {
                     new Cost(ModItems.REAPER_SOUL::get, 1),
                     new Cost(ModItems.WRAITH_IRON_INGOT::get, 4),
                     new Cost(() -> Items.NETHERITE_INGOT, 1))),
+            // the Leviathan's armour: its scales over netherite (a fight gives 2-4; the set takes 8)
+            new Recipe("leviathan_helmet", Category.ARMOR, ModItems.LEVIATHAN_HELMET::get, 60, List.of(
+                    new Cost(ModItems.LEVIATHAN_SCALE::get, 2),
+                    new Cost(() -> Items.NETHERITE_HELMET, 1),
+                    new Cost(() -> Items.PRISMARINE_CRYSTALS, 4))),
+            new Recipe("leviathan_chestplate", Category.ARMOR, ModItems.LEVIATHAN_CHESTPLATE::get, 100, List.of(
+                    new Cost(ModItems.LEVIATHAN_SCALE::get, 3),
+                    new Cost(() -> Items.NETHERITE_CHESTPLATE, 1),
+                    new Cost(ModItems.WRAITH_IRON_INGOT::get, 4))),
+            new Recipe("leviathan_leggings", Category.ARMOR, ModItems.LEVIATHAN_LEGGINGS::get, 80, List.of(
+                    new Cost(ModItems.LEVIATHAN_SCALE::get, 2),
+                    new Cost(() -> Items.NETHERITE_LEGGINGS, 1),
+                    new Cost(ModItems.WRAITH_IRON_INGOT::get, 3))),
+            new Recipe("leviathan_boots", Category.ARMOR, ModItems.LEVIATHAN_BOOTS::get, 50, List.of(
+                    new Cost(ModItems.LEVIATHAN_SCALE::get, 1),
+                    new Cost(() -> Items.NETHERITE_BOOTS, 1),
+                    new Cost(() -> Items.NAUTILUS_SHELL, 1))),
             new Recipe("soul_vessel", Category.ACCESSORY, ModItems.SOUL_VESSEL::get, 0, List.of(
                     new Cost(ModItems.WRAITH_IRON_INGOT::get, 3),
                     new Cost(() -> Items.GLASS_BOTTLE, 1))),

@@ -132,6 +132,30 @@ public final class DevAutoTestClient {
             if (tick == 260) mc.stop();
             return;
         }
+        if (DevAutoTest.ARMOR) {
+            if (tick == 40) opts.setCameraType(CameraType.THIRD_PERSON_FRONT);
+            if (tick == 50) shot(mc, "armor_front");
+            if (tick == 52) opts.setCameraType(CameraType.THIRD_PERSON_BACK);
+            if (tick == 60) shot(mc, "armor_back");
+            if (tick == 62) {
+                opts.setCameraType(CameraType.FIRST_PERSON);
+                mc.player.setYRot(mc.player.getYRot() + 35);
+                mc.options.keyInventory.setDown(false);
+                mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player));
+            }
+            if (tick == 66) shot(mc, "armor_inventory");
+            var anvil = mc.player.blockPosition().relative(mc.player.getDirection(), 3);
+            if (tick == 70) mc.setScreen(new com.soulless.client.anvil.ForgeScreen(anvil));
+            if (tick == 73) shot(mc, "armor_anvil_top");
+            if (tick == 75 && mc.screen instanceof com.soulless.client.anvil.ForgeScreen fs)
+                fs.devPick(com.soulless.forge.SoulAnvilRecipes.Category.ARMOR, null);
+            if (tick == 78) shot(mc, "armor_anvil_list");
+            if (tick == 80 && mc.screen instanceof com.soulless.client.anvil.ForgeScreen fs)
+                fs.devPick(com.soulless.forge.SoulAnvilRecipes.Category.ARMOR, com.soulless.forge.SoulAnvilRecipes.byId("leviathan_chestplate"));
+            if (tick == 83) shot(mc, "armor_anvil_card");
+            if (tick == 90) mc.stop();
+            return;
+        }
         if (DevAutoTest.FORGE) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             var anvil = mc.player.blockPosition().relative(mc.player.getDirection(), 2);

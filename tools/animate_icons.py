@@ -29,6 +29,13 @@ ANIM = {
     "eye_of_lament": (["glow", "sheen"], 16, 3),
     "eye_of_drowned": (["glow", "sheen"], 16, 3),
     "drowned_gills": (["glow"], 16, 3),
+    "leviathan_scale": (["sheen", "glow"], 16, 2),
+    "leviathan_helmet": (["glow", "sheen"], 16, 3),
+    "leviathan_chestplate": (["glow", "sheen"], 16, 3),
+    "leviathan_leggings": (["glow", "sheen"], 16, 3),
+    "leviathan_boots": (["glow", "sheen"], 16, 3),
+    "soul_ring": (["glow", "twinkle"], 16, 3),
+    "abyssal_heart": (["glow"], 16, 3),
 }
 
 

@@ -39,6 +39,17 @@ public final class ClientModEvents {
     }
 
     @SubscribeEvent
+    public static void onLayers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(LeviathanArmorModel.OUTER, LeviathanArmorModel::outer);
+        event.registerLayerDefinition(LeviathanArmorModel.INNER, LeviathanArmorModel::inner);
+    }
+
+    @SubscribeEvent
+    public static void onLayersBaked(net.minecraftforge.client.event.EntityRenderersEvent.AddLayers event) {
+        LeviathanArmorModels.reset();
+    }
+
+    @SubscribeEvent
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static void onRenderers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(com.soulless.registry.ModEntities.WAILING_REAPER.get(), BossRenderers.Reaper::new);
