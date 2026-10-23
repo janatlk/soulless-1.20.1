@@ -56,6 +56,19 @@ public final class Upgrades {
         return t == null ? new CompoundTag() : t.getCompound(TAG);
     }
 
+    /** The tooltip's account of the anvil's work on it: each upgrade bought, marked, with what it gives. */
+    public static void describePicked(ItemStack stack, List<net.minecraft.network.chat.Component> tooltip) {
+        for (String opt : picked(stack)) {
+            tooltip.add(net.minecraft.network.chat.Component.literal(" \u2714 ").append(net.minecraft.network.chat.Component.translatable("upgrade.soulless." + opt))
+                    .withStyle(net.minecraft.ChatFormatting.AQUA));
+            tooltip.add(net.minecraft.network.chat.Component.literal("    ").append(net.minecraft.network.chat.Component.translatable("upgrade.soulless." + opt + ".desc"))
+                    .withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
+        }
+        int souls = invested(stack);
+        if (souls > 0) tooltip.add(net.minecraft.network.chat.Component.translatable("tooltip.soulless.upgrade.invested", souls)
+                .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+    }
+
     public static List<String> picked(ItemStack stack) {
         List<String> out = new ArrayList<>();
         ListTag l = data(stack).getList(PICKED, 8);

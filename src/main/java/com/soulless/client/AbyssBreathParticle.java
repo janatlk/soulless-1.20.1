@@ -29,7 +29,7 @@ public class AbyssBreathParticle extends TextureSheetParticle {
         friction = 0.88F;
         gravity = -0.004F;   // the warm breath lifts, barely
         lifetime = 22 + random.nextInt(14);
-        quadSize = 0.25F + random.nextFloat() * 0.2F;
+        quadSize = 0.3F + random.nextFloat() * 0.25F;
         size0 = quadSize;
         roll = oRoll = random.nextFloat() * 6.28F;
         spin = (random.nextFloat() - 0.5F) * 0.12F;

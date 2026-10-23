@@ -74,13 +74,30 @@ public class UpgradeScreen extends Screen {
         int bought = picked.size(), souls = SoulVessels.total(p);
 
         // the artifact
-        float ax = width / 2F - 150, ay = height / 2F - 10;
+        float ax = width / 2F - 150, ay = Math.min(height / 2F - 10, 110);
         AnvilStyle.diamond(g, ax, ay, 54, AnvilStyle.FILL_HOVER, AnvilStyle.SOUL, AnvilStyle.SOUL_DIM);
         AnvilStyle.item(g, s, ax, ay, 3.2F);
         g.drawCenteredString(font, s.getHoverName().copy().withStyle(s.getRarity().getStyleModifier()), (int) ax, (int) ay + 64, AnvilStyle.TEXT);
         g.drawCenteredString(font, Component.translatable("anvil.soulless.souls", souls), (int) ax, (int) ay + 78, AnvilStyle.SOUL);
         if (tree != null) {
             g.drawCenteredString(font, Component.translatable("tooltip.soulless.upgrade.tier", bought, tree.size()), (int) ax, (int) ay - 68, AnvilStyle.GOLD);
+        }
+
+        // what the anvil has opened on it so far
+        int oy = (int) ay + 96, ox = (int) ax - 110;
+        g.drawString(font, Component.translatable("anvil.soulless.opened"), ox, oy, AnvilStyle.GOLD, false);
+        oy += 12;
+        if (picked.isEmpty()) g.drawString(font, Component.translatable("anvil.soulless.opened_none"), ox, oy, AnvilStyle.DIM, false);
+        for (String id : picked) {
+            if (oy > buttonsY() - 24) break;
+            g.drawString(font, Component.literal("\u2714 ").append(Component.translatable("upgrade.soulless." + id)), ox, oy, AnvilStyle.SOUL, false);
+            oy += 10;
+            for (var seq : font.split(Component.translatable("upgrade.soulless." + id + ".desc"), 210)) {
+                if (oy > buttonsY() - 14) break;
+                g.drawString(font, seq, ox + 8, oy, AnvilStyle.DIM, false);
+                oy += 9;
+            }
+            oy += 3;
         }
 
         List<Component> tip = null;

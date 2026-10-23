@@ -69,7 +69,8 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             float pitch = dir.lengthSqr() < 1e-6 ? prevPitch : (float) (-Mth.atan2(dir.y, dir.horizontalDistance()) * Mth.RAD_TO_DEG);
             float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -45, 45), bendX = Mth.clamp(pitch - prevPitch, -45, 45);
             // eased a little, so a network correction does not snap it - but quickly, so it stays on its hit boxes
-            float ease = 1;   // no lag: the root turns with the entity at once, so must the bends
+            // a touch of easing against the network's small corrections; quick, so it stays on its hit boxes
+            float ease = 1 - (float) Math.pow(0.3, dtBend);
             e.bend[i * 2] += (bendX - e.bend[i * 2]) * ease;
             e.bend[i * 2 + 1] += (bendY - e.bend[i * 2 + 1]) * ease;
             bendX = e.bend[i * 2];

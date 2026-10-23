@@ -85,6 +85,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private static final float BITE_DAMAGE = 17, RAM_DAMAGE = 7, GRAB_DAMAGE = 22, BREATH_DAMAGE = 3, TAIL_DAMAGE = 10, VORTEX_DAMAGE = 6;
     /** Spent, it takes this much more damage. */
     private static final float EXHAUSTED_TAKEN = 1.35F;
+    /** Its health as if it were 1400 (the game's attribute stops at 1024). */
+    private static final float HEALTH_SCALE = 1024F / 1400F;
     /** The breath: how long the bubbles come first (the warning - the aim follows its prey closely), how long it
      * lasts in all, how far it reaches (ticks, blocks); the beam then turns at most BREATH_TURN degrees a tick, so a
      * player swimming across it gets out of it, and blocks stop it - a pillar is cover. */
@@ -100,6 +102,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private int phaseTicks, grabsDone, ramCooldown, cycles, chargesLeft, tailCooldown = 60, vortexCooldown = 100, vortexTicks, stage = 1;
     @Nullable private Vec3 vortexAt;
     private int floorTicks;
+    /** One bite a charge. */
+    private boolean bitThisCharge;
     private Vec3 chargeAim, breathAim;
     @Nullable private ServerPlayer held;
 
@@ -172,7 +176,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 1400).add(Attributes.MOVEMENT_SPEED, 0.3).add(Attributes.ARMOR_TOUGHNESS, 4)
+        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 1024).add(Attributes.MOVEMENT_SPEED, 0.3).add(Attributes.ARMOR_TOUGHNESS, 4)
                 .add(Attributes.FOLLOW_RANGE, 64).add(Attributes.KNOCKBACK_RESISTANCE, 1.0).add(Attributes.ARMOR, 10);
     }
 
@@ -272,12 +276,12 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         };
         speed *= tempo();
         float turnRate = switch (phase) {
-            case COIL -> 6F;
+            case COIL -> 10F;
             case TURN -> 9F;
             case TAIL -> phaseTicks > TAIL_WARN ? 16F : 3F;
             case EXHAUSTED -> 0.8F;
             case GRAB_RISE -> 14F;
-            case CHARGE -> 1.5F;
+            case CHARGE -> phaseTicks < 8 ? 5F : 1.5F;   // it steers onto its prey as it sets off, then runs straight
             case REAR -> 5F;
             case BREATHE -> 1.2F;
             case GRAB_RUSH, GRAB_DIVE -> 4F;
@@ -306,6 +310,9 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     }
 
     private void setPhase(Phase p) {
+        if (p == Phase.CHARGE) bitThisCharge = false;
+        if (com.soulless.dev.DevAutoTest.ENABLED && p != phase)
+            com.soulless.Soulless.LOGGER.info("[autotest] lev phase {} -> {} stage={} hp={}", phase, p, stage, Math.round(getHealth()));
         phase = p;
         phaseTicks = 0;
         entityData.set(POSE, p == Phase.GRAB_RISE ? 1 : p == Phase.GRAB_HOLD ? 2 : p == Phase.REAR || p == Phase.BREATHE ? 3 : 0);
@@ -428,12 +435,14 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             case CHARGE -> {
                 // straight through where its prey was, a little past
                 Vec3 fwd = Vec3.directionFromRotation(getXRot(), getYRot());
+                if (phaseTicks < 8) chargeAim = onFloor(prey) ? at : at.add(prey.getDeltaMovement().scale(6));
                 goal = chargeAim.add(fwd.scale(12));
                 // at prey on the floor it skims along the bottom rather than ploughing into it
                 if (onFloor(prey)) goal = new Vec3(goal.x, chargeAim.y + 0.5, goal.z);
                 double d = mouth().distanceToSqr(at);
                 if (d < 7 * 7 && phaseTicks % 20 == 1) triggerAnim("roar", "bite");
-                if (d < 3.2 * 3.2 && prey.hurtTime == 0) {
+                if (d < 3.7 * 3.7 && !bitThisCharge) {
+                    bitThisCharge = true;
                     prey.hurt(damageSources().mobAttack(this), BITE_DAMAGE);
                     prey.knockback(1.2, -fwd.x, -fwd.z);
                     level().playSound(null, prey.blockPosition(), SoundEvents.EVOKER_FANGS_ATTACK, SoundSource.HOSTILE, 2F, 0.6F);
@@ -615,7 +624,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     /** Spent (after a great attack), it takes more damage - the window to strike. */
     @Override
     public boolean hurt(net.minecraft.world.damagesource.DamageSource source, float amount) {
-        return super.hurt(source, phase == Phase.EXHAUSTED ? amount * EXHAUSTED_TAKEN : amount);
+        // the game caps health at 1024: damage is scaled so it lasts as 1400 would
+        return super.hurt(source, (phase == Phase.EXHAUSTED ? amount * EXHAUSTED_TAKEN : amount) * HEALTH_SCALE);
     }
 
     private void circle(Vec3 at, double r, float rate) {
@@ -655,7 +665,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         // the breath bursts, slows, swells and churns as a real one does; the warning is a sputter of bubbles
         Vec3 up = Math.abs(dir.y) > 0.95 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
         Vec3 sideA = dir.cross(up).normalize(), sideB = dir.cross(sideA).normalize();
-        int n = fire ? 14 : 5;
+        int n = fire ? 10 : 4;
         for (int i = 0; i < n; i++) {
             double a = random.nextDouble() * Math.PI * 2, r = Math.tan(Math.toRadians(fire ? BREATH_CONE : 14)) * Math.sqrt(random.nextDouble());
             Vec3 v = dir.add(sideA.scale(Math.cos(a) * r)).add(sideB.scale(Math.sin(a) * r)).normalize()
@@ -735,15 +745,19 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private void attackWithBody() {
         boolean frenzy = stage == 3 && phase != Phase.EXHAUSTED && phase != Phase.ROAM;
         if (ramCooldown > 0 || !(frenzy || phase == Phase.CHARGE || phase == Phase.GRAB_RISE || phase == Phase.GRAB_RUSH)) return;
-        for (LeviathanPart part : parts) {
-            for (Player p : level().getEntitiesOfClass(Player.class, part.getBoundingBox().inflate(0.3))) {
-                if (p == held || p.isSpectator() || p.isCreative()) continue;
+        AABB all = head.getBoundingBox();
+        for (LeviathanPart part : body) all = all.minmax(part.getBoundingBox());
+        for (Player p : level().getEntitiesOfClass(Player.class, all.inflate(0.3))) {
+            if (p == held || p.isSpectator() || p.isCreative()) continue;
+            for (LeviathanPart part : parts) {
+                if (!part.getBoundingBox().inflate(0.3).intersects(p.getBoundingBox())) continue;
                 if (p.hurt(damageSources().mobAttack(this), RAM_DAMAGE)) {
                     Vec3 away = p.position().subtract(part.position()).normalize();
                     p.setDeltaMovement(p.getDeltaMovement().add(away.scale(0.9)));
                     p.hurtMarked = true;
                     ramCooldown = 10;
                 }
+                break;
             }
         }
     }
@@ -911,7 +925,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             if (side.lengthSqr() < 1e-4) side = fwd.cross(new Vec3(0, 1, 0));
             if (side.lengthSqr() < 1e-4) side = new Vec3(1, 0, 0);
             float f = (i + 1F) / SEGMENTS;
-            double off = Math.sin(wavePhase - i * 0.6) * (0.1 + 0.9 * f) * waveStrength;
+            double off = Math.sin(wavePhase - i * 0.6) * (0.1 + 1.5 * f * f) * waveStrength;
             Vec3 o = side.normalize().scale(off);
             p.setPos(p.getX() + o.x, p.getY() + o.y, p.getZ() + o.z);
         }

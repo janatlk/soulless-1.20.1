@@ -137,7 +137,7 @@ public final class DevAutoTestClient {
             if (tick == 30) mc.getEntityRenderDispatcher().setRenderHitBoxes(true);
             var lev = mc.level.getEntitiesOfClass(com.soulless.boss.LeviathanEntity.class, mc.player.getBoundingBox().inflate(120)).stream().findFirst().orElse(null);
             // follow it, from the side and above
-            if (lev != null && tick >= 40) {
+            if (lev != null && tick >= 40 && !DevAutoTest.LEV_FIGHT) {
                 var c = lev.position();
                 // from the side and above, its whole length in view (the body trails some 33 blocks behind the head)
                 var fwd = net.minecraft.world.phys.Vec3.directionFromRotation(0, lev.getYRot());
@@ -145,6 +145,13 @@ public final class DevAutoTestClient {
                 var side = new net.minecraft.world.phys.Vec3(-fwd.z, 0, fwd.x).scale(30);
                 mc.player.setPos(mid.x + side.x, mid.y + 22, mid.z + side.z);
                 mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, mid);
+            }
+            if (DevAutoTest.LEV_FIGHT) {
+                // the player's own eyes, turned toward it
+                if (lev != null) mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, lev.position());
+                if (tick % 30 == 0 && tick >= 60) shot(mc, String.format("levfight_%04d", tick));
+                if (tick == 2300) mc.stop();
+                return;
             }
             if (tick >= 60 && tick <= 400 && tick % 8 == 0) {
                 shot(mc, String.format("lev_%03d", tick));

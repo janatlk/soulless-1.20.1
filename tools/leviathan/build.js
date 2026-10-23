@@ -74,14 +74,15 @@
     const stain = Math.sin(i * 1.7 + j * 0.9) > 0.7 ? -18 : 0;
     fill(192 + i, 64 + j, 1, 1, rgb(112 + f * 88 + edge + stain, 96 + f * 80 + edge + stain, 62 + f * 66 + edge + stain));
   }
-  // GUM: the inside of the maw - deep sea-blue flesh in ridges (as a palate's), each ridge lit along its crest,
-  // dark wet grooves between, glints of slime
+  // GUM: the inside of the maw - dark red-violet flesh in ridges (as a palate's), each ridge lit along its crest,
+  // deep wet grooves between, glints of slime
   for (let i = 0; i < 48; i++) for (let j = 0; j < 48; j++) {
-    const ridge = (j + Math.round(Math.sin(i * 0.3) * 1.5)) % 5;
-    let r = 52, gg = 104, b = 160;
-    if (ridge === 0) { r = 118; gg = 176; b = 222; }
-    else if (ridge === 1) { r = 84; gg = 142; b = 196; }
-    else if (ridge === 4) { r = 26; gg = 56; b = 98; }
+    const ridge = (j + Math.round(Math.sin(i * 0.3) * 1.5)) % 6;
+    let r = 74, gg = 22, b = 40;
+    if (ridge === 0) { r = 122; gg = 44; b = 62; }
+    else if (ridge === 1) { r = 96; gg = 32; b = 50; }
+    else if (ridge === 4) { r = 44; gg = 12; b = 26; }
+    else if (ridge === 5) { r = 30; gg = 8; b = 18; }
     const n = (rnd() - 0.5) * 10;
     const glint = rnd() < 0.015 ? 60 : 0;
     fill(208 + i, 64 + j, 1, 1, rgb(r + n + glint, gg + n + glint, b + n + glint));
@@ -205,12 +206,6 @@
   cube('jaw_chin', jaw, [-13, CY - 11, -106], [13, CY - 4, -84]);
   cube('jaw_floor', jaw, [-16, CY + 2, -102], [16, CY + 3, -12], 'GUM');
   cube('throat', jaw, [-10, CY, -16], [10, CY + 3, -4], 'THROAT');
-  // the long tongue, lying in the jaw, tapering to its tip
-  const tongue = group('tongue', jaw, [0, CY + 3, -16]);
-  for (let k = 0; k < 5; k++) {
-    const w = 12 - k * 2.2, z0 = -16 - k * 16;
-    cube(`tongue_${k}`, tongue, [-w / 2, CY + 3, z0 - 16], [w / 2, CY + 4.5 - k * 0.2, z0], 'GUM');
-  }
   // the lower teeth: flat rows standing up inside the lips of the jaw
   for (const sx of [-1, 1]) cube(`fangs_d_${sx > 0 ? 'l' : 'r'}`, jaw, [sx * 17.4, CY - 2, -102], [sx * 17.4, CY + 14, -12], 'FANGS_DN');
   cube('fangs_d_front', jaw, [-12, CY - 2, -105.6], [12, CY + 14, -105.6], 'FANGS_DN');

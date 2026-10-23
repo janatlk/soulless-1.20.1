@@ -70,7 +70,7 @@ public class ForgeScreen extends Screen {
 
     /** Neighbours share an edge: each link is half a diagonal down and across from the last. */
     private float cy(int i, int n) {
-        float top = Math.max(64, height / 2F - (n - 1) * BIG / 2);
+        float top = Math.max(84, height / 2F - (n - 1) * BIG / 2);
         return top + i * BIG;
     }
 
@@ -79,9 +79,9 @@ public class ForgeScreen extends Screen {
         return (int) (chainX() - BIG);
     }
 
+    /** Fixed, under the header, whatever the list's length. */
     private int backY() {
-        int n = category == Category.SOULS ? meltable().size() : category == null ? 0 : SoulAnvilRecipes.in(category).size();
-        return Math.max(30, (int) (cy(0, Math.max(1, n)) - BIG - 22));
+        return 34;
     }
 
     /** Labels stand in one column right of the chain. */
@@ -310,12 +310,7 @@ public class ForgeScreen extends Screen {
         // back: the button over the chain, or a right click anywhere
         if (category != null && (button == 1 || mx >= backX() && mx < backX() + 60 && my >= backY() && my < backY() + 18)) {
             AnvilStyle.click();
-            if (picked != null || meltSlot >= 0) {
-                picked = null;
-                meltSlot = -1;
-            } else {
-                category = null;
-            }
+            back();
             return true;
         }
         if (category == null) {
@@ -368,6 +363,13 @@ public class ForgeScreen extends Screen {
         return super.mouseClicked(mx, my, button);
     }
 
+    /** Back: straight to the first menu (the categories), from a list or a card alike. */
+    private void back() {
+        picked = null;
+        meltSlot = -1;
+        category = null;
+    }
+
     /** Dev (autotest): show a category and maybe one of its cards, as if clicked. */
     public void devPick(Category c, Recipe r) {
         category = c;
@@ -387,12 +389,7 @@ public class ForgeScreen extends Screen {
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
         if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE && category != null) {
-            if (picked != null || meltSlot >= 0) {
-                picked = null;
-                meltSlot = -1;
-            } else {
-                category = null;
-            }
+            back();
             return true;
         }
         return super.keyPressed(key, scan, mods);

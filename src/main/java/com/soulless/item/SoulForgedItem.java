@@ -155,9 +155,7 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
         var tree = com.soulless.upgrade.Upgrades.tree(stack);
         tooltip.add(Component.translatable("tooltip.soulless.upgrade.tier", v(com.soulless.upgrade.Upgrades.tier(stack)), v(tree == null ? 0 : tree.size()))
                 .withStyle(ChatFormatting.AQUA));
-        for (String opt : com.soulless.upgrade.Upgrades.picked(stack)) {
-            tooltip.add(Component.literal(" \u2726 ").append(Component.translatable("upgrade.soulless." + opt)).withStyle(ChatFormatting.DARK_AQUA));
-        }
+        com.soulless.upgrade.Upgrades.describePicked(stack, tooltip);
 
         if (!details) {
             tooltip.add(section("passive"));
@@ -205,7 +203,7 @@ public class SoulForgedItem extends SwordItem implements GeoItem {
 
     /** The line as it is once the upgrade is bought; until then a locked line pointing at the Soul Anvil. */
     private static Component gated(ItemStack stack, String option, Component line) {
-        if (com.soulless.upgrade.Upgrades.has(stack, option)) return line;
+        if (com.soulless.upgrade.Upgrades.has(stack, option)) return Component.literal("\u2714 ").withStyle(ChatFormatting.AQUA).append(line);
         return Component.translatable("tooltip.soulless.upgrade.locked", line.getString()).withStyle(ChatFormatting.DARK_GRAY);
     }
 

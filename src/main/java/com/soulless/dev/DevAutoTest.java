@@ -56,6 +56,15 @@ public final class DevAutoTest {
     public static final boolean ARMOR = ENABLED && System.getenv("SOULLESS_ARMOR") != null;
     /** SOULLESS_LEVIATHAN=1: a pool dug in the flat world, the Leviathan swimming in it, filmed with hit boxes shown. */
     public static final boolean LEVIATHAN = ENABLED && System.getenv("SOULLESS_LEVIATHAN") != null;
+    /** SOULLESS_LEV_FIGHT=1 (with SOULLESS_LEVIATHAN): a deep pool, the player in it as prey (unhurt), the fight's three
+     * stages forced in turn; every phase and every hit logged. */
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void onLevHurt(net.minecraftforge.event.entity.living.LivingHurtEvent event) {
+        if (LEV_FIGHT && event.getEntity() instanceof ServerPlayer)
+            Soulless.LOGGER.info("[autotest] levfight hurt {} by {}", String.format("%.1f", event.getAmount()), event.getSource().getMsgId());
+    }
+
+    public static final boolean LEV_FIGHT = LEVIATHAN && System.getenv("SOULLESS_LEV_FIGHT") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -251,17 +260,51 @@ public final class DevAutoTest {
             if (tick == 20) {
                 ServerLevel l = p.serverLevel();
                 net.minecraft.core.BlockPos c = p.blockPosition();
-                int r = 30, depth = 9;
-                for (int x = -r; x <= r; x++)
-                    for (int z = -r; z <= r; z++)
-                        for (int y = -depth; y <= 0; y++)
-                            l.setBlock(c.offset(x, y - 1, z), net.minecraft.world.level.block.Blocks.WATER.defaultBlockState(), 2);
+                int r = LEV_FIGHT ? 36 : 30, depth = LEV_FIGHT ? 26 : 9;
+                if (LEV_FIGHT) {
+                    // a glass tank built up from the ground (the flat world's ground is too near the void to dig)
+                    c = c.above(depth + 1);
+                    for (int x = -r - 1; x <= r + 1; x++)
+                        for (int z = -r - 1; z <= r + 1; z++)
+                            for (int y = -depth - 1; y <= 0; y++) {
+                                boolean wall = Math.abs(x) == r + 1 || Math.abs(z) == r + 1 || y == -depth - 1;
+                                l.setBlock(c.offset(x, y - 1, z), wall ? net.minecraft.world.level.block.Blocks.GLASS.defaultBlockState()
+                                        : net.minecraft.world.level.block.Blocks.WATER.defaultBlockState(), 2);
+                            }
+                } else {
+                    for (int x = -r; x <= r; x++)
+                        for (int z = -r; z <= r; z++)
+                            for (int y = -depth; y <= 0; y++)
+                                l.setBlock(c.offset(x, y - 1, z), net.minecraft.world.level.block.Blocks.WATER.defaultBlockState(), 2);
+                }
                 var lev = com.soulless.registry.ModEntities.LEVIATHAN.get().create(l);
                 lev.moveTo(c.getX(), c.getY() - 5, c.getZ() + 8, 0, 0);
                 l.addFreshEntity(lev);
-                p.teleportTo(l, c.getX() - 30, c.getY() + 22, c.getZ() - 6, -70, 38);
-                p.getAbilities().flying = true;
-                p.onUpdateAbilities();
+                if (LEV_FIGHT) {
+                    lev.moveTo(c.getX() + 14, c.getY() - 14, c.getZ(), 90, 0);
+                    p.setGameMode(GameType.SURVIVAL);
+                    p.teleportTo(l, c.getX(), c.getY() - 12, c.getZ(), 0, 0);
+                    p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, 99999, 4, false, false));
+                    p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WATER_BREATHING, 99999, 0, false, false));
+                    p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.NIGHT_VISION, 99999, 0, false, false));
+                } else {
+                    p.teleportTo(l, c.getX() - 30, c.getY() + 22, c.getZ() - 6, -70, 38);
+                    p.getAbilities().flying = true;
+                    p.onUpdateAbilities();
+                }
+            }
+            if (LEV_FIGHT) {
+                var lev = p.serverLevel().getEntitiesOfClass(com.soulless.boss.LeviathanEntity.class, p.getBoundingBox().inflate(120)).stream().findFirst().orElse(null);
+                if (lev != null) {
+                    if (tick == 700) lev.setHealth(lev.getMaxHealth() * 0.55F);
+                    if (tick == 1400) lev.setHealth(lev.getMaxHealth() * 0.2F);
+                    if (tick == 2100) lev.setHealth(1);
+                    if (tick == 2110) lev.hurt(p.damageSources().playerAttack(p), 50);
+                }
+                p.setHealth(p.getMaxHealth());
+                if (tick % 20 == 0) Soulless.LOGGER.info("[autotest] levfight t={} lev={} player={}", tick,
+                        lev == null ? "gone" : String.format("%.1f %.1f %.1f", lev.getX(), lev.getY(), lev.getZ()),
+                        String.format("%.1f %.1f %.1f inWater=%s", p.getX(), p.getY(), p.getZ(), p.isInWater()));
             }
             return;
         }
