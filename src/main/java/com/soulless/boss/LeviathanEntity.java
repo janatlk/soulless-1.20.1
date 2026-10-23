@@ -128,6 +128,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     /** Client: each body bone's bend (pitch, yaw), eased toward the path's so the body never snaps. */
     public final float[] bend = new float[24];
     public float bendT = Float.NaN;
+    /** The swimming wave laid on the hit boxes (wave()): its phase and how strong it is. */
+    private double wavePhase, waveStrength = 0.5;
     /** Client: the swimming wave's phase (runs faster the faster it swims), its smoothed speed, and the head's gaze. */
     public float swimPhase, swimSpeed, lastLiveT = Float.NaN, gazeYaw, gazePitch, roarStart = Float.NaN;
 
@@ -140,8 +142,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         for (int i = 0; i < SEGMENTS; i++) {
             float f = i / (SEGMENTS - 1F);
             float w = (46 - f * 34) / 16F, h = (40 - f * 30) / 16F;
-            float sway = 0.6F + 1.4F * f;   // wider than the body: the boxes cover the animation's sway round the path
-            body[i] = new LeviathanPart(this, "body_" + i, Math.max(w, h) + sway, h + sway * 0.5F);
+            body[i] = new LeviathanPart(this, "body_" + i, Math.max(w, h), h);
         }
         parts = new LeviathanPart[SEGMENTS + 1];
         parts[0] = head;
@@ -194,7 +195,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         super.tick();
         if (home == null) home = blockPosition();
         setNoGravity(isInWater());
-        if (!level().isClientSide && !isDeadOrDying()) {
+        if (!level().isClientSide && !isDeadOrDying() && !DEV_ARC) {
             swim();
             bar.setProgress(getHealth() / getMaxHealth());
             if (tickCount % 10 == 0) updateBar();
@@ -833,7 +834,28 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     }
 
     /** Lays the head part before the neck and the body parts along the path the neck has swum. */
+    /** Dev (autotest SOULLESS_LEV_ARC): frozen, its body laid on a known curve - down and to its right - to check
+     * the model bends the way its hit boxes lie. */
+    private static final boolean DEV_ARC = System.getenv("SOULLESS_LEV_ARC") != null;
+
     private void layBody() {
+        if (DEV_ARC) {
+            setDeltaMovement(Vec3.ZERO);
+            setYRot(0);
+            setXRot(0);
+            yRotO = 0;
+            xRotO = 0;
+            yBodyRot = yBodyRotO = 0;
+            Vec3 neck = position().add(0, 1.5, 0);
+            Vec3 fwd = Vec3.directionFromRotation(0, 0);
+            Vec3 right = new Vec3(-fwd.z, 0, fwd.x);
+            place(head, neck.add(fwd.scale(3.6)));
+            for (int i = 0; i < SEGMENTS; i++) {
+                double b = SEG_LEN * (i + 0.5);
+                place(body[i], neck.subtract(fwd.scale(b)).add(0, -0.03 * b * b, 0).add(right.scale(0.02 * b * b)));
+            }
+            return;
+        }
         Vec3 now = position().add(0, 1.5, 0);
         // a new point only once the neck has really moved on: bumping a wall or the network's small corrections would
         // otherwise crowd the trail with jitter, and the body would twitch along it
@@ -843,7 +865,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         place(head, now.add(fwd.scale(3.6)));
         // walk back along the trail; past its end, carry on straight behind
         java.util.Iterator<Vec3> it = trail.iterator();
-        Vec3 prev = it.hasNext() ? it.next() : now;
+        Vec3 prev = now;
+        if (it.hasNext() && trail.peekFirst().distanceToSqr(now) < 1e-8) it.next();
         double walked = 0;
         int seg = 0;
         double want = SEG_LEN * 0.5;
@@ -865,6 +888,32 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                 seg++;
                 want += SEG_LEN;
             }
+        }
+        wave();
+    }
+
+    /** The swimming wave, laid on the hit boxes themselves (the model takes its shape from them, so what is seen is
+     * what is hit): each segment pushed aside, a wave running back down the body, bigger toward the tail and the
+     * harder it swims. It only moves the boxes - the trail they are laid along never takes it in. */
+    private void wave() {
+        double speed = new Vec3(getX() - xo, getY() - yo, getZ() - zo).length();
+        waveStrength += (Mth.clamp(speed / 0.5, 0.3, 1.4) - waveStrength) * 0.05;
+        if (isDeadOrDying()) waveStrength *= 0.95;
+        wavePhase += 0.12 + 0.2 * waveStrength;
+        Vec3 fwd = Vec3.directionFromRotation(getXRot(), getYRot());
+        Vec3 front = position().add(0, 1.5, 0);
+        for (int i = 0; i < SEGMENTS; i++) {
+            LeviathanPart p = body[i];
+            Vec3 c = p.position().add(0, p.getBbHeight() / 2, 0);
+            Vec3 dir = front.subtract(c);
+            front = c;
+            Vec3 side = dir.cross(new Vec3(0, 1, 0));
+            if (side.lengthSqr() < 1e-4) side = fwd.cross(new Vec3(0, 1, 0));
+            if (side.lengthSqr() < 1e-4) side = new Vec3(1, 0, 0);
+            float f = (i + 1F) / SEGMENTS;
+            double off = Math.sin(wavePhase - i * 0.6) * (0.1 + 0.9 * f) * waveStrength;
+            Vec3 o = side.normalize().scale(off);
+            p.setPos(p.getX() + o.x, p.getY() + o.y, p.getZ() + o.z);
         }
     }
 

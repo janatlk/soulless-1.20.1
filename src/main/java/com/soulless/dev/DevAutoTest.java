@@ -54,6 +54,8 @@ public final class DevAutoTest {
     public static final boolean STRUCT = ENABLED && System.getenv("SOULLESS_STRUCT") != null;
     /** SOULLESS_ARMOR=1: the Leviathan armour worn (front and back) and its page at the Soul Anvil. */
     public static final boolean ARMOR = ENABLED && System.getenv("SOULLESS_ARMOR") != null;
+    /** SOULLESS_LEVIATHAN=1: a pool dug in the flat world, the Leviathan swimming in it, filmed with hit boxes shown. */
+    public static final boolean LEVIATHAN = ENABLED && System.getenv("SOULLESS_LEVIATHAN") != null;
     private static net.minecraft.core.BlockPos dojo;
     private static net.minecraft.core.BlockPos altarPos;
     /** Open ground away from anything built near spawn. */
@@ -105,7 +107,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE && !STRUCT && !ARMOR) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE && !STRUCT && !ARMOR && !LEVIATHAN) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -243,6 +245,24 @@ public final class DevAutoTest {
         }
         if (FORGE) {
             forgeTick(p);
+            return;
+        }
+        if (LEVIATHAN) {
+            if (tick == 20) {
+                ServerLevel l = p.serverLevel();
+                net.minecraft.core.BlockPos c = p.blockPosition();
+                int r = 30, depth = 9;
+                for (int x = -r; x <= r; x++)
+                    for (int z = -r; z <= r; z++)
+                        for (int y = -depth; y <= 0; y++)
+                            l.setBlock(c.offset(x, y - 1, z), net.minecraft.world.level.block.Blocks.WATER.defaultBlockState(), 2);
+                var lev = com.soulless.registry.ModEntities.LEVIATHAN.get().create(l);
+                lev.moveTo(c.getX(), c.getY() - 5, c.getZ() + 8, 0, 0);
+                l.addFreshEntity(lev);
+                p.teleportTo(l, c.getX() - 30, c.getY() + 22, c.getZ() - 6, -70, 38);
+                p.getAbilities().flying = true;
+                p.onUpdateAbilities();
+            }
             return;
         }
         if (ARMOR) {

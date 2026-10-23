@@ -67,18 +67,18 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             net.minecraft.world.phys.Vec3 dir = front.subtract(c);
             float yaw = dir.lengthSqr() < 1e-6 ? prevYaw : (float) (Mth.atan2(dir.z, dir.x) * Mth.RAD_TO_DEG) - 90;
             float pitch = dir.lengthSqr() < 1e-6 ? prevPitch : (float) (-Mth.atan2(dir.y, dir.horizontalDistance()) * Mth.RAD_TO_DEG);
-            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -28, 28), bendX = Mth.clamp(pitch - prevPitch, -22, 22);
-            // eased, so a jolt in the path (a bump on a block, a correction from the server) becomes a slow ripple
-            float ease = 1 - (float) Math.pow(0.9, dtBend);
+            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -45, 45), bendX = Mth.clamp(pitch - prevPitch, -45, 45);
+            // eased a little, so a network correction does not snap it - but quickly, so it stays on its hit boxes
+            float ease = 1;   // no lag: the root turns with the entity at once, so must the bends
             e.bend[i * 2] += (bendX - e.bend[i * 2]) * ease;
             e.bend[i * 2 + 1] += (bendY - e.bend[i * 2 + 1]) * ease;
             bendX = e.bend[i * 2];
             bendY = e.bend[i * 2 + 1];
-            float amp = (1F + 6F * f) * effort * (1 - 0.5F * roar);
-            float wave = Mth.sin(ph * 1.5F - i * 0.55F) * amp + Mth.sin(t * 0.21F - i * 1.3F) * f * (0.6F + 1.4F * mood);
-            float rise = Mth.sin(ph * 0.9F - i * 0.4F + 1.3F) * (0.8F + 2.6F * f) + Mth.sin(t * 0.037F - i * 0.25F) * 1.5F * f;
+            // the shape is its hit boxes' alone (their swimming wave included - LeviathanEntity.wave); only a slight
+            // roll, which moves no box, is the model's own. Set from the rest pose: no animation turns these bones,
+            // so adding to them would pile up frame after frame
             float roll = Mth.sin(ph * 1.5F - i * 0.55F - 1.2F) * (1.5F + 3F * f) * (0.5F + 0.5F * effort);
-            add("body_" + i, (rise * alive + BEND_PITCH * bendX) * d, (wave * alive + BEND_YAW * bendY) * d, roll * alive * d);
+            addRest("body_" + i, BEND_PITCH * bendX * d, BEND_YAW * bendY * d, 0);
             prevYaw = yaw;
             prevPitch = pitch;
             front = c;

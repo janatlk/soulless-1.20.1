@@ -132,6 +132,33 @@ public final class DevAutoTestClient {
             if (tick == 260) mc.stop();
             return;
         }
+        if (DevAutoTest.LEVIATHAN) {
+            opts.setCameraType(CameraType.FIRST_PERSON);
+            if (tick == 30) mc.getEntityRenderDispatcher().setRenderHitBoxes(true);
+            var lev = mc.level.getEntitiesOfClass(com.soulless.boss.LeviathanEntity.class, mc.player.getBoundingBox().inflate(120)).stream().findFirst().orElse(null);
+            // follow it, from the side and above
+            if (lev != null && tick >= 40) {
+                var c = lev.position();
+                // from the side and above, its whole length in view (the body trails some 33 blocks behind the head)
+                var fwd = net.minecraft.world.phys.Vec3.directionFromRotation(0, lev.getYRot());
+                var mid = c.add(fwd.scale(-14));
+                var side = new net.minecraft.world.phys.Vec3(-fwd.z, 0, fwd.x).scale(30);
+                mc.player.setPos(mid.x + side.x, mid.y + 22, mid.z + side.z);
+                mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, mid);
+            }
+            if (tick >= 60 && tick <= 400 && tick % 8 == 0) {
+                shot(mc, String.format("lev_%03d", tick));
+                if (lev != null) {
+                    StringBuilder b = new StringBuilder();
+                    for (var part : lev.bodyParts()) b.append(String.format("%.1f ", part.getY() - lev.getY()));
+                    Soulless.LOGGER.info("[autotest] lev t={} xRot={} xRotO={} bend0={} bend1={} bend2={} partsDy=[{}]", tick,
+                            String.format("%.1f", lev.getXRot()), String.format("%.1f", lev.xRotO),
+                            String.format("%.1f", lev.bend[0]), String.format("%.1f", lev.bend[2]), String.format("%.1f", lev.bend[4]), b);
+                }
+            }
+            if (tick == 405) mc.stop();
+            return;
+        }
         if (DevAutoTest.ARMOR) {
             if (tick == 40) opts.setCameraType(CameraType.THIRD_PERSON_FRONT);
             if (tick == 50) shot(mc, "armor_front");
