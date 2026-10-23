@@ -469,6 +469,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                 // upright, turned toward its prey; the breath's aim follows them, a little behind
                 Vec3 flat = new Vec3(at.x - getX(), 0, at.z - getZ()).normalize();
                 goal = position().add(flat.scale(1.5)).add(0, 12, 0);
+                if (breathAim == null) breathAim = at;   // a breath begun without its aim (a world loaded mid-breath)
                 if (phaseTicks < BUBBLES) breathAim = breathAim.lerp(at, 0.3);
                 else breathAim = turnToward(mouth(), breathAim, at, BREATH_TURN);
                 breathe(phaseTicks >= BUBBLES);
@@ -619,6 +620,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private void breathe(boolean fire) {
         if (!(level() instanceof ServerLevel sl)) return;
         Vec3 from = mouth();
+        if (breathAim == null) return;
         Vec3 dir = breathAim.subtract(from);
         if (dir.lengthSqr() < 1e-4) return;
         dir = dir.normalize();
