@@ -82,7 +82,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
 
     /** Balanced for after the Reaper: its prey wields the Soul Forged and wears diamond or netherite (on full
      * netherite with Protection IV a bite still takes two hearts, the grab four). */
-    private static final float BITE_DAMAGE = 28, RAM_DAMAGE = 12, GRAB_DAMAGE = 34, BREATH_DAMAGE = 6, TAIL_DAMAGE = 16, VORTEX_DAMAGE = 10;
+    private static final float BITE_DAMAGE = 17, RAM_DAMAGE = 7, GRAB_DAMAGE = 22, BREATH_DAMAGE = 4, TAIL_DAMAGE = 10, VORTEX_DAMAGE = 6;
     /** Spent, it takes this much more damage. */
     private static final float EXHAUSTED_TAKEN = 1.35F;
     /** The breath: how long the bubbles come first (the warning - the aim follows its prey closely), how long it
@@ -97,6 +97,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private Phase phase = Phase.ROAM;
     private int phaseTicks, grabsDone, ramCooldown, cycles, chargesLeft, tailCooldown = 60, vortexCooldown = 100, vortexTicks, stage = 1;
     @Nullable private Vec3 vortexAt;
+    private int floorTicks;
     private Vec3 chargeAim, breathAim;
     @Nullable private ServerPlayer held;
 
@@ -236,7 +237,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             return;
         }
         hunt();
-        boolean free = phase == Phase.GRAB_RISE || phase == Phase.GRAB_HOLD || phase == Phase.CHARGE
+        boolean free = floorHunt() || phase == Phase.GRAB_RISE || phase == Phase.GRAB_HOLD || phase == Phase.CHARGE
                 || phase == Phase.REAR || phase == Phase.BREATHE || phase == Phase.EXHAUSTED;   // nothing turns it aside
         boolean blocked = !free && !openWater(position().add(Vec3.directionFromRotation(getXRot(), getYRot()).scale(6)), 2);
         if (phase == Phase.ROAM && (goal == null || blocked || --goalTicks <= 0 || position().distanceToSqr(goal) < 16)) {
@@ -337,6 +338,12 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         if (tailCooldown > 0) tailCooldown--;
         if (vortexCooldown > 0) vortexCooldown--;
         tickVortex();
+        // staying on the sea floor out of its way does not work: after a few seconds there a whirlpool comes for them
+        floorTicks = onFloor(prey) ? floorTicks + 1 : 0;
+        if (floorTicks > 70 && vortexAt == null && !grabbing) {
+            startVortex(at);
+            floorTicks = 0;
+        }
         // twice a fight, opening stages II and III: the grab from below (it waits for a free moment to begin it)
         boolean free = phase == Phase.CIRCLE || phase == Phase.RECOVER || phase == Phase.TURN || phase == Phase.EXHAUSTED;
         if (!grabbing && free && grabsDone < stage - 1) {
@@ -379,7 +386,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                 }
                 int warn = chargesLeft < stage ? 10 : stage == 3 ? 16 : 22;   // the first of a run warns longest
                 if (phaseTicks >= warn) {
-                    chargeAim = at.add(prey.getDeltaMovement().scale(10));
+                    chargeAim = onFloor(prey) ? at : at.add(prey.getDeltaMovement().scale(10));
                     setPhase(Phase.CHARGE);
                     level().playSound(null, blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.HOSTILE, 2.5F, 0.8F);
                 }
@@ -419,6 +426,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                 // straight through where its prey was, a little past
                 Vec3 fwd = Vec3.directionFromRotation(getXRot(), getYRot());
                 goal = chargeAim.add(fwd.scale(12));
+                // at prey on the floor it skims along the bottom rather than ploughing into it
+                if (onFloor(prey)) goal = new Vec3(goal.x, chargeAim.y + 0.5, goal.z);
                 double d = mouth().distanceToSqr(at);
                 if (d < 7 * 7 && phaseTicks % 20 == 1) triggerAnim("roar", "bite");
                 if (d < 3.2 * 3.2 && prey.hurtTime == 0) {
@@ -501,6 +510,16 @@ public class LeviathanEntity extends Monster implements GeoEntity {
 
     /** How long the tail swipe warns before it whips (ticks). */
     private static final int TAIL_WARN = 18;
+
+    /** Standing on the sea floor (or anything solid right under them). */
+    private boolean onFloor(@Nullable Player p) {
+        return p != null && (p.onGround() || !level().getFluidState(p.blockPosition().below()).is(net.minecraft.tags.FluidTags.WATER));
+    }
+
+    /** Going for prey on the floor: it may swim down to the bottom (the lift off the floor is off). */
+    private boolean floorHunt() {
+        return onFloor(prey) && (phase == Phase.COIL || phase == Phase.CHARGE || phase == Phase.TURN);
+    }
 
     /** How fast it moves in this stage. */
     private float tempo() {
