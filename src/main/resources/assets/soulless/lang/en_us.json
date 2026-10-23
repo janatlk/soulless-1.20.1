@@ -290,6 +290,7 @@
   "item.soulless.drowned_gills": "Drowned One's Gills",
   "item.soulless.drowned_gills.desc": "Taken from one who never came up",
   "tooltip.soulless.drowned_gills.water": "In water: water breathing, %s%% faster swimming",
+  "tooltip.soulless.drowned_gills.hunt": "near the Leviathan (in its arena): %s%% faster swimming on top",
   "tooltip.soulless.drowned_gills.land": "On land: you choke like a fish - water or rain saves you",
   "tooltip.soulless.drowned_gills.slot": "Worn round the neck (necklace slot)"
 }

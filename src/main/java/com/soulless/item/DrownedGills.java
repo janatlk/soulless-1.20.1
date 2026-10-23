@@ -35,7 +35,11 @@ import java.util.UUID;
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class DrownedGills {
     public static final double SWIM_BONUS = 0.5;
+    /** Near the Leviathan (anywhere in its arena) the gills drive the wearer on harder still. */
+    public static final double HUNT_BONUS = 1.15;
+    private static final double HUNT_RANGE = com.soulless.world.DrownedSoulsStructure.ARENA_R + 16;
     private static final UUID SWIM_ID = UUID.fromString("2a7d9c41-5e1b-4f33-a8d0-6b9e1c4f7a25");
+    private static final UUID HUNT_ID = UUID.fromString("7c1e4b2a-93d5-4f60-b1a8-2e6d9f0c5b47");
     private static final boolean CURIOS = ModList.get().isLoaded("curios");
     /** The air each wearer has left on land (the game would refill it every tick otherwise). */
     private static final Map<UUID, Integer> AIR = new HashMap<>();
@@ -55,6 +59,14 @@ public final class DrownedGills {
             boolean has = swim.getModifier(SWIM_ID) != null;
             if (on && wet && !has) swim.addTransientModifier(new AttributeModifier(SWIM_ID, "Drowned gills", SWIM_BONUS, AttributeModifier.Operation.MULTIPLY_BASE));
             else if ((!on || !wet) && has) swim.removeModifier(SWIM_ID);
+            // the Leviathan near: checked twice a second
+            if (p.tickCount % 10 == 0) {
+                boolean hunt = on && wet && !p.level().getEntitiesOfClass(com.soulless.boss.LeviathanEntity.class,
+                        p.getBoundingBox().inflate(HUNT_RANGE), e -> e.isAlive()).isEmpty();
+                boolean hasHunt = swim.getModifier(HUNT_ID) != null;
+                if (hunt && !hasHunt) swim.addTransientModifier(new AttributeModifier(HUNT_ID, "Drowned gills: the Leviathan near", HUNT_BONUS, AttributeModifier.Operation.MULTIPLY_BASE));
+                else if (!hunt && hasHunt) swim.removeModifier(HUNT_ID);
+            }
         }
         if (!on) {
             AIR.remove(p.getUUID());
@@ -91,6 +103,7 @@ public final class DrownedGills {
         public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
             tooltip.add(Component.translatable("item.soulless.drowned_gills.desc").withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC));
             tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.water", Math.round(SWIM_BONUS * 100)).withStyle(ChatFormatting.AQUA));
+            tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.hunt", Math.round(HUNT_BONUS * 100)).withStyle(ChatFormatting.DARK_PURPLE));
             tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.land").withStyle(ChatFormatting.RED));
             tooltip.add(Component.translatable("tooltip.soulless.drowned_gills.slot").withStyle(ChatFormatting.DARK_GRAY));
         }

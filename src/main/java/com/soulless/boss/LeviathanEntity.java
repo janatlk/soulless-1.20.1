@@ -65,11 +65,26 @@ public class LeviathanEntity extends Monster implements GeoEntity {
      * 4 dying). */
     private static final EntityDataAccessor<Integer> POSE = SynchedEntityData.defineId(LeviathanEntity.class, EntityDataSerializers.INT);
 
-    private enum Phase { ROAM, CIRCLE, COIL, CHARGE, RECOVER, REAR, BREATHE, GRAB_RUSH, GRAB_DIVE, GRAB_RISE, GRAB_HOLD }
+    private enum Phase { ROAM, CIRCLE, COIL, CHARGE, TURN, TAIL, RECOVER, EXHAUSTED, REAR, BREATHE, GRAB_RUSH, GRAB_DIVE, GRAB_RISE, GRAB_HOLD }
+
+    /*
+     * The fight in three stages (by health), each telegraphed attack warned 1-2 s ahead, and a window to strike back
+     * after each great one:
+     *   I   (100-60%): the charge (a coil and a roar first) and the tail swipe for whoever lingers behind it; it never
+     *                  rests, short circles between.
+     *  II   (60-25%):  the grab opens it; faster; charges come two in a row; the breath; whirlpools under its prey
+     *                  (a ring of bubbles marks them); drowned rise to fight beside it.
+     *  III  (<25%):    the second grab opens it; frenzy - faster still, three charges in a row, its body hurts on any
+     *                  touch, whirlpools and breath come often.
+     * Windows: after the breath, a grab or a run of charges it is spent (EXHAUSTED) for 2-3 s, slow and sinking, and
+     * takes more damage.
+     */
 
     /** Balanced for after the Reaper: its prey wields the Soul Forged and wears diamond or netherite (on full
      * netherite with Protection IV a bite still takes two hearts, the grab four). */
-    private static final float BITE_DAMAGE = 28, RAM_DAMAGE = 12, GRAB_DAMAGE = 34, BREATH_DAMAGE = 6;
+    private static final float BITE_DAMAGE = 28, RAM_DAMAGE = 12, GRAB_DAMAGE = 34, BREATH_DAMAGE = 6, TAIL_DAMAGE = 16, VORTEX_DAMAGE = 10;
+    /** Spent, it takes this much more damage. */
+    private static final float EXHAUSTED_TAKEN = 1.35F;
     /** The breath: how long the bubbles come first (the warning - the aim follows its prey closely), how long it
      * lasts in all, how far it reaches (ticks, blocks); the beam then turns at most BREATH_TURN degrees a tick, so a
      * player swimming across it gets out of it, and blocks stop it - a pillar is cover. */
@@ -80,7 +95,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private final ServerBossEvent bar = new ServerBossEvent(net.minecraft.network.chat.Component.translatable("entity.soulless.leviathan"),
             BossEvent.BossBarColor.BLUE, BossEvent.BossBarOverlay.NOTCHED_10);
     private Phase phase = Phase.ROAM;
-    private int phaseTicks, grabsDone, ramCooldown, cycles;
+    private int phaseTicks, grabsDone, ramCooldown, cycles, chargesLeft, tailCooldown = 60, vortexCooldown = 100, vortexTicks, stage = 1;
+    @Nullable private Vec3 vortexAt;
     private Vec3 chargeAim, breathAim;
     @Nullable private ServerPlayer held;
 
@@ -221,7 +237,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         }
         hunt();
         boolean free = phase == Phase.GRAB_RISE || phase == Phase.GRAB_HOLD || phase == Phase.CHARGE
-                || phase == Phase.REAR || phase == Phase.BREATHE;   // nothing turns it aside
+                || phase == Phase.REAR || phase == Phase.BREATHE || phase == Phase.EXHAUSTED;   // nothing turns it aside
         boolean blocked = !free && !openWater(position().add(Vec3.directionFromRotation(getXRot(), getYRot()).scale(6)), 2);
         if (phase == Phase.ROAM && (goal == null || blocked || --goalTicks <= 0 || position().distanceToSqr(goal) < 16)) {
             Vec3 g = pickGoal(home == null ? position() : Vec3.atCenterOf(home), 8, 26, 6, 10);
@@ -239,7 +255,10 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             case CIRCLE -> 0.45F;
             case COIL -> 0.12F;
             case CHARGE -> 0.95F;
+            case TURN -> 0.55F;
+            case TAIL -> 0.3F;
             case RECOVER -> 0.5F;
+            case EXHAUSTED -> 0.06F;
             case REAR -> 0.4F;
             case BREATHE -> 0.02F;
             case GRAB_RUSH -> 0.8F;
@@ -247,8 +266,12 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             case GRAB_RISE -> 1.15F;
             case GRAB_HOLD -> 0.35F;
         };
+        speed *= tempo();
         float turnRate = switch (phase) {
             case COIL -> 6F;
+            case TURN -> 9F;
+            case TAIL -> phaseTicks > TAIL_WARN ? 16F : 3F;
+            case EXHAUSTED -> 0.8F;
             case GRAB_RISE -> 14F;
             case CHARGE -> 1.5F;
             case REAR -> 5F;
@@ -308,9 +331,15 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             if (phase == Phase.ROAM) setPhase(Phase.CIRCLE);
         }
         Vec3 at = prey.position().add(0, prey.getBbHeight() / 2, 0);
-        // twice a fight: the grab from below
         float hp = getHealth() / getMaxHealth();
-        if (!grabbing && (phase == Phase.CIRCLE || phase == Phase.RECOVER) && (grabsDone == 0 && hp < 2 / 3F || grabsDone == 1 && hp < 1 / 3F)) {
+        int nowStage = hp > 0.6F ? 1 : hp > 0.25F ? 2 : 3;
+        if (nowStage > stage) enterStage(nowStage);
+        if (tailCooldown > 0) tailCooldown--;
+        if (vortexCooldown > 0) vortexCooldown--;
+        tickVortex();
+        // twice a fight, opening stages II and III: the grab from below (it waits for a free moment to begin it)
+        boolean free = phase == Phase.CIRCLE || phase == Phase.RECOVER || phase == Phase.TURN || phase == Phase.EXHAUSTED;
+        if (!grabbing && free && grabsDone < stage - 1) {
             grabsDone++;
             setPhase(Phase.GRAB_RUSH);
             roar();
@@ -318,23 +347,72 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         }
         switch (phase) {
             case CIRCLE -> {
-                circle(at, 13 + 4 * Math.sin(tickCount * 0.02), 0.016F);
+                // short: a few seconds to pick its angle, never a rest
+                circle(at, 12 + 3 * Math.sin(tickCount * 0.02), 0.02F * tempo());
                 if (--roarCooldown <= 0 && distanceToSqr(prey) < 24 * 24) {
                     roar();
-                    roarCooldown = 260 + random.nextInt(200);
+                    roarCooldown = 300 + random.nextInt(200);
                 }
-                if (phaseTicks > 90 + random.nextInt(60)) {
-                    // every third time round: rear up and breathe, if there is room above
+                if (tailCooldown == 0 && nearTail(prey)) {
+                    setPhase(Phase.TAIL);
+                    break;
+                }
+                if (stage >= 2 && vortexCooldown == 0 && vortexAt == null) startVortex(at);
+                int circleFor = stage == 1 ? 50 : stage == 2 ? 36 : 22;
+                if (phaseTicks > circleFor + random.nextInt(20)) {
+                    // the breath: from stage II, every other time round (every time in III), if there is room above
                     boolean room = openWater(position().add(0, 10, 0), 2) && openWater(position().add(0, 18, 0), 2);
-                    setPhase(++cycles % 3 == 0 && room ? Phase.REAR : Phase.COIL);
+                    cycles++;
+                    if (stage >= 2 && room && (stage == 3 ? cycles % 2 == 0 : cycles % 3 == 0)) setPhase(Phase.REAR);
+                    else {
+                        chargesLeft = stage;   // I: one charge, II: two in a row, III: three
+                        setPhase(Phase.COIL);
+                    }
                 }
             }
-            case COIL -> {   // slows and swings its head round onto its prey
+            case COIL -> {   // the warning: it slows, swings its head round onto its prey and roars, bubbles at its jaws
                 goal = at;
-                if (phaseTicks >= 16) {
+                if (phaseTicks == 1) level().playSound(null, blockPosition(), SoundEvents.RAVAGER_ROAR, SoundSource.HOSTILE, 3F, 0.5F);
+                if (level() instanceof ServerLevel sl) {
+                    Vec3 m = mouth();
+                    sl.sendParticles(ParticleTypes.BUBBLE, m.x, m.y, m.z, 4, 0.6, 0.6, 0.6, 0.1);
+                }
+                int warn = chargesLeft < stage ? 10 : stage == 3 ? 16 : 22;   // the first of a run warns longest
+                if (phaseTicks >= warn) {
                     chargeAim = at.add(prey.getDeltaMovement().scale(10));
                     setPhase(Phase.CHARGE);
-                    level().playSound(null, blockPosition(), SoundEvents.RAVAGER_ROAR, SoundSource.HOSTILE, 3F, 0.5F);
+                    level().playSound(null, blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.HOSTILE, 2.5F, 0.8F);
+                }
+            }
+            case TURN -> {   // a tight turn back onto its prey, then the next charge of the run
+                goal = at;
+                Vec3 to = at.subtract(position()).normalize();
+                if (phaseTicks > 30 || Vec3.directionFromRotation(getXRot(), getYRot()).dot(to) > 0.8) setPhase(Phase.COIL);
+            }
+            case TAIL -> {
+                // the warning: the tail curls aside, a hiss and a stir of the water at it; then it whips round
+                LeviathanPart tip = body[SEGMENTS - 1];
+                if (phaseTicks == 1) level().playSound(null, tip.blockPosition(), SoundEvents.ELDER_GUARDIAN_FLOP, SoundSource.HOSTILE, 4F, 0.5F);
+                if (phaseTicks <= TAIL_WARN) {
+                    if (level() instanceof ServerLevel sl) {
+                        for (int i = SEGMENTS - 4; i < SEGMENTS; i++) {
+                            LeviathanPart b = body[i];
+                            sl.sendParticles(ParticleTypes.BUBBLE_POP, b.getX(), b.getY() + 1, b.getZ(), 3, 0.8, 0.8, 0.8, 0.05);
+                        }
+                    }
+                    goal = position().add(Vec3.directionFromRotation(0, getYRot()).scale(4));
+                } else {
+                    // the whip: the head swings hard to one side, so the tail sweeps the other way through its prey
+                    Vec3 fwd = Vec3.directionFromRotation(0, getYRot());
+                    Vec3 side = new Vec3(-fwd.z, 0, fwd.x);
+                    Vec3 rel = prey.position().subtract(position());
+                    goal = position().add(side.scale(rel.dot(side) > 0 ? -8 : 8)).add(fwd.scale(2));
+                    if (phaseTicks == TAIL_WARN + 1) level().playSound(null, tip.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 4F, 0.4F);
+                    tailHit();
+                }
+                if (phaseTicks > TAIL_WARN + 16) {
+                    tailCooldown = stage == 3 ? 60 : 110;
+                    setPhase(Phase.CIRCLE);
                 }
             }
             case CHARGE -> {
@@ -349,8 +427,26 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                     level().playSound(null, prey.blockPosition(), SoundEvents.EVOKER_FANGS_ATTACK, SoundSource.HOSTILE, 2F, 0.6F);
                 }
                 if (phaseTicks > 45 || position().subtract(chargeAim).dot(fwd) > 10) {
-                    setPhase(Phase.RECOVER);
-                    goal = pickGoal(at, 18, 26, 2, 8);
+                    if (--chargesLeft > 0) setPhase(Phase.TURN);
+                    else if (stage >= 2) setPhase(Phase.EXHAUSTED);   // a run of charges spends it
+                    else {
+                        circleDir = random.nextBoolean() ? 1 : -1;
+                        circleAngle = (float) Math.atan2(getZ() - at.z, getX() - at.x);
+                        setPhase(Phase.CIRCLE);
+                    }
+                }
+            }
+            case EXHAUSTED -> {   // spent: it drifts, sinking a little, gills streaming - the moment to strike
+                goal = position().add(Vec3.directionFromRotation(0, getYRot()).scale(2)).add(0, -1, 0);
+                if (level() instanceof ServerLevel sl && phaseTicks % 3 == 0) {
+                    Vec3 h = head.position();
+                    sl.sendParticles(ParticleTypes.BUBBLE_COLUMN_UP, h.x, h.y + 1, h.z, 5, 1.2, 0.6, 1.2, 0.02);
+                }
+                if (phaseTicks == 1) level().playSound(null, blockPosition(), SoundEvents.ELDER_GUARDIAN_HURT, SoundSource.HOSTILE, 3F, 0.4F);
+                if (phaseTicks > (stage == 3 ? 45 : 60)) {
+                    circleDir = random.nextBoolean() ? 1 : -1;
+                    circleAngle = (float) Math.atan2(getZ() - at.z, getX() - at.x);
+                    setPhase(Phase.CIRCLE);
                 }
             }
             case RECOVER -> {
@@ -376,10 +472,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                 if (phaseTicks < BUBBLES) breathAim = breathAim.lerp(at, 0.3);
                 else breathAim = turnToward(mouth(), breathAim, at, BREATH_TURN);
                 breathe(phaseTicks >= BUBBLES);
-                if (phaseTicks >= BREATH_TICKS) {
-                    setPhase(Phase.RECOVER);
-                    goal = pickGoal(at, 16, 24, 0, 8);
-                }
+                if (phaseTicks >= BREATH_TICKS) setPhase(Phase.EXHAUSTED);
             }
             case GRAB_RUSH -> {   // faster and tighter round its prey
                 circle(at, 10, 0.05F);
@@ -403,6 +496,103 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             }
             default -> {}
         }
+    }
+
+    /** How long the tail swipe warns before it whips (ticks). */
+    private static final int TAIL_WARN = 18;
+
+    /** How fast it moves in this stage. */
+    private float tempo() {
+        return stage == 1 ? 1F : stage == 2 ? 1.15F : 1.3F;
+    }
+
+    /** A new stage: a roar, the bar's colour, and from II drowned rising to fight beside it. */
+    private void enterStage(int s) {
+        stage = s;
+        bar.setColor(s == 2 ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
+        roar();
+        level().playSound(null, blockPosition(), SoundEvents.ELDER_GUARDIAN_CURSE, SoundSource.HOSTILE, 5F, 0.4F);
+        if (level() instanceof ServerLevel sl && prey != null) {
+            for (int i = 0; i < (s == 2 ? 2 : 3); i++) {
+                var d = EntityType.DROWNED.create(sl);
+                if (d == null) continue;
+                double a = random.nextDouble() * Math.PI * 2;
+                Vec3 p = prey.position().add(Math.cos(a) * 7, -2, Math.sin(a) * 7);
+                if (!openWater(p, 1)) p = prey.position().add(0, -2, 0);
+                d.moveTo(p.x, p.y, p.z, random.nextFloat() * 360, 0);
+                d.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.TRIDENT));
+                d.setTarget(prey);
+                sl.addFreshEntity(d);
+                sl.sendParticles(ParticleTypes.SOUL, p.x, p.y + 1, p.z, 12, 0.5, 0.8, 0.5, 0.02);
+            }
+        }
+    }
+
+    /** Its prey is near its tail (the back third of the body) and not before its head. */
+    private boolean nearTail(Player p) {
+        for (int i = SEGMENTS * 2 / 3; i < SEGMENTS; i++) if (body[i].distanceToSqr(p) < 6 * 6) return mouth().distanceToSqr(p.position()) > 8 * 8;
+        return false;
+    }
+
+    /** The tail's whip: whoever the last segments sweep through is struck hard and thrown. */
+    private void tailHit() {
+        for (int i = SEGMENTS - 4; i < SEGMENTS; i++) {
+            LeviathanPart b = body[i];
+            for (Player p : level().getEntitiesOfClass(Player.class, b.getBoundingBox().inflate(1.5))) {
+                if (p.isSpectator() || p.isCreative() || p.hurtTime > 0) continue;
+                if (p.hurt(damageSources().mobAttack(this), TAIL_DAMAGE)) {
+                    Vec3 away = p.position().subtract(b.position()).normalize();
+                    p.setDeltaMovement(away.scale(1.6).add(0, 0.4, 0));
+                    p.hurtMarked = true;
+                }
+            }
+        }
+    }
+
+    /** A whirlpool under its prey: a ring of bubbles marks it for two seconds, then it pulls in and down and hurts. */
+    private void startVortex(Vec3 at) {
+        BlockPos below = BlockPos.containing(at);
+        for (int i = 0; i < 6 && level().getFluidState(below.below()).is(net.minecraft.tags.FluidTags.WATER); i++) below = below.below();
+        vortexAt = Vec3.atBottomCenterOf(below);
+        vortexTicks = 40;
+        level().playSound(null, below, SoundEvents.CONDUIT_ACTIVATE, SoundSource.HOSTILE, 3F, 0.5F);
+    }
+
+    private void tickVortex() {
+        if (vortexAt == null || !(level() instanceof ServerLevel sl)) return;
+        vortexTicks--;
+        double r = 3.5;
+        if (vortexTicks > 0) {
+            // the warning ring, closing in and rising as it nears
+            double k = vortexTicks / 40.0;
+            for (int i = 0; i < 16; i++) {
+                double a = i / 16.0 * Math.PI * 2 + vortexTicks * 0.2;
+                sl.sendParticles(ParticleTypes.BUBBLE, vortexAt.x + Math.cos(a) * r, vortexAt.y + 0.3 + (1 - k) * 3, vortexAt.z + Math.sin(a) * r, 1, 0, 0.2, 0, 0);
+            }
+            if (vortexTicks % 4 == 0) sl.sendParticles(ParticleTypes.SCULK_SOUL, vortexAt.x, vortexAt.y + 0.5, vortexAt.z, 2, r * 0.5, 0.2, r * 0.5, 0.01);
+            return;
+        }
+        // the pull
+        sl.sendParticles(ParticleTypes.BUBBLE_COLUMN_UP, vortexAt.x, vortexAt.y + 1, vortexAt.z, 60, r * 0.6, 2, r * 0.6, 0.2);
+        level().playSound(null, BlockPos.containing(vortexAt), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.HOSTILE, 2F, 0.6F);
+        for (Player p : level().getEntitiesOfClass(Player.class, new AABB(vortexAt, vortexAt).inflate(r, 6, r))) {
+            if (p.isSpectator() || p.isCreative()) continue;
+            Vec3 in = vortexAt.subtract(p.position());
+            if (in.horizontalDistanceSqr() > r * r) continue;
+            p.invulnerableTime = 0;
+            p.hurt(damageSources().mobAttack(this), VORTEX_DAMAGE);
+            p.setDeltaMovement(in.normalize().scale(0.6).add(0, -0.8, 0));
+            p.hurtMarked = true;
+            p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 2));
+        }
+        vortexAt = null;
+        vortexCooldown = stage == 3 ? 120 : 200;
+    }
+
+    /** Spent (after a great attack), it takes more damage - the window to strike. */
+    @Override
+    public boolean hurt(net.minecraft.world.damagesource.DamageSource source, float amount) {
+        return super.hurt(source, phase == Phase.EXHAUSTED ? amount * EXHAUSTED_TAKEN : amount);
     }
 
     private void circle(Vec3 at, double r, float rate) {
@@ -509,14 +699,14 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             p.setDeltaMovement(fling);
             p.hurtMarked = true;
             level().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.HOSTILE, 2F, 0.5F);
-            setPhase(Phase.RECOVER);
-            goal = pickGoal(position(), 18, 26, 0, 8);
+            setPhase(Phase.EXHAUSTED);
         }
     }
 
     /** Whoever its body passes through while it charges or rises is rammed. */
     private void attackWithBody() {
-        if (ramCooldown > 0 || !(phase == Phase.CHARGE || phase == Phase.GRAB_RISE || phase == Phase.GRAB_RUSH)) return;
+        boolean frenzy = stage == 3 && phase != Phase.EXHAUSTED && phase != Phase.ROAM;
+        if (ramCooldown > 0 || !(frenzy || phase == Phase.CHARGE || phase == Phase.GRAB_RISE || phase == Phase.GRAB_RUSH)) return;
         for (LeviathanPart part : parts) {
             for (Player p : level().getEntitiesOfClass(Player.class, part.getBoundingBox().inflate(0.3))) {
                 if (p == held || p.isSpectator() || p.isCreative()) continue;
@@ -700,6 +890,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         super.addAdditionalSaveData(tag);
         if (home != null) tag.put("Home", NbtUtils.writeBlockPos(home));
         tag.putInt("Grabs", grabsDone);
+        tag.putInt("Stage", stage);
     }
 
     @Override
@@ -707,6 +898,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         super.readAdditionalSaveData(tag);
         if (tag.contains("Home")) home = NbtUtils.readBlockPos(tag.getCompound("Home"));
         grabsDone = tag.getInt("Grabs");
+        stage = Math.max(1, tag.getInt("Stage"));
+        bar.setColor(stage == 1 ? BossEvent.BossBarColor.BLUE : stage == 2 ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
         if (hasCustomName()) bar.setName(getDisplayName());
     }
 

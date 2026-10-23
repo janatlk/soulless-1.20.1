@@ -290,6 +290,7 @@
   "item.soulless.drowned_gills": "Жабры Утопленника",
   "item.soulless.drowned_gills.desc": "Снятые с того, кто так и не всплыл",
   "tooltip.soulless.drowned_gills.water": "В воде: дыхание под водой, плавание быстрее на %s%%",
+  "tooltip.soulless.drowned_gills.hunt": "рядом с Левиафаном (на его арене): плавание ещё быстрее на %s%%",
   "tooltip.soulless.drowned_gills.land": "На суше: вы задыхаетесь, как рыба - спасает вода или дождь",
   "tooltip.soulless.drowned_gills.slot": "Носится на шее (слот ожерелья)"
 }
