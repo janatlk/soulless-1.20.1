@@ -121,7 +121,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         for (int i = 0; i < SEGMENTS; i++) {
             float f = i / (SEGMENTS - 1F);
             float w = (46 - f * 34) / 16F, h = (40 - f * 30) / 16F;
-            body[i] = new LeviathanPart(this, "body_" + i, Math.max(w, h), h);
+            float sway = 0.6F + 1.4F * f;   // wider than the body: the boxes cover the animation's sway round the path
+            body[i] = new LeviathanPart(this, "body_" + i, Math.max(w, h) + sway, h + sway * 0.5F);
         }
         parts = new LeviathanPart[SEGMENTS + 1];
         parts[0] = head;
@@ -576,8 +577,30 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                 for (LeviathanPart part : parts) sl.sendParticles(ParticleTypes.SCULK_SOUL, part.getX(), part.getY() + 1, part.getZ(), 8, 1.2, 1.2, 1.2, 0.04);
             }
             level().broadcastEntityEvent(this, (byte) 60);
+            if (level() instanceof ServerLevel sl) dropChest(sl);
             remove(RemovalReason.KILLED);
         }
+    }
+
+    /** Its spoils: a chest in the middle of the arena's floor (or where it died, out of an arena). */
+    private void dropChest(ServerLevel sl) {
+        BlockPos at = blockPosition();
+        var structure = sl.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
+                .get(com.soulless.Soulless.id("drowned_souls"));
+        if (structure != null) {
+            var start = sl.structureManager().getStructureWithPieceAt(at, structure);
+            for (var piece : start.isValid() ? start.getPieces() : java.util.List.<net.minecraft.world.level.levelgen.structure.StructurePiece>of())
+                if (piece instanceof com.soulless.world.DrownedSoulsStructure.Piece p)
+                    at = p.centre().offset(0, com.soulless.world.DrownedSoulsStructure.ARENA_BOTTOM_Y, 0);
+        }
+        // up from the floor to the first block it can stand in
+        for (int i = 0; i < 40 && !(sl.getBlockState(at).canBeReplaced() && !sl.getBlockState(at.below()).canBeReplaced()); i++)
+            at = sl.getBlockState(at).canBeReplaced() ? at.below() : at.above();
+        sl.setBlock(at, net.minecraft.world.level.block.Blocks.CHEST.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.ChestBlock.WATERLOGGED, sl.getFluidState(at).is(net.minecraft.tags.FluidTags.WATER)), 3);
+        if (sl.getBlockEntity(at) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest)
+            chest.setLootTable(com.soulless.Soulless.id("chests/leviathan"), random.nextLong());
+        sl.sendParticles(ParticleTypes.SCULK_SOUL, at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, 30, 0.6, 0.6, 0.6, 0.05);
     }
 
     @Override

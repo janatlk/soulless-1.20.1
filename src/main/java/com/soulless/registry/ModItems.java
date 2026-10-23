@@ -25,6 +25,7 @@ public final class ModItems {
 
 
     /** Wraith Iron: mined from its ore deep below (raw), smelted into ingots - what the katana is forged from. */
+    public static final RegistryObject<Item> LEVIATHAN_SCALE = ITEMS.register("leviathan_scale", () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC).fireResistant()));
     public static final RegistryObject<Item> RAW_WRAITH_IRON = ITEMS.register("raw_wraith_iron", () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> WRAITH_IRON_INGOT = ITEMS.register("wraith_iron_ingot", () -> new Item(new Item.Properties()));
 
