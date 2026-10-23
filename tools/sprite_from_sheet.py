@@ -45,6 +45,7 @@ def pixel_size(im):
 
 
 FORCE = None   # --pixel N: the art's pixel size, when the runs mislead
+FIT = None     # --fit N: every icon resampled to N pixels on its longer side, so a set comes out one size
 
 
 def crush(cell):
@@ -60,6 +61,8 @@ def crush(cell):
         return None
     art = cell.crop(box)
     s = FORCE or pixel_size(art)
+    if FIT:
+        s = max(art.size) / FIT
     nw, nh = max(1, round(art.width / s)), max(1, round(art.height / s))
     out = Image.new("RGBA", (nw, nh))
     ap, op = art.load(), out.load()
@@ -70,7 +73,7 @@ def crush(cell):
             votes = Counter()
             for dy in (-1, 0, 1):
                 for dx in (-1, 0, 1):
-                    p = ap[min(art.width - 1, max(0, cx + dx * s // 4)), min(art.height - 1, max(0, cy + dy * s // 4))]
+                    p = ap[min(art.width - 1, max(0, cx + dx * int(s) // 4)), min(art.height - 1, max(0, cy + dy * int(s) // 4))]
                     votes[p if p[3] else (0, 0, 0, 0)] += 1
             p = votes.most_common(1)[0][0]
             # thin lines (a cord, an outline) cover only the middle of an art pixel: if the middle is drawn, keep it
@@ -88,7 +91,11 @@ def crush(cell):
 def main():
     args = sys.argv[1:]
     cut = 0.0
-    global FORCE
+    global FORCE, FIT
+    if "--fit" in args:
+        i = args.index("--fit")
+        FIT = int(args[i + 1])
+        del args[i:i + 2]
     if "--pixel" in args:
         i = args.index("--pixel")
         FORCE = int(args[i + 1])
