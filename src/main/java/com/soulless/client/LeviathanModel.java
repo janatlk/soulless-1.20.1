@@ -64,7 +64,7 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             net.minecraft.world.phys.Vec3 dir = front.subtract(c);
             float yaw = dir.lengthSqr() < 1e-6 ? prevYaw : (float) (Mth.atan2(dir.z, dir.x) * Mth.RAD_TO_DEG) - 90;
             float pitch = dir.lengthSqr() < 1e-6 ? prevPitch : (float) (-Mth.atan2(dir.y, dir.horizontalDistance()) * Mth.RAD_TO_DEG);
-            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -28, 28), bendX = Mth.clamp(pitch - prevPitch, -22, 22);
+            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -45, 45), bendX = Mth.clamp(pitch - prevPitch, -45, 45);
             // eased, so a jolt in the path (a bump on a block, a correction from the server) becomes a slow ripple
             float ease = 1 - (float) Math.pow(0.45, dtBend);
             e.bend[i * 2] += (bendX - e.bend[i * 2]) * ease;
@@ -166,8 +166,9 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         return s < 0.75F ? 1 : Math.max(0, 1 - (s - 0.75F) / 0.25F);
     }
 
-    /** How a bend in the swum path turns a body bone (the sign maps world yaw/pitch onto the bone's rotation). */
-    private static final float BEND_YAW = -1, BEND_PITCH = -1;
+    /** How a bend in the swum path turns a body bone (the sign maps world yaw/pitch onto the bone's rotation - checked
+     * in game: with -1 the body bent away from its hit boxes, mirrored). */
+    private static final float BEND_YAW = 1, BEND_PITCH = 1;
     private static final float WHISKER_GAIN = 5.5F, WHISKER_K = 0.16F, WHISKER_DAMP = 0.78F, WHISKER_MAX = 45;
 
     private void whiskers(LeviathanEntity e, float t, AnimationState<LeviathanEntity> state) {
