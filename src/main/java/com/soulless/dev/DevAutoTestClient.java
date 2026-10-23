@@ -132,6 +132,16 @@ public final class DevAutoTestClient {
             if (tick == 260) mc.stop();
             return;
         }
+        if (DevAutoTest.MOBS) {
+            opts.setCameraType(CameraType.FIRST_PERSON);
+            var lk = mc.level.getEntitiesOfClass(com.soulless.mob.LampkeeperEntity.class, mc.player.getBoundingBox().inflate(20)).stream().findFirst().orElse(null);
+            var mim = mc.level.getEntitiesOfClass(com.soulless.mob.ClamMimicEntity.class, mc.player.getBoundingBox().inflate(20)).stream().findFirst().orElse(null);
+            if (tick < 255 && lk != null) mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, lk.position().add(0, 1, 0));
+            if (tick >= 265 && mim != null) mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, mim.position().add(0, 0.4, 0));
+            if (tick >= 40 && tick % 12 == 0 && tick <= 420) shot(mc, String.format("mobs_%03d", tick));
+            if (tick == 430) mc.stop();
+            return;
+        }
         if (DevAutoTest.LEVIATHAN) {
             opts.setCameraType(CameraType.FIRST_PERSON);
             if (tick == 30) mc.getEntityRenderDispatcher().setRenderHitBoxes(true);

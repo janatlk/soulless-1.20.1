@@ -390,7 +390,10 @@ public class DrownedSoulsStructure extends Structure {
             int ox = cell(cellX), oz = cell(cellZ), y0 = cataY;
             int r = h(cellX, cellZ * 3 + 1);
             put(ox, y0 + ROOM_H + 1, oz, Blocks.SEA_LANTERN.defaultBlockState());
-            switch (kind(cellX, cellZ)) {
+            var kd = kind(cellX, cellZ);
+            if ((kd == Kind.CRYPT || kd == Kind.SHRINE || kd == Kind.LIBRARY || kd == Kind.PRISON) && r % 2 == 0)
+                mob(com.soulless.registry.ModEntities.LAMPKEEPER.get(), ox, y0 + 2, oz);
+            switch (kd) {
                 case HALL -> {
                     for (int[] q : new int[][]{{-3, -3}, {3, -3}, {-3, 3}, {3, 3}}) {
                         for (int y = 1; y <= ROOM_H; y++) put(ox + q[0], y0 + y, oz + q[1], y == 1 || y == ROOM_H ? polished : wallAt(ox + q[0], y0 + y, oz + q[1]));
@@ -454,9 +457,25 @@ public class DrownedSoulsStructure extends Structure {
             }
         }
 
+        /** A dweller of the catacombs, placed as the city is built (only by the chunk that holds its spot). */
+        void mob(net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.Mob> type, double x, double y, double z) {
+            BlockPos p = c.offset((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
+            if (!clip.isInside(p)) return;
+            var m = type.create(level.getLevel());
+            if (m == null) return;
+            m.moveTo(c.getX() + x + 0.5, c.getY() + y, c.getZ() + z + 0.5, h((int) x, (int) z) % 360, 0);
+            m.setPersistenceRequired();
+            level.addFreshEntityWithPassengers(m);
+        }
+
         void chest(int x, int y, int z, Direction facing) {
             BlockPos p = c.offset(x, y, z);
             if (!clip.isInside(p)) return;
+            // half the chests have a mimic lying beside them, along the wall
+            if (h(x * 5, z * 7) % 2 == 0) {
+                Direction side = facing.getClockWise();
+                mob(com.soulless.registry.ModEntities.CLAM_MIMIC.get(), x + side.getStepX() * 2, y, z + side.getStepZ() * 2);
+            }
             level.setBlock(p, Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, facing).setValue(ChestBlock.WATERLOGGED, true), 2);
             RandomizableContainerBlockEntity.setLootTable(level, RandomSource.create(h(x, z)), p, Soulless.id(LOOT));
         }

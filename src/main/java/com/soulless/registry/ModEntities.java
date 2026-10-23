@@ -76,8 +76,18 @@ public final class ModEntities {
             () -> EntityType.Builder.<com.soulless.boss.LeviathanEntity>of(com.soulless.boss.LeviathanEntity::new, MobCategory.MONSTER)
                     .sized(4.0F, 3.5F).fireImmune().clientTrackingRange(16).updateInterval(1).build("leviathan"));
 
+    /** The catacombs' small dwellers (mob.LampkeeperEntity, mob.ClamMimicEntity), placed by the City of Drowned Souls. */
+    public static final RegistryObject<EntityType<com.soulless.mob.LampkeeperEntity>> LAMPKEEPER = ENTITIES.register("lampkeeper",
+            () -> EntityType.Builder.<com.soulless.mob.LampkeeperEntity>of(com.soulless.mob.LampkeeperEntity::new, MobCategory.MONSTER)
+                    .sized(0.8F, 2.0F).clientTrackingRange(8).build("lampkeeper"));
+    public static final RegistryObject<EntityType<com.soulless.mob.ClamMimicEntity>> CLAM_MIMIC = ENTITIES.register("clam_mimic",
+            () -> EntityType.Builder.<com.soulless.mob.ClamMimicEntity>of(com.soulless.mob.ClamMimicEntity::new, MobCategory.MONSTER)
+                    .sized(1.2F, 0.8F).clientTrackingRange(8).build("clam_mimic"));
+
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
+        event.put(LAMPKEEPER.get(), com.soulless.mob.LampkeeperEntity.createAttributes().build());
+        event.put(CLAM_MIMIC.get(), com.soulless.mob.ClamMimicEntity.createAttributes().build());
         event.put(WAILING_REAPER.get(), WailingReaperEntity.createAttributes().build());
         event.put(TAMED_FOX.get(), com.soulless.pet.TamedFox.createAttributes().build());
         event.put(RENEGADE.get(), com.soulless.boss.RenegadeEntity.createAttributes().build());

@@ -56,11 +56,13 @@ public final class DevAutoTest {
     public static final boolean ARMOR = ENABLED && System.getenv("SOULLESS_ARMOR") != null;
     /** SOULLESS_LEVIATHAN=1: a pool dug in the flat world, the Leviathan swimming in it, filmed with hit boxes shown. */
     public static final boolean LEVIATHAN = ENABLED && System.getenv("SOULLESS_LEVIATHAN") != null;
+    /** SOULLESS_MOBS=1: a glass tank like a catacomb room - a chest with a Clam Mimic beside it, a Lampkeeper; the player as prey. */
+    public static final boolean MOBS = ENABLED && System.getenv("SOULLESS_MOBS") != null;
     /** SOULLESS_LEV_FIGHT=1 (with SOULLESS_LEVIATHAN): a deep pool, the player in it as prey (unhurt), the fight's three
      * stages forced in turn; every phase and every hit logged. */
     @net.minecraftforge.eventbus.api.SubscribeEvent
     public static void onLevHurt(net.minecraftforge.event.entity.living.LivingHurtEvent event) {
-        if (LEV_FIGHT && event.getEntity() instanceof ServerPlayer)
+        if ((LEV_FIGHT || MOBS) && event.getEntity() instanceof ServerPlayer)
             Soulless.LOGGER.info("[autotest] levfight hurt {} by {}", String.format("%.1f", event.getAmount()), event.getSource().getMsgId());
     }
 
@@ -116,7 +118,7 @@ public final class DevAutoTest {
         p.getInventory().setItem(0, new ItemStack(KATANA ? ModItems.SOUL_KATANA.get() : ModItems.SOUL_FORGED.get()));
         p.getInventory().selected = 0;
         p.teleportTo(level, ARENA_X, p.getY(), ARENA_Z, 0, 10);
-        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE && !STRUCT && !ARMOR && !LEVIATHAN) spawnZombies(p);
+        if (!PREVIEW && !BOSS && !KATANA && !FOX && !RENEGADE && !FORGE && !STRUCT && !ARMOR && !LEVIATHAN && !MOBS) spawnZombies(p);
         Soulless.LOGGER.info("[autotest] scenario ready (tune={})", TUNE);
     }
 
@@ -254,6 +256,44 @@ public final class DevAutoTest {
         }
         if (FORGE) {
             forgeTick(p);
+            return;
+        }
+        if (MOBS) {
+            ServerLevel l = p.serverLevel();
+            if (tick == 20) {
+                net.minecraft.core.BlockPos c = p.blockPosition().above(8);
+                for (int x = -7; x <= 7; x++)
+                    for (int z = -7; z <= 7; z++)
+                        for (int y = -1; y <= 7; y++) {
+                            boolean wall = Math.abs(x) == 7 || Math.abs(z) == 7 || y == -1 || y == 7;
+                            l.setBlock(c.offset(x, y, z), wall ? net.minecraft.world.level.block.Blocks.POLISHED_DEEPSLATE.defaultBlockState()
+                                    : net.minecraft.world.level.block.Blocks.WATER.defaultBlockState(), 2);
+                        }
+                l.setBlock(c.offset(0, 6, 0), net.minecraft.world.level.block.Blocks.SEA_LANTERN.defaultBlockState(), 2);
+                l.setBlock(c.offset(0, 0, 5), net.minecraft.world.level.block.Blocks.CHEST.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.ChestBlock.WATERLOGGED, true), 2);
+                var mim = com.soulless.registry.ModEntities.CLAM_MIMIC.get().create(l);
+                mim.moveTo(c.getX() + 2.5, c.getY(), c.getZ() + 5.5, 180, 0);
+                l.addFreshEntity(mim);
+                var lk = com.soulless.registry.ModEntities.LAMPKEEPER.get().create(l);
+                lk.moveTo(c.getX() - 1.5, c.getY() + 1, c.getZ() - 1.5, 180, 0);
+                l.addFreshEntity(lk);
+                p.setGameMode(GameType.SURVIVAL);
+                p.teleportTo(l, c.getX() + 0.5, c.getY() + 1, c.getZ() - 4.5, 0, 10);
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, 99999, 4, false, false));
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WATER_BREATHING, 99999, 0, false, false));
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.NIGHT_VISION, 99999, 0, false, false));
+            }
+            p.setHealth(p.getMaxHealth());
+            // walk up to the chest (and the mimic) after a while
+            if (tick == 260) p.teleportTo(l, p.getX() + 2, p.getY(), p.getZ() + 8, 0, 10);
+            if (tick % 20 == 0) {
+                var lk = l.getEntitiesOfClass(com.soulless.mob.LampkeeperEntity.class, p.getBoundingBox().inflate(20)).stream().findFirst().orElse(null);
+                var mim = l.getEntitiesOfClass(com.soulless.mob.ClamMimicEntity.class, p.getBoundingBox().inflate(20)).stream().findFirst().orElse(null);
+                Soulless.LOGGER.info("[autotest] mobs t={} lamp={} lit={} d={} mimic={} open={}", tick,
+                        lk == null ? "-" : String.format("%.1f %.1f %.1f", lk.getX(), lk.getY(), lk.getZ()), lk != null && lk.lit(),
+                        lk == null ? -1 : String.format("%.1f", lk.distanceTo(p)), mim == null ? "-" : String.format("%.1f %.1f %.1f d=%.1f", mim.getX(), mim.getY(), mim.getZ(), mim.distanceTo(p)), mim != null && mim.open());
+            }
             return;
         }
         if (LEVIATHAN) {
