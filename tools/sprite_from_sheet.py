@@ -44,6 +44,9 @@ def pixel_size(im):
     return min(r for r, n in best if n >= best[0][1] * 0.35)
 
 
+FORCE = None   # --pixel N: the art's pixel size, when the runs mislead
+
+
 def crush(cell):
     cell = cell.convert("RGBA")
     px = cell.load()
@@ -56,7 +59,7 @@ def crush(cell):
     if not box:
         return None
     art = cell.crop(box)
-    s = pixel_size(art)
+    s = FORCE or pixel_size(art)
     nw, nh = max(1, round(art.width / s)), max(1, round(art.height / s))
     out = Image.new("RGBA", (nw, nh))
     ap, op = art.load(), out.load()
@@ -85,6 +88,11 @@ def crush(cell):
 def main():
     args = sys.argv[1:]
     cut = 0.0
+    global FORCE
+    if "--pixel" in args:
+        i = args.index("--pixel")
+        FORCE = int(args[i + 1])
+        del args[i:i + 2]
     if "--cut-bottom" in args:
         i = args.index("--cut-bottom")
         cut = float(args[i + 1])
@@ -93,11 +101,32 @@ def main():
     names = args[4:]
     out.mkdir(parents=True, exist_ok=True)
     cw, ch = sheet.width / cols, sheet.height / rows
+    cells = None
+    if rows == 1:
+        # one row: split where whole columns are background, so icons need not sit in even cells
+        rgb = sheet.convert("RGB")
+        px = rgb.load()
+        filled = [any(not is_bg(px[x, y]) and sum(px[x, y]) > 30 for y in range(0, rgb.height, 4)) for x in range(rgb.width)]
+        runs, start = [], None
+        for x, f in enumerate(filled + [False]):
+            if f and start is None:
+                start = x
+            elif not f and start is not None:
+                if x - start > rgb.width // 60:
+                    runs.append((start, x))
+                start = None
+        # a pair (boots) is one icon: join runs closer than a few art pixels
+        while len(runs) > len(names):
+            gaps = [runs[i + 1][0] - runs[i][1] for i in range(len(runs) - 1)]
+            i = gaps.index(min(gaps))
+            runs[i:i + 2] = [(runs[i][0], runs[i + 1][1])]
+        if len(runs) == len(names):
+            cells = [sheet.crop((a, 0, b, sheet.height)) for a, b in runs]
     for k, name in enumerate(names):
         if name == "-":
             continue
         c, r = k % cols, k // cols
-        cell = sheet.crop((int(c * cw), int(r * ch), int((c + 1) * cw), int((r + 1) * ch - ch * cut)))
+        cell = cells[k] if cells else sheet.crop((int(c * cw), int(r * ch), int((c + 1) * cw), int((r + 1) * ch - ch * cut)))
         res = crush(cell)
         if res is None:
             print(name, "empty")
