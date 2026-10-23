@@ -74,7 +74,8 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             // the shape comes from the hit boxes' path alone (their swimming wave included - LeviathanEntity.layBody),
             // so what is seen is what is hit; only a slight roll is the model's own
             float roll = Mth.sin(ph * 1.5F - i * 0.55F - 1.2F) * (1.5F + 3F * f) * (0.5F + 0.5F * effort);
-            add("body_" + i, BEND_PITCH * bendX * d, BEND_YAW * bendY * d, roll * alive * d);
+            // set from the rest pose, not added: no animation keys the body's turns, so nothing would reset them
+            addRest("body_" + i, BEND_PITCH * bendX * d, BEND_YAW * bendY * d, roll * alive * d);
             prevYaw = yaw;
             prevPitch = pitch;
             front = c;
@@ -166,9 +167,10 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         return s < 0.75F ? 1 : Math.max(0, 1 - (s - 0.75F) / 0.25F);
     }
 
-    /** How a bend in the swum path turns a body bone (the sign maps world yaw/pitch onto the bone's rotation - checked
-     * in game: with -1 the body bent away from its hit boxes, mirrored). */
-    private static final float BEND_YAW = 1, BEND_PITCH = 1;
+    /** How a bend in the swum path turns a body bone. In the rendered model -z is forward and +x the entity's right;
+     * a bone's +Y turn swings what lies behind it (the tail, +z) to the right and its +X turn swings it down - so a
+     * segment turned right (yaw up) or nose-down (pitch up) of the one before is the opposite turn of its bone. */
+    private static final float BEND_YAW = -1, BEND_PITCH = -1;
     private static final float WHISKER_GAIN = 5.5F, WHISKER_K = 0.16F, WHISKER_DAMP = 0.78F, WHISKER_MAX = 45;
 
     private void whiskers(LeviathanEntity e, float t, AnimationState<LeviathanEntity> state) {
@@ -203,7 +205,8 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         }
     }
 
-    /** Adds to whatever the keyframes did this frame: for bones the idle keys every frame (body, tail fin, arms). */
+    /** Adds to whatever the keyframes did this frame: only for bones the idle keys every frame (tail fin, arms, head) -
+     * on any other bone it would pile up frame after frame. */
     private void add(String name, float x, float y, float z) {
         CoreGeoBone b = getAnimationProcessor().getBone(name);
         if (b == null) return;
@@ -212,7 +215,7 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         b.setRotZ(b.getRotZ() + z);
     }
 
-    /** Sets the bone to its rest pose plus this: for bones no animation keys (the whiskers). */
+    /** Sets the bone to its rest pose plus this: for bones no animation turns (the body, the whiskers). */
     private void addRest(String name, float x, float y, float z) {
         CoreGeoBone b = getAnimationProcessor().getBone(name);
         if (b == null) return;
