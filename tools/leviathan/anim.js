@@ -40,9 +40,16 @@
     key(idle, 'tongue', 'rotation', t, tg, 0, 0);
   }
 
-  // the body's bones are not keyed: the body takes its shape from its hit boxes' path (the swimming wave is laid on
-  // that in the game), so the model and what is hit stay one. Only the tail fin (which has no hit box) sweeps.
+  // the whole body coils in a slow S that rolls back to the tail; every body bone is keyed (so the game adds its
+  // swimming on top of these instead of replacing them)
   const TAU = Math.PI * 2;
+  for (let i = 0; i < 12; i++) {
+    const f = (i + 1) / 12;
+    for (let s = 0; s <= 12; s++) {
+      const t = s * 0.5, w = TAU * t / 6;
+      key(idle, 'body_' + i, 'rotation', t, Math.sin(w * 2 - i * 0.7 + 1) * (2 + 4 * f), Math.sin(w - i * 0.55) * (5 + 9 * f), Math.sin(w - i * 0.55 - 1.2) * 4 * f);
+    }
+  }
   for (let s = 0; s <= 12; s++) {
     const t = s * 0.5, w = TAU * t / 6;
     key(idle, 'tail_fin', 'rotation', t, Math.sin(w * 2 - 6) * 10, Math.sin(w - 7.2) * 30, 0);
@@ -130,11 +137,15 @@
   arm(thrash, 1.2, 0.05, (t, a, k, up) => [6 * Math.sin(t / 1.2 * Math.PI * 4 + a) * up, 14 - 14 * wr(t - 0.08), 3 * Math.sin(t / 1.2 * Math.PI * 4 + a - k), -6 * wr(t - 0.1 - k * 0.05)]);
 
   // breath - loops while it stands reared up like a dragon breathing at its prey: the jaw wide, the crown spread out
-  // like a collar (the body's writhing below is the path's wave, in the game)
+  // like a collar, the body below writhing in a slow wave running down to the tail fin (small per segment - it adds up)
   const br = anim('breath', 4.0, true);
   const bw = t => t / 4 * Math.PI * 2;
   sample(br, 'jaw', 'rotation', 4.0, 0.1, t => [-52 + 3 * Math.sin(bw(t) * 8), 0, 0]);
   sample(br, 'tongue', 'rotation', 4.0, 0.1, t => [-22 + 4 * Math.sin(bw(t) * 6), 0, 0]);
+  for (let i = 0; i < 12; i++) {
+    const f = Math.max(0, (i - 1) / 10);
+    sample(br, 'body_' + i, 'rotation', 4.0, 0.2, t => [Math.sin(bw(t) * 2 - i * 0.6 + 1) * 2 * f, Math.sin(bw(t) * 2 - i * 0.6) * (1 + 4 * f), 0]);
+  }
   sample(br, 'tail_fin', 'rotation', 4.0, 0.2, t => [0, Math.sin(bw(t) * 2 - 12 * 0.6 - 0.6) * 18, 0]);
   arm(br, 4.0, 0.1, (t, a, k, up) => [-12 * up + 3 * Math.sin(bw(t) * 4 + a), 42 + 5 * Math.sin(bw(t) * 2 + a * 1.4), 2 * Math.sin(bw(t) * 4 + a - k), -4 + 3 * Math.sin(bw(t) * 4 + a - k * 0.7)]);
 

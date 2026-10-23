@@ -64,18 +64,18 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             net.minecraft.world.phys.Vec3 dir = front.subtract(c);
             float yaw = dir.lengthSqr() < 1e-6 ? prevYaw : (float) (Mth.atan2(dir.z, dir.x) * Mth.RAD_TO_DEG) - 90;
             float pitch = dir.lengthSqr() < 1e-6 ? prevPitch : (float) (-Mth.atan2(dir.y, dir.horizontalDistance()) * Mth.RAD_TO_DEG);
-            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -45, 45), bendX = Mth.clamp(pitch - prevPitch, -45, 45);
+            float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -28, 28), bendX = Mth.clamp(pitch - prevPitch, -22, 22);
             // eased, so a jolt in the path (a bump on a block, a correction from the server) becomes a slow ripple
-            float ease = 1 - (float) Math.pow(0.45, dtBend);
+            float ease = 1 - (float) Math.pow(0.9, dtBend);
             e.bend[i * 2] += (bendX - e.bend[i * 2]) * ease;
             e.bend[i * 2 + 1] += (bendY - e.bend[i * 2 + 1]) * ease;
             bendX = e.bend[i * 2];
             bendY = e.bend[i * 2 + 1];
-            // the shape comes from the hit boxes' path alone (their swimming wave included - LeviathanEntity.layBody),
-            // so what is seen is what is hit; only a slight roll is the model's own
+            float amp = (1F + 6F * f) * effort * (1 - 0.5F * roar);
+            float wave = Mth.sin(ph * 1.5F - i * 0.55F) * amp + Mth.sin(t * 0.21F - i * 1.3F) * f * (0.6F + 1.4F * mood);
+            float rise = Mth.sin(ph * 0.9F - i * 0.4F + 1.3F) * (0.8F + 2.6F * f) + Mth.sin(t * 0.037F - i * 0.25F) * 1.5F * f;
             float roll = Mth.sin(ph * 1.5F - i * 0.55F - 1.2F) * (1.5F + 3F * f) * (0.5F + 0.5F * effort);
-            // set from the rest pose, not added: no animation keys the body's turns, so nothing would reset them
-            addRest("body_" + i, BEND_PITCH * bendX * d, BEND_YAW * bendY * d, roll * alive * d);
+            add("body_" + i, (rise * alive + BEND_PITCH * bendX) * d, (wave * alive + BEND_YAW * bendY) * d, roll * alive * d);
             prevYaw = yaw;
             prevPitch = pitch;
             front = c;
@@ -167,9 +167,7 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         return s < 0.75F ? 1 : Math.max(0, 1 - (s - 0.75F) / 0.25F);
     }
 
-    /** How a bend in the swum path turns a body bone. In the rendered model -z is forward and +x the entity's right;
-     * a bone's +Y turn swings what lies behind it (the tail, +z) to the right and its +X turn swings it down - so a
-     * segment turned right (yaw up) or nose-down (pitch up) of the one before is the opposite turn of its bone. */
+    /** How a bend in the swum path turns a body bone (the sign maps world yaw/pitch onto the bone's rotation). */
     private static final float BEND_YAW = -1, BEND_PITCH = -1;
     private static final float WHISKER_GAIN = 5.5F, WHISKER_K = 0.16F, WHISKER_DAMP = 0.78F, WHISKER_MAX = 45;
 
@@ -205,8 +203,7 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         }
     }
 
-    /** Adds to whatever the keyframes did this frame: only for bones the idle keys every frame (tail fin, arms, head) -
-     * on any other bone it would pile up frame after frame. */
+    /** Adds to whatever the keyframes did this frame: for bones the idle keys every frame (body, tail fin, arms). */
     private void add(String name, float x, float y, float z) {
         CoreGeoBone b = getAnimationProcessor().getBone(name);
         if (b == null) return;
@@ -215,7 +212,7 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         b.setRotZ(b.getRotZ() + z);
     }
 
-    /** Sets the bone to its rest pose plus this: for bones no animation turns (the body, the whiskers). */
+    /** Sets the bone to its rest pose plus this: for bones no animation keys (the whiskers). */
     private void addRest(String name, float x, float y, float z) {
         CoreGeoBone b = getAnimationProcessor().getBone(name);
         if (b == null) return;
