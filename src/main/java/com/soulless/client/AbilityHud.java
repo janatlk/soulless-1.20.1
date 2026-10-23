@@ -13,7 +13,7 @@ import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 
 /**
- * Two small ability slots right of the hotbar while the sword is held (Soul Crush key, Soul Rend RMB) with a
+ * Left of the hotbar, the Leviathan set's Breath of the Deep. Two small ability slots right of the hotbar while the sword is held (Soul Crush key, Soul Rend RMB) with a
  * cooldown shade and seconds left, plus a charge bar under the crosshair during the Soul Rend wind-up.
  */
 public final class AbilityHud implements IGuiOverlay {
@@ -24,6 +24,14 @@ public final class AbilityHud implements IGuiOverlay {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         if (player == null || mc.options.hideGui) return;
+        // the Leviathan set's Breath of the Deep: a slot left of the hotbar (left of the off-hand slot when it is shown)
+        if (com.soulless.ability.DeepDash.worn(player)) {
+            var chest = com.soulless.registry.ModItems.LEVIATHAN_CHESTPLATE.get();
+            float cd = player.getCooldowns().getCooldownPercent(chest, partialTick);
+            int dx = width / 2 - 91 - 8 - SLOT - (player.getOffhandItem().isEmpty() ? 0 : 29);
+            slot(g, mc.font, dx, height - SLOT - 2, com.soulless.client.ClientModEvents.DASH_KEY.getTranslatedKeyMessage(), cd,
+                    Mth.ceil(cd * com.soulless.ability.DeepDash.COOLDOWN_TICKS / 20F), 0xFF6FE6F5);
+        }
         if (player.getMainHandItem().getItem() instanceof com.soulless.item.SoulKatanaItem katana) {
             katana(g, mc.font, player, katana, partialTick, width, height);
             return;
