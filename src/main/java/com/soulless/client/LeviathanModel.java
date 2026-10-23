@@ -32,6 +32,18 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         float t = e.tickCount + state.getPartialTick();
         float turn = Mth.lerp(state.getPartialTick(), e.turnO, e.turn);
         float d = Mth.DEG_TO_RAD;
+        float roar = roarAmount(e, instanceId, t);
+
+        // how fast it swims, smoothed; the wave runs faster and swings wider the harder it swims, and never quite stops
+        float dtLive = Float.isNaN(e.lastLiveT) ? 0 : Mth.clamp(t - e.lastLiveT, 0, 3);
+        e.lastLiveT = t;
+        float speed = (float) Math.sqrt(Mth.square(e.getX() - e.xo) + Mth.square(e.getY() - e.yo) + Mth.square(e.getZ() - e.zo));
+        e.swimSpeed += (Mth.clamp(speed / 0.6F, 0, 1.5F) - e.swimSpeed) * (1 - (float) Math.pow(0.92, dtLive));
+        float effort = e.swimSpeed;
+        e.swimPhase += dtLive * (0.06F + 0.16F * effort);
+        float ph = e.swimPhase;
+        // a slow, uneven drift of moods: sometimes it coils lazily, sometimes it shivers along its whole length
+        float mood = 0.5F + 0.5F * Mth.sin(t * 0.011F) * Mth.sin(t * 0.0073F + 1.1F);
 
         // the body: a wave running back along it, bigger toward the tail, plus the bend of a turn
         // the body follows the path its head swam (the same points its hit boxes lie on): each segment turns by the
@@ -57,14 +69,41 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             e.bend[i * 2 + 1] += (bendY - e.bend[i * 2 + 1]) * ease;
             bendX = e.bend[i * 2];
             bendY = e.bend[i * 2 + 1];
-            float wave = Mth.sin(t * 0.09F - i * 0.55F) * (1.5F + 4.5F * f);
-            float rise = Mth.sin(t * 0.06F - i * 0.4F + 1.3F) * (0.6F + 2F * f);
-            add("body_" + i, (rise + BEND_PITCH * bendX) * d, (wave + BEND_YAW * bendY) * d, 0);
+            float amp = (2.5F + 7F * f) * (0.7F + 0.6F * effort) * (1 - 0.5F * roar);
+            float wave = Mth.sin(ph * 1.5F - i * 0.55F) * amp + Mth.sin(t * 0.21F - i * 1.3F) * f * (0.6F + 1.4F * mood);
+            float rise = Mth.sin(ph * 0.9F - i * 0.4F + 1.3F) * (0.8F + 2.6F * f) + Mth.sin(t * 0.037F - i * 0.25F) * 1.5F * f;
+            // a roar heaves the front of the body: rearing back, then thrown forward, and rolling back down it
+            float heave = i < 5 ? roar * (5 - i) * 1.6F * Mth.sin(Math.min(1, roar * 2) * Mth.PI - 0.6F) : 0;
+            float roll = Mth.sin(ph * 1.5F - i * 0.55F - 1.2F) * (1.5F + 3F * f) * (0.5F + 0.5F * effort);
+            add("body_" + i, (rise + heave + BEND_PITCH * bendX) * d, (wave + BEND_YAW * bendY) * d, roll * d);
             prevYaw = yaw;
             prevPitch = pitch;
             front = c;
         }
-        add("tail_fin", 0, Mth.sin(t * 0.09F - SEGMENTS * 0.55F) * 14 * d, 0);
+        // the fin lags the last segment and snaps through each stroke, with a flick now and then
+        float flick = Math.max(0, Mth.sin(t * 0.023F + 2)) ;
+        flick = flick > 0.97F ? (flick - 0.97F) / 0.03F : 0;
+        add("tail_fin", Mth.sin(ph * 0.9F - SEGMENTS * 0.4F) * 6 * d,
+                (Mth.sin(ph * 1.5F - SEGMENTS * 0.55F - 0.8F) * (16 + 10 * effort) + Mth.sin(t * 0.9F) * 18 * flick) * d, 0);
+
+        // the head is never still: it glances about, and turns its gaze toward the nearest player near it
+        CoreGeoBone head = getAnimationProcessor().getBone("head");
+        if (head != null) {
+            float gy = Mth.sin(t * 0.031F) * 6 + Mth.sin(t * 0.083F + 2) * 3, gp = Mth.sin(t * 0.027F + 1) * 4;
+            var pl = e.level().getNearestPlayer(e, 28);
+            if (pl != null) {
+                var to = pl.getEyePosition(state.getPartialTick()).subtract(e.getEyePosition(state.getPartialTick()));
+                float want = Mth.wrapDegrees((float) (Mth.atan2(to.z, to.x) * Mth.RAD_TO_DEG) - 90 - Mth.rotLerp(pt, e.yRotO, e.getYRot()));
+                gy = Mth.clamp(want, -35, 35);
+                gp = Mth.clamp((float) (-Mth.atan2(to.y, to.horizontalDistance()) * Mth.RAD_TO_DEG) - e.getXRot(), -20, 20);
+            }
+            float k = 1 - (float) Math.pow(0.9, dtLive);
+            e.gazeYaw += (gy - e.gazeYaw) * k;
+            e.gazePitch += (gp - e.gazePitch) * k;
+            // on top of the keyframes (the idle keys the head every frame, so nothing piles up)
+            head.setRotY(head.getRotY() + BEND_YAW * e.gazeYaw * d * (1 - roar));
+            head.setRotX(head.getRotX() + BEND_PITCH * e.gazePitch * d * (1 - roar));
+        }
 
         // the crown of tentacles breathes with it: the whole crown opens on the in-breath and closes on the out (the idle
         // animation's 4 s), each arm rolling a wave down to its tip, plus a sway of its own
@@ -73,10 +112,15 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             float side = a % 2 == 0 ? 1 : -1, up = a < 2 ? 1 : a < 4 ? 0.3F : -1;
             for (int k = 0; k < ARM_LINKS; k++) {
                 float f = (k + 1f) / ARM_LINKS;
-                float open = Mth.sin(breath - k * 0.45F) * (4F + 9F * f);
-                float sway = Mth.sin(t * 0.07F + a * 1.7F - k * 0.7F) * (2F + 6F * f);
-                float lift = Mth.sin(t * 0.055F + a * 2.3F - k * 0.6F) * (2F + 5F * f);
-                add("arm_" + a + "_" + k, (lift - open * up * 0.6F) * d, (sway + open * side) * d, 0);
+                float open = Mth.sin(breath - k * 0.45F) * (5F + 11F * f);
+                float sway = Mth.sin(t * 0.07F + a * 1.7F - k * 0.7F) * (3F + 8F * f);
+                float lift = Mth.sin(t * 0.055F + a * 2.3F - k * 0.6F) * (3F + 6F * f);
+                // a curl that creeps along the arm on its own slow clock: the tips coil in and uncoil
+                float curl = Mth.sin(t * 0.045F + a * 0.9F) * k * 4F + Mth.sin(t * 0.17F + a * 3.1F - k) * 1.5F * f;
+                // swimming hard sweeps them back; a roar flares the crown wide
+                float back = effort * 10F * f, flare = roar * (24F - k * 3F);
+                add("arm_" + a + "_" + k, (lift + curl - open * up * 0.6F - back * up) * d,
+                        (sway + (open + flare) * side - back * side * 0.4F) * d, 0);
             }
         }
 
@@ -87,11 +131,18 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
 
         // the eyes shut like sliding doors, the two leaves meeting in the middle - one eye after another from the front,
         // both sides together, every few seconds
+        // (each blink cycle its own length, from a hash of its number, so they never fall into a rhythm; now and then a
+        // double blink). A roar opens them all wide.
         long seed = e.getUUID().getLeastSignificantBits();
-        int period = 80 + (int) Math.floorMod(seed, 60L);
-        float since = (t + Math.floorMod(seed, 97L)) % period;
+        float tb = t + Math.floorMod(seed, 97L);
+        int cycle = (int) (tb / 70);
+        int h = (int) ((cycle * 0x9E3779B1L + seed) >>> 7);
+        float since = tb - cycle * 70 - Math.floorMod(h, 40);
+        boolean twice = Math.floorMod(h >> 8, 5) == 0;
         for (int n = 0; n < 3; n++) {
-            float s = since - n * 4;
+            float s = since - n * 3.5F;
+            if (twice && s > 9) s -= 9;
+            if (roar > 0) s = -1;
             float shut = s < 0 ? 0 : s < 2.5F ? s / 2.5F : s < 4 ? 1 : s < 6.5F ? 1 - (s - 4) / 2.5F : 0;
             for (String side : new String[]{"l", "r"}) {
                 for (String leaf : new String[]{"f", "b"}) {
@@ -100,6 +151,21 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
                 }
             }
         }
+    }
+
+    /** How far into its roar it is (0..1, 0 when not roaring), from the roar controller; it rises fast and fades. */
+    private float roarAmount(LeviathanEntity e, long id, float t) {
+        var ctrl = e.getAnimatableInstanceCache().getManagerForId(id).getAnimationControllers().get("roar");
+        boolean on = ctrl != null && ctrl.getAnimationState() == software.bernie.geckolib.core.animation.AnimationController.State.RUNNING;
+        if (!on) {
+            e.roarStart = Float.NaN;
+            return 0;
+        }
+        if (Float.isNaN(e.roarStart)) e.roarStart = t;
+        float s = (t - e.roarStart) / 52F;   // the roar's 2.6 s
+        if (s < 0.25F) return s / 0.25F * 0.4F;           // the wind-up
+        if (s < 0.35F) return 0.4F + (s - 0.25F) / 0.1F * 0.6F;
+        return s < 0.75F ? 1 : Math.max(0, 1 - (s - 0.75F) / 0.25F);
     }
 
     /** How a bend in the swum path turns a body bone (the sign maps world yaw/pitch onto the bone's rotation). */

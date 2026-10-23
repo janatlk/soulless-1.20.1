@@ -37,6 +37,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  */
 public class LeviathanEntity extends Monster implements GeoEntity {
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.leviathan.idle");
+    private static final RawAnimation BITE = RawAnimation.begin().thenPlay("animation.leviathan.bite");
     private static final RawAnimation ROAR = RawAnimation.begin().thenPlay("animation.leviathan.roar");
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
@@ -65,6 +66,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     /** Client: each body bone's bend (pitch, yaw), eased toward the path's so the body never snaps. */
     public final float[] bend = new float[24];
     public float bendT = Float.NaN;
+    /** Client: the swimming wave's phase (runs faster the faster it swims), its smoothed speed, and the head's gaze. */
+    public float swimPhase, swimSpeed, lastLiveT = Float.NaN, gazeYaw, gazePitch, roarStart = Float.NaN;
 
     public LeviathanEntity(EntityType<? extends LeviathanEntity> type, Level level) {
         super(type, level);
@@ -170,6 +173,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             if (--roarCooldown <= 0 && distanceToSqr(prey) < 22 * 22) {
                 roar();
                 roarCooldown = 300 + random.nextInt(300);
+            } else if (random.nextInt(90) == 0 && distanceToSqr(prey) < 16 * 16) {
+                triggerAnim("roar", "bite");   // snaps at the water as it passes
             }
         }
         if (goal == null || blocked || --goalTicks <= 0 || position().distanceToSqr(goal) < 16) {
@@ -291,7 +296,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "main", 6, state -> state.setAndContinue(IDLE)));
         controllers.add(new AnimationController<>(this, "roar", 4, state -> software.bernie.geckolib.core.object.PlayState.STOP)
-                .triggerableAnim("roar", ROAR));
+                .triggerableAnim("roar", ROAR).triggerableAnim("bite", BITE));
     }
 
     public void roar() {
