@@ -109,6 +109,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     /** Client: each body bone's bend (pitch, yaw), eased toward the path's so the body never snaps. */
     public final float[] bend = new float[24];
     public float bendT = Float.NaN;
+    /** The swimming wave laid on the body's path (wave()): its phase and how strong it is. */
+    private double wavePhase, waveStrength = 0.5;
     /** Client: the swimming wave's phase (runs faster the faster it swims), its smoothed speed, and the head's gaze. */
     public float swimPhase, swimSpeed, lastLiveT = Float.NaN, gazeYaw, gazePitch, roarStart = Float.NaN;
 
@@ -625,6 +627,30 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                 seg++;
                 want += SEG_LEN;
             }
+        }
+        wave();
+    }
+
+    /** The swimming wave laid on the body's path: each segment pushed aside, a wave running back down the body,
+     * bigger toward the tail and the harder it swims. The model takes its shape from these points, so the hit boxes
+     * and what is seen are one. */
+    private void wave() {
+        double speed = new Vec3(getX() - xo, getY() - yo, getZ() - zo).length();
+        waveStrength += (Mth.clamp(speed / 0.5, 0.25, 1.4) - waveStrength) * 0.05;
+        if (isDeadOrDying()) waveStrength *= 0.95;
+        wavePhase += 0.1 + 0.18 * waveStrength;
+        Vec3 front = head.position();
+        for (int i = 0; i < SEGMENTS; i++) {
+            LeviathanPart p = body[i];
+            Vec3 c = p.position();
+            Vec3 dir = front.subtract(c);
+            front = c;
+            Vec3 side = dir.cross(new Vec3(0, 1, 0));
+            if (side.lengthSqr() < 1e-4) side = new Vec3(1, 0, 0);   // upright: sway along x
+            float f = (i + 1F) / SEGMENTS;
+            double off = Math.sin(wavePhase - i * 0.55) * (0.15 + 1.1 * f) * waveStrength;
+            Vec3 o = side.normalize().scale(off);
+            p.setPos(p.getX() + o.x, p.getY() + o.y, p.getZ() + o.z);
         }
     }
 

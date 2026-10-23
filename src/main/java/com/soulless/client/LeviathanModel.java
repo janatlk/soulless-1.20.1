@@ -66,16 +66,15 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             float pitch = dir.lengthSqr() < 1e-6 ? prevPitch : (float) (-Mth.atan2(dir.y, dir.horizontalDistance()) * Mth.RAD_TO_DEG);
             float bendY = Mth.clamp(Mth.wrapDegrees(yaw - prevYaw), -28, 28), bendX = Mth.clamp(pitch - prevPitch, -22, 22);
             // eased, so a jolt in the path (a bump on a block, a correction from the server) becomes a slow ripple
-            float ease = 1 - (float) Math.pow(0.9, dtBend);
+            float ease = 1 - (float) Math.pow(0.45, dtBend);
             e.bend[i * 2] += (bendX - e.bend[i * 2]) * ease;
             e.bend[i * 2 + 1] += (bendY - e.bend[i * 2 + 1]) * ease;
             bendX = e.bend[i * 2];
             bendY = e.bend[i * 2 + 1];
-            float amp = (1F + 6F * f) * effort * (1 - 0.5F * roar);
-            float wave = Mth.sin(ph * 1.5F - i * 0.55F) * amp + Mth.sin(t * 0.21F - i * 1.3F) * f * (0.6F + 1.4F * mood);
-            float rise = Mth.sin(ph * 0.9F - i * 0.4F + 1.3F) * (0.8F + 2.6F * f) + Mth.sin(t * 0.037F - i * 0.25F) * 1.5F * f;
+            // the shape comes from the hit boxes' path alone (their swimming wave included - LeviathanEntity.layBody),
+            // so what is seen is what is hit; only a slight roll is the model's own
             float roll = Mth.sin(ph * 1.5F - i * 0.55F - 1.2F) * (1.5F + 3F * f) * (0.5F + 0.5F * effort);
-            add("body_" + i, (rise * alive + BEND_PITCH * bendX) * d, (wave * alive + BEND_YAW * bendY) * d, roll * alive * d);
+            add("body_" + i, BEND_PITCH * bendX * d, BEND_YAW * bendY * d, roll * alive * d);
             prevYaw = yaw;
             prevPitch = pitch;
             front = c;
