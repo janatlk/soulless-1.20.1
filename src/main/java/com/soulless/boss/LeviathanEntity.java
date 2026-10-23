@@ -460,7 +460,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         Vec3 fwd = Vec3.directionFromRotation(getXRot(), getYRot());
         // swims on upward and onward, weaving (the thrash on the client wrenches the head)
         Vec3 side = new Vec3(-fwd.z, 0, fwd.x).normalize();
-        goal = position().add(fwd.scale(10)).add(side.scale(Math.sin(phaseTicks * 0.4) * 6)).add(0, 2, 0);
+        goal = position().add(fwd.scale(10)).add(side.scale(Math.sin(phaseTicks * 0.13) * 6)).add(0, 2, 0);
         if (!openWater(goal, 2)) {
             Vec3 g = pickGoal(position(), 6, 12, 2, 6);
             if (g != null) goal = g;
@@ -475,7 +475,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             held = null;
             p.invulnerableTime = 0;
             p.hurt(damageSources().mobAttack(this), GRAB_DAMAGE);
-            Vec3 fling = fwd.scale(1.6).add(side.scale(Math.signum(Math.sin(phaseTicks * 0.4)) * 0.6)).add(0, 0.6, 0);
+            Vec3 fling = fwd.scale(1.6).add(side.scale(Math.signum(Math.sin(phaseTicks * 0.13)) * 0.6)).add(0, 0.6, 0);
             p.setDeltaMovement(fling);
             p.hurtMarked = true;
             level().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.HOSTILE, 2F, 0.5F);
@@ -631,10 +631,10 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "main", 6, state -> state.setAndContinue(IDLE)));
-        controllers.add(new AnimationController<>(this, "roar", 4, state -> software.bernie.geckolib.core.object.PlayState.STOP)
+        controllers.add(new AnimationController<>(this, "roar", 8, state -> software.bernie.geckolib.core.object.PlayState.STOP)
                 .triggerableAnim("roar", ROAR).triggerableAnim("bite", BITE));
         // added last, so the fight's poses win over the others
-        controllers.add(new AnimationController<>(this, "pose", 4, state -> switch (entityData.get(POSE)) {
+        controllers.add(new AnimationController<>(this, "pose", 12, state -> switch (entityData.get(POSE)) {
             case 1 -> state.setAndContinue(LUNGE);
             case 2 -> state.setAndContinue(THRASH);
             case 3 -> state.setAndContinue(BREATH);

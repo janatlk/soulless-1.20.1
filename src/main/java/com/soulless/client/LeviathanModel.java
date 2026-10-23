@@ -78,11 +78,9 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             prevPitch = pitch;
             front = c;
         }
-        // the fin lags the last segment and snaps through each stroke, with a flick now and then
-        float flick = Math.max(0, Mth.sin(t * 0.023F + 2)) ;
-        flick = flick > 0.97F ? (flick - 0.97F) / 0.03F : 0;
+        // the fin lags the last segment and follows through each stroke
         add("tail_fin", Mth.sin(ph * 0.9F - SEGMENTS * 0.4F) * 6 * d,
-                (Mth.sin(ph * 1.5F - SEGMENTS * 0.55F - 0.8F) * (16 + 10 * effort) + Mth.sin(t * 0.9F) * 18 * flick) * d, 0);
+                (Mth.sin(ph * 1.5F - SEGMENTS * 0.55F - 0.8F) * (16 + 10 * effort)) * d, 0);
 
         // the head is never still: it glances about, and turns its gaze toward the nearest player near it
         CoreGeoBone head = getAnimationProcessor().getBone("head");
