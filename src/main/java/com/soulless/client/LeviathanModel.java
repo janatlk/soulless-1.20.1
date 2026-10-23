@@ -33,6 +33,8 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         float turn = Mth.lerp(state.getPartialTick(), e.turnO, e.turn);
         float d = Mth.DEG_TO_RAD;
         float roar = roarAmount(e, instanceId, t);
+        // dying, its own motion fades out over three seconds (the death animation takes over)
+        float alive = e.isDeadOrDying() ? Math.max(0, 1 - (e.deathTime + state.getPartialTick()) / 60F) : 1;
 
         // how fast it swims, smoothed; the wave runs faster and swings wider the harder it swims, and never quite stops
         float dtLive = Float.isNaN(e.lastLiveT) ? 0 : Mth.clamp(t - e.lastLiveT, 0, 3);
@@ -73,7 +75,7 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
             float wave = Mth.sin(ph * 1.5F - i * 0.55F) * amp + Mth.sin(t * 0.21F - i * 1.3F) * f * (0.6F + 1.4F * mood);
             float rise = Mth.sin(ph * 0.9F - i * 0.4F + 1.3F) * (0.8F + 2.6F * f) + Mth.sin(t * 0.037F - i * 0.25F) * 1.5F * f;
             float roll = Mth.sin(ph * 1.5F - i * 0.55F - 1.2F) * (1.5F + 3F * f) * (0.5F + 0.5F * effort);
-            add("body_" + i, (rise + BEND_PITCH * bendX) * d, (wave + BEND_YAW * bendY) * d, roll * d);
+            add("body_" + i, (rise * alive + BEND_PITCH * bendX) * d, (wave * alive + BEND_YAW * bendY) * d, roll * alive * d);
             prevYaw = yaw;
             prevPitch = pitch;
             front = c;

@@ -25,6 +25,11 @@ public class LeviathanRenderer extends GeoEntityRenderer<LeviathanEntity> {
     }
 
     @Override
+    protected float getDeathMaxRotation(LeviathanEntity e) {
+        return 0;   // the death animation rolls it over itself
+    }
+
+    @Override
     public boolean shouldShowName(LeviathanEntity e) {
         return false;
     }

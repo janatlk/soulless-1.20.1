@@ -335,6 +335,9 @@ public class DrownedSoulsStructure extends Structure {
                         else if (Math.abs(dx) <= HALL + 1 && Math.abs(dz) <= HALL + 1 && y <= cataY + ROOM_H + 1) continue;
                         else put(dx, y, dz, (y - cataY) % 8 == 0 ? trim : wallAt(dx, y, dz));
                     }
+                    // over the mouth, up to the sea's surface: clear (lumps of the sea floor left there would come
+                    // down the shaft - gravel, sand - and pile up in the arena)
+                    if (d <= SHAFT_R + 2.3) for (int y = 2; y < level.getSeaLevel() - c.getY(); y++) put(dx, y, dz, water);
                     // the well: a narrower hole through the hub's floor and the rock into the dome
                     if (d <= wellR) {
                         for (int y = arenaTop - 1; y <= cataY; y++) put(dx, y, dz, water);

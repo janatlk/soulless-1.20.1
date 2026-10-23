@@ -1,6 +1,87 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:cutout",
   "textures": {
-    "all": "soulless:block/deepslate_wraith_iron_ore"
-  }
+    "particle": "minecraft:block/deepslate",
+    "rock": "minecraft:block/deepslate",
+    "veins": "soulless:block/wraith_iron_ore_veins"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rock",
+          "cullface": "north"
+        },
+        "south": {
+          "texture": "#rock",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#rock",
+          "cullface": "east"
+        },
+        "west": {
+          "texture": "#rock",
+          "cullface": "west"
+        },
+        "up": {
+          "texture": "#rock",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#rock",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#veins",
+          "cullface": "north"
+        },
+        "south": {
+          "texture": "#veins",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#veins",
+          "cullface": "east"
+        },
+        "west": {
+          "texture": "#veins",
+          "cullface": "west"
+        },
+        "up": {
+          "texture": "#veins",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#veins",
+          "cullface": "down"
+        }
+      }
+    }
+  ]
 }

@@ -17,10 +17,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Floods the Drowned Souls arena's air pockets. Worldgen that runs after the arena is built (features from the
- * chunks round it) can leave pockets of air in it, and water placed by worldgen never flows into them. When a
- * player first comes into an arena, every air block joined to its water, inside the arena's walls, becomes water -
- * a flood fill from the middle, a few thousand blocks a tick.
+ * Cleans the Drowned Souls arena. Worldgen that runs after the arena is built (features from the chunks round it)
+ * can leave pockets of air in it, which water placed by worldgen never flows into, and loose stuff - gravel, sand,
+ * dirt, clay - drops into it down the shaft or is laid on its floor. When a player first comes into an arena (each
+ * session), every air block and every block a shovel digs that is joined to its water, inside its walls, becomes
+ * water - a flood fill from the middle, a few thousand blocks a tick.
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class ArenaFlood {
@@ -65,7 +66,7 @@ public final class ArenaFlood {
             BlockPos p = BlockPos.of(j.open.poll());
             if (!j.level.isLoaded(p)) continue;
             BlockState s = j.level.getBlockState(p);
-            if (s.isAir()) j.level.setBlock(p, water, 2);
+            if (s.isAir() || s.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL)) j.level.setBlock(p, water, 2);
             else if (!s.getFluidState().is(net.minecraft.tags.FluidTags.WATER)) continue;
             for (var d : net.minecraft.core.Direction.values()) {
                 BlockPos q = p.relative(d);

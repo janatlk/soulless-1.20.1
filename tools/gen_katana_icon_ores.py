@@ -1,5 +1,5 @@
-"""The katana's inventory icon (32x32: a long, slightly curved blade, a round guard, a wrapped grip) and the Wraith
-Iron ore textures (16x16, vanilla-like: mottled stone or layered deepslate with shaded crystal clusters).
+"""The katana's inventory icon (32x32: a long, slightly curved blade, a round guard, a wrapped grip). (It used to make
+the Wraith Iron ore textures too - ore() is kept; the ores are now tools/gen_ore_veins.py.)
 
     python tools/gen_katana_icon_ores.py
 """
@@ -139,7 +139,4 @@ def ore(name, base):
 
 if __name__ == "__main__":
     katana()
-    STONE = [(98, 98, 100), (112, 112, 114), (124, 124, 126), (134, 134, 136), (146, 146, 148)]
-    DEEP = [(48, 48, 54), (58, 58, 64), (68, 68, 74), (80, 80, 86), (92, 92, 98)]
-    ore("wraith_iron_ore", stone(11, STONE, False))
-    ore("deepslate_wraith_iron_ore", stone(21, DEEP, True))
+    # the ores are no longer made here: veins over the game's own stone (tools/gen_ore_veins.py)

@@ -7,6 +7,7 @@
 //   roar - 2.6 s: coils back, throws the whole front forward with the crown fanned out, shakes, sinks back
 //   bite - 0.9 s: the neck kinks into an S, the whole front strikes, the jaw snaps shut
 //   breath - reared up as a dragon breathing (loops): crown spread, tail writhing below
+//   death - a last convulsion, then slack, rolling onto its back (held)
 //   grab_lunge / grab_thrash - the rise from below at its prey, and the shaking of it in its jaws (loops)
 (() => {
   Animation.all.slice().forEach(a => a.remove(false));
@@ -147,6 +148,23 @@
   }
   sample(br, 'tail_fin', 'rotation', 4.0, 0.2, t => [0, Math.sin(bw(t) * 2 - 12 * 0.6 - 0.6) * 18, 0]);
   arm(br, 4.0, 0.1, (t, a, k, up) => [-12 * up + 3 * Math.sin(bw(t) * 4 + a), 42 + 5 * Math.sin(bw(t) * 2 + a * 1.4), 2 * Math.sin(bw(t) * 4 + a - k), -4 + 3 * Math.sin(bw(t) * 4 + a - k * 0.7)]);
+
+  // death - 5.5 s, held at the end: a last convulsion (jaw wide, head flung up and shaking, crown flung out), then it
+  // goes slack - jaw hanging, tongue lolling, head drooping, the crown falling limp - and rolls over onto its back
+  const death = anim('death', 5.5, false);
+  death.loop = 'hold';
+  const conv = t => bell(t, 0, 0.35, 1.3), slack = t => ease(t, 1.0, 2.2);
+  const dshake = t => Math.sin(t * 30) * bell(t, 0.2, 0.5, 1.4);
+  sample(death, 'jaw', 'rotation', 5.5, 0.05, t => [-64 * conv(t) - 30 * slack(t) * (1 - conv(t)), 0, 0]);
+  sample(death, 'head', 'rotation', 5.5, 0.05, t => [-26 * conv(t) + 14 * slack(t), 10 * dshake(t), 8 * dshake(t)]);
+  sample(death, 'tongue', 'rotation', 5.5, 0.1, t => [-30 * Math.max(conv(t), slack(t)), 0, 0]);
+  sample(death, 'root', 'rotation', 5.5, 0.1, t => [6 * slack(t), 0, 155 * ease(t, 1.6, 5.2)]);
+  sample(death, 'tail_fin', 'rotation', 5.5, 0.1, t => [0, Math.sin(t * 2.2) * 20 * (1 - ease(t, 1, 4)), 0]);
+  arm(death, 5.5, 0.1, (t, a, k, up) => [
+    -14 * up * conv(t) + 10 * up * slack(t),
+    44 * conv(t) + 10 * slack(t) + 6 * Math.sin(t * 25 + a) * bell(t, 0.2, 0.5, 1.2),
+    -3 * up * conv(t) + 7 * up * slack(t),
+    5 * conv(t) - 2 * slack(t)]);
 
   return Animation.all.map(a => a.name + '/' + a.length);
 })()

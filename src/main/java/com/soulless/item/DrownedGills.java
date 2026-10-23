@@ -28,13 +28,13 @@ import java.util.UUID;
 
 /**
  * The Drowned One's Gills, a relic worn round the neck (Curios necklace slot, or anywhere in the inventory without
- * Curios). In water: the wearer breathes as a fish (Conduit Power - breath and clear sight in the murk) and swims
- * faster. Out of it, they breathe as a fish too: the air runs out as it would under water, and once it is gone they
+ * Curios). In water: the wearer breathes as a fish (Water Breathing) and swims half again as
+ * fast. Out of it, they breathe as a fish too: the air runs out as it would under water, and once it is gone they
  * choke - until they are back in the water or out in the rain.
  */
 @Mod.EventBusSubscriber(modid = Soulless.MODID)
 public final class DrownedGills {
-    public static final double SWIM_BONUS = 0.3;
+    public static final double SWIM_BONUS = 0.5;
     private static final UUID SWIM_ID = UUID.fromString("2a7d9c41-5e1b-4f33-a8d0-6b9e1c4f7a25");
     private static final boolean CURIOS = ModList.get().isLoaded("curios");
     /** The air each wearer has left on land (the game would refill it every tick otherwise). */
@@ -63,7 +63,7 @@ public final class DrownedGills {
         if (wet || p.isInWaterOrRain()) {
             p.setAirSupply(p.getMaxAirSupply());
             AIR.put(p.getUUID(), p.getMaxAirSupply());
-            if (wet && p.tickCount % 80 == 0) p.addEffect(new MobEffectInstance(MobEffects.CONDUIT_POWER, 260, 0, true, false, true));
+            if (wet && p.tickCount % 80 == 0) p.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 260, 0, true, false, true));
             return;
         }
         // on dry land: the breath runs out as a fish's does

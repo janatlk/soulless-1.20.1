@@ -59,15 +59,24 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     private static final RawAnimation LUNGE = RawAnimation.begin().thenLoop("animation.leviathan.grab_lunge");
     private static final RawAnimation THRASH = RawAnimation.begin().thenLoop("animation.leviathan.grab_thrash");
     private static final RawAnimation BREATH = RawAnimation.begin().thenLoop("animation.leviathan.breath");
+    private static final RawAnimation DEATH = RawAnimation.begin().thenPlayAndHold("animation.leviathan.death");
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
-    /** The pose the fight shows (0 none, 1 rising at its prey with the jaw wide, 2 shaking it, 3 the dragon's breath). */
+    /** The pose the fight shows (0 none, 1 rising at its prey with the jaw wide, 2 shaking it, 3 the dragon's breath,
+     * 4 dying). */
     private static final EntityDataAccessor<Integer> POSE = SynchedEntityData.defineId(LeviathanEntity.class, EntityDataSerializers.INT);
 
     private enum Phase { ROAM, CIRCLE, COIL, CHARGE, RECOVER, REAR, BREATHE, GRAB_RUSH, GRAB_DIVE, GRAB_RISE, GRAB_HOLD }
 
-    private static final float BITE_DAMAGE = 12, RAM_DAMAGE = 6, GRAB_DAMAGE = 18, BREATH_DAMAGE = 4;
-    /** The breath: how long the bubbles come first, how long it lasts in all, how far it reaches (ticks, blocks). */
-    private static final int BUBBLES = 30, BREATH_TICKS = 140, BREATH_RANGE = 30;
+    /** Balanced for after the Reaper: its prey wields the Soul Forged and wears diamond or netherite (on full
+     * netherite with Protection IV a bite still takes two hearts, the grab four). */
+    private static final float BITE_DAMAGE = 28, RAM_DAMAGE = 12, GRAB_DAMAGE = 34, BREATH_DAMAGE = 6;
+    /** The breath: how long the bubbles come first (the warning - the aim follows its prey closely), how long it
+     * lasts in all, how far it reaches (ticks, blocks); the beam then turns at most BREATH_TURN degrees a tick, so a
+     * player swimming across it gets out of it, and blocks stop it - a pillar is cover. */
+    private static final int BUBBLES = 36, BREATH_TICKS = 126, BREATH_RANGE = 30;
+    private static final float BREATH_TURN = 0.9F;
+    /** How long it takes to die (the death animation's length), ticks. */
+    private static final int DEATH_TICKS = 110;
     private final ServerBossEvent bar = new ServerBossEvent(net.minecraft.network.chat.Component.translatable("entity.soulless.leviathan"),
             BossEvent.BossBarColor.BLUE, BossEvent.BossBarOverlay.NOTCHED_10);
     private Phase phase = Phase.ROAM;
@@ -142,7 +151,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 1200).add(Attributes.MOVEMENT_SPEED, 0.3)
+        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 1400).add(Attributes.MOVEMENT_SPEED, 0.3).add(Attributes.ARMOR_TOUGHNESS, 4)
                 .add(Attributes.FOLLOW_RANGE, 64).add(Attributes.KNOCKBACK_RESISTANCE, 1.0).add(Attributes.ARMOR, 10);
     }
 
@@ -165,13 +174,13 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         super.tick();
         if (home == null) home = blockPosition();
         setNoGravity(isInWater());
-        if (!level().isClientSide) {
+        if (!level().isClientSide && !isDeadOrDying()) {
             swim();
             bar.setProgress(getHealth() / getMaxHealth());
             if (tickCount % 10 == 0) updateBar();
         }
         layBody();
-        if (!level().isClientSide) attackWithBody();
+        if (!level().isClientSide && !isDeadOrDying()) attackWithBody();
         if (level().isClientSide) {
             // the body always faces where it swims (no mob body lag on the client)
             yBodyRot = getYRot();
@@ -363,7 +372,8 @@ public class LeviathanEntity extends Monster implements GeoEntity {
                 // upright, turned toward its prey; the breath's aim follows them, a little behind
                 Vec3 flat = new Vec3(at.x - getX(), 0, at.z - getZ()).normalize();
                 goal = position().add(flat.scale(1.5)).add(0, 12, 0);
-                breathAim = breathAim.lerp(at, phaseTicks < BUBBLES ? 0.3 : 0.06);
+                if (phaseTicks < BUBBLES) breathAim = breathAim.lerp(at, 0.3);
+                else breathAim = turnToward(mouth(), breathAim, at, BREATH_TURN);
                 breathe(phaseTicks >= BUBBLES);
                 if (phaseTicks >= BREATH_TICKS) {
                     setPhase(Phase.RECOVER);
@@ -400,6 +410,20 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         goal = openWater(c, 2) ? c : goal != null ? goal : c;
     }
 
+    /** The aim turned from {@code aim} toward {@code to} (as seen from {@code from}) by at most {@code deg} degrees. */
+    private static Vec3 turnToward(Vec3 from, Vec3 aim, Vec3 to, float deg) {
+        Vec3 a = aim.subtract(from), b = to.subtract(from);
+        double la = a.length(), lb = b.length();
+        if (la < 1e-4 || lb < 1e-4) return to;
+        Vec3 na = a.scale(1 / la), nb = b.scale(1 / lb);
+        double angle = Math.acos(Mth.clamp(na.dot(nb), -1, 1));
+        double max = deg * Mth.DEG_TO_RAD;
+        if (angle <= max) return to;
+        // slerp by max/angle
+        double f = max / angle, s0 = Math.sin((1 - f) * angle) / Math.sin(angle), s1 = Math.sin(f * angle) / Math.sin(angle);
+        return from.add(na.scale(s0).add(nb.scale(s1)).scale(lb));
+    }
+
     /** From its mouth toward {@code breathAim}: first a stream of bubbles, then the violet breath, which burns. */
     private void breathe(boolean fire) {
         if (!(level() instanceof ServerLevel sl)) return;
@@ -407,10 +431,14 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         Vec3 dir = breathAim.subtract(from);
         if (dir.lengthSqr() < 1e-4) return;
         dir = dir.normalize();
-        int reach = fire ? BREATH_RANGE : 8;
+        double reach = fire ? BREATH_RANGE : 8;
+        // blocks stop it
+        var hit = level().clip(new net.minecraft.world.level.ClipContext(from, from.add(dir.scale(reach)),
+                net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, this));
+        if (hit.getType() != net.minecraft.world.phys.HitResult.Type.MISS) reach = hit.getLocation().distanceTo(from);
         for (double d = 1; d < reach; d += fire ? 0.8 : 1.2) {
             Vec3 p = from.add(dir.scale(d));
-            double spread = 0.15 + d * 0.04;
+            double spread = 0.12 + d * 0.025;
             if (fire) {
                 sl.sendParticles(ParticleTypes.DRAGON_BREATH, p.x, p.y, p.z, 2, spread, spread, spread, 0.01);
                 if (random.nextInt(3) == 0) sl.sendParticles(ParticleTypes.WITCH, p.x, p.y, p.z, 1, spread, spread, spread, 0);
@@ -429,12 +457,12 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             if (p.isSpectator() || p.isCreative()) continue;
             Vec3 c = p.position().add(0, p.getBbHeight() / 2, 0).subtract(from);
             double along = c.dot(dir);
-            if (along < 0 || along > BREATH_RANGE) continue;
+            if (along < 0 || along > reach) continue;
             double off = c.subtract(dir.scale(along)).length();
-            if (off < 1.4 + along * 0.05) {
+            if (off < 1.1 + along * 0.03) {
                 p.invulnerableTime = 0;
                 p.hurt(damageSources().dragonBreath(), BREATH_DAMAGE);
-                p.addEffect(new MobEffectInstance(MobEffects.WITHER, 60, 0));
+                p.addEffect(new MobEffectInstance(MobEffects.WITHER, 50, 1));
             }
         }
     }
@@ -475,6 +503,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             held = null;
             p.invulnerableTime = 0;
             p.hurt(damageSources().mobAttack(this), GRAB_DAMAGE);
+            p.addEffect(new MobEffectInstance(MobEffects.WITHER, 80, 1));
             Vec3 fling = fwd.scale(1.6).add(side.scale(Math.signum(Math.sin(phaseTicks * 0.13)) * 0.6)).add(0, 0.6, 0);
             p.setDeltaMovement(fling);
             p.hurtMarked = true;
@@ -518,6 +547,36 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         }
         for (Player p : level().players()) {
             if (p instanceof ServerPlayer sp && p.distanceToSqr(this) < 56 * 56 && (phase != Phase.ROAM || p.isInWater())) bar.addPlayer(sp);
+        }
+    }
+
+    // ------------------------------------------------------------------ death
+
+    /** Dying: a last convulsion, then it goes slack, rolls over and sinks (the death animation), and is gone. */
+    @Override
+    protected void tickDeath() {
+        deathTime++;
+        if (deathTime == 1) {
+            entityData.set(POSE, 4);
+            bar.removeAllPlayers();
+            if (held != null) held = null;
+            level().playSound(null, blockPosition(), SoundEvents.ELDER_GUARDIAN_DEATH, SoundSource.HOSTILE, 5F, 0.4F);
+            level().playSound(null, blockPosition(), SoundEvents.WARDEN_DEATH, SoundSource.HOSTILE, 4F, 0.5F);
+        }
+        // the body drifts down slowly
+        setDeltaMovement(getDeltaMovement().scale(0.8).add(0, deathTime > 30 ? -0.025 : 0, 0));
+        move(MoverType.SELF, getDeltaMovement());
+        if (level() instanceof ServerLevel sl && deathTime > 20 && deathTime % 3 == 0) {
+            LeviathanPart part = parts[random.nextInt(parts.length)];
+            sl.sendParticles(ParticleTypes.BUBBLE_COLUMN_UP, part.getX(), part.getY() + 1, part.getZ(), 6, 1, 1, 1, 0.05);
+            sl.sendParticles(ParticleTypes.SOUL, part.getX(), part.getY() + 1, part.getZ(), 2, 1, 1, 1, 0.02);
+        }
+        if (deathTime >= DEATH_TICKS && !level().isClientSide()) {
+            if (level() instanceof ServerLevel sl) {
+                for (LeviathanPart part : parts) sl.sendParticles(ParticleTypes.SCULK_SOUL, part.getX(), part.getY() + 1, part.getZ(), 8, 1.2, 1.2, 1.2, 0.04);
+            }
+            level().broadcastEntityEvent(this, (byte) 60);
+            remove(RemovalReason.KILLED);
         }
     }
 
@@ -630,7 +689,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "main", 6, state -> state.setAndContinue(IDLE)));
+        controllers.add(new AnimationController<>(this, "main", 6, state -> isDeadOrDying() ? software.bernie.geckolib.core.object.PlayState.STOP : state.setAndContinue(IDLE)));
         controllers.add(new AnimationController<>(this, "roar", 8, state -> software.bernie.geckolib.core.object.PlayState.STOP)
                 .triggerableAnim("roar", ROAR).triggerableAnim("bite", BITE));
         // added last, so the fight's poses win over the others
@@ -638,6 +697,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
             case 1 -> state.setAndContinue(LUNGE);
             case 2 -> state.setAndContinue(THRASH);
             case 3 -> state.setAndContinue(BREATH);
+            case 4 -> state.setAndContinue(DEATH);
             default -> software.bernie.geckolib.core.object.PlayState.STOP;
         }));
     }
