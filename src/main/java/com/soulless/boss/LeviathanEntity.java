@@ -89,7 +89,7 @@ public class LeviathanEntity extends Monster implements GeoEntity {
      * lasts in all, how far it reaches (ticks, blocks); the beam then turns at most BREATH_TURN degrees a tick, so a
      * player swimming across it gets out of it, and blocks stop it - a pillar is cover. */
     private static final int BUBBLES = 36, BREATH_TICKS = 126, BREATH_RANGE = 30;
-    private static final float BREATH_TURN = 0.7F;
+    private static final float BREATH_TURN = 0.9F;
     /** The breath's cone: its half-angle (degrees). */
     private static final float BREATH_CONE = 7F;
     /** How long it takes to die (the death animation's length), ticks. */
