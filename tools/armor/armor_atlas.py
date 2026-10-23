@@ -100,9 +100,9 @@ def build():
         layer = 2 if bone.endswith('leg') else 1
         parts[layer].setdefault(bone, []).append(detail(c, PIVOT[bone], (0, 0, 0), atlases[layer], set_tex[0]))
     # the helmet: a block model, 16 to the block - its head spans x 4..12, z 3.5..11.5, the crown's underside at
-    # y 11.25; moved onto the player's head (whose top is 8 above the neck pivot)
+    # y 11.25; moved onto the player's head (whose top is 8 above the neck pivot), sat 0.75 lower so it fits snug
     for c in helm['elements']:
-        parts[1].setdefault('head', []).append(detail(c, PIVOT['head'], (-8, 24 + 8 - 11.25, -7.5), atlases[1], helm_tex))
+        parts[1].setdefault('head', []).append(detail(c, PIVOT['head'], (-8, 24 + 8 - 11.25 - 0.75, -7.5), atlases[1], helm_tex))
     for k, a in atlases.items():
         a.img.save(TEX + f'leviathan_armor_{k}.png')
     return parts

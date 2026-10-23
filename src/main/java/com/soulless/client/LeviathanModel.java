@@ -35,6 +35,9 @@ public class LeviathanModel extends DefaultedEntityGeoModel<LeviathanEntity> {
         float roar = roarAmount(e, instanceId, t);
         // dying, its own motion fades out over three seconds (the death animation takes over)
         float alive = e.isDeadOrDying() ? Math.max(0, 1 - (e.deathTime + state.getPartialTick()) / 60F) : 1;
+        // dying, the idle stops - nothing resets the bones each frame any more, so adding to them would pile up into
+        // twitching; the death animation alone moves it
+        if (e.isDeadOrDying()) return;
 
         // how fast it swims, smoothed; the wave runs faster and swings wider the harder it swims, and never quite stops
         float dtLive = Float.isNaN(e.lastLiveT) ? 0 : Mth.clamp(t - e.lastLiveT, 0, 3);
