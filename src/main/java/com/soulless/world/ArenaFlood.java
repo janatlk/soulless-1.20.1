@@ -79,7 +79,16 @@ public final class ArenaFlood {
             if (!j.level.isLoaded(p)) continue;
             BlockState s = j.level.getBlockState(p);
             if (s.isAir() || s.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL)) j.level.setBlock(p, water, 2);
-            else if (!s.getFluidState().is(net.minecraft.tags.FluidTags.WATER)) continue;
+            else if (foreign(s)) {
+                // the ocean's own features (magma, seagrass, kelp, ruins...): the bowl's floor where the floor is, water above it
+                int dx = p.getX() - j.centre.getX(), dz = p.getZ() - j.centre.getZ();
+                double f = Math.min(1, Math.sqrt(dx * dx + dz * dz) / DrownedSoulsStructure.ARENA_R);
+                if (p.getY() <= j.centre.getY() + DrownedSoulsStructure.ARENA_BOTTOM_Y + (int) Math.round(f * f * 12)) {
+                    j.level.setBlock(p, Blocks.DARK_PRISMARINE.defaultBlockState(), 2);
+                    continue;
+                }
+                j.level.setBlock(p, water, 2);
+            } else if (!s.getFluidState().is(net.minecraft.tags.FluidTags.WATER)) continue;
             for (var d : net.minecraft.core.Direction.values()) {
                 BlockPos q = p.relative(d);
                 int dx = q.getX() - j.centre.getX(), dz = q.getZ() - j.centre.getZ();
@@ -87,6 +96,15 @@ public final class ArenaFlood {
                 if (j.seen.add(q.asLong())) j.open.add(q.asLong());
             }
         }
+    }
+
+    /** Not of the arena's own making (deepslate, prismarine, chains, lanterns, water). */
+    private static boolean foreign(BlockState s) {
+        if (s.is(Blocks.WATER) || s.is(Blocks.CHAIN) || s.is(Blocks.SOUL_LANTERN) || s.is(Blocks.SEA_LANTERN) || s.is(Blocks.BUBBLE_COLUMN)) return false;
+        if (s.hasBlockEntity()) return false;   // the Leviathan's chest, anything a player has set there
+        var key = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(s.getBlock());
+        if (!"minecraft".equals(key.getNamespace())) return false;
+        return !key.getPath().contains("deepslate") && !key.getPath().contains("prismarine");
     }
 
     /** The arenas whose Leviathan has been put in them already (by centre), kept with the world. */

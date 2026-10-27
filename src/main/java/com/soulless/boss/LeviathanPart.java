@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Pose;
 import net.minecraftforge.entity.PartEntity;
 
 /** One piece of the Leviathan's long body (its head or a body segment): hit it and the Leviathan is hit. */
+@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = com.soulless.Soulless.MODID)
 public class LeviathanPart extends PartEntity<LeviathanEntity> {
     public final String name;
     private final EntityDimensions size;
@@ -51,5 +52,16 @@ public class LeviathanPart extends PartEntity<LeviathanEntity> {
     @Override
     public boolean shouldBeSaved() {
         return false;
+    }
+
+    /**
+     * A player's blow at a piece is struck at the Leviathan itself, as at any creature: weapon enchantments, crits,
+     * the sweep, its red flash and its cry.
+     */
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void onAttack(net.minecraftforge.event.entity.player.AttackEntityEvent event) {
+        if (!(event.getTarget() instanceof LeviathanPart part)) return;
+        event.setCanceled(true);
+        event.getEntity().attack(part.getParent());
     }
 }

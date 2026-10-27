@@ -59,12 +59,12 @@
     return [1 + 0.14 * p, 1 - 0.16 * p, 1 + 0.14 * p];
   });
   for (let i = 0; i < TEN; i++) {
-    wave(swim, `tendril_${i}_a`, 'rotation', 1.6, 8, w => [35 + Math.sin(w - i * 0.4) * 16, 0, Math.sin(w * 2 - i) * 6]);
-    wave(swim, `tendril_${i}_b`, 'rotation', 1.6, 8, w => [20 + Math.sin(w - i * 0.4 - 1) * 24, 0, Math.sin(w * 2 - i - 1) * 8]);
+    wave(swim, `tendril_${i}_a`, 'rotation', 1.6, 8, w => [-35 - Math.sin(w - i * 0.4) * 16, 0, Math.sin(w * 2 - i) * 6]);
+    wave(swim, `tendril_${i}_b`, 'rotation', 1.6, 8, w => [-20 - Math.sin(w - i * 0.4 - 1) * 24, 0, Math.sin(w * 2 - i - 1) * 8]);
   }
   wave(swim, 'arm_r', 'rotation', 1.6, 4, w => [20 + Math.sin(w) * 6, 0, -14]);
   wave(swim, 'arm_l', 'rotation', 1.6, 4, w => [30 + Math.sin(w + 1) * 8, 0, 14]);
-  wave(swim, 'chain', 'rotation', 1.6, 4, w => [45 + Math.sin(w) * 8, 0, -6]);
+  wave(swim, 'chain', 'rotation', 1.6, 4, w => [-45 - Math.sin(w) * 8, 0, -6]);
   wave(swim, 'hood', 'rotation', 1.6, 4, w => [-12, 0, 0]);
 
   // ---- attack: rear back, then rake down with the free claw

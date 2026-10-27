@@ -299,14 +299,18 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         float wantYaw = (float) (Mth.atan2(to.z, to.x) * Mth.RAD_TO_DEG) - 90;
         float wantPitch = (float) (-Mth.atan2(to.y, to.horizontalDistance()) * Mth.RAD_TO_DEG);
         // the sea floor close below: lift (unless it is going for its prey anyway)
-        if (!free && !level().getFluidState(blockPosition().below(3)).is(net.minecraft.tags.FluidTags.WATER)) wantPitch = Math.min(wantPitch, -18);
+        if (!free && prey == null && !level().getFluidState(blockPosition().below(3)).is(net.minecraft.tags.FluidTags.WATER)) wantPitch = Math.min(wantPitch, -18);
+        // hunting, it is free to dive and climb steeply (prey far above or below is reached at once, not in long spirals)
         float maxPitch = phase == Phase.GRAB_RISE || phase == Phase.GRAB_DIVE || phase == Phase.REAR || phase == Phase.BREATHE ? 80
-                : phase == Phase.COIL || phase == Phase.CHARGE || phase == Phase.TURN ? 65 : 45;
+                : prey != null ? 75 : 45;
+        if (prey != null && Math.abs(to.y) > 4) turnRate = Math.max(turnRate, 5F);
         setYRot(Mth.approachDegrees(getYRot(), wantYaw, phase == Phase.BREATHE ? 3F : turnRate));
         setXRot(Mth.approach(getXRot(), Mth.clamp(wantPitch, -maxPitch, maxPitch), turnRate * 0.7F + (phase == Phase.REAR ? 2 : 0)));
         yBodyRot = getYRot();
         yHeadRot = getYRot();
         Vec3 dir = Vec3.directionFromRotation(getXRot(), getYRot()).scale(speed);
+        if (prey != null && phase != Phase.BREATHE && phase != Phase.EXHAUSTED)   // and sinks or rises straight toward its goal too
+            dir = dir.add(0, Mth.clamp(to.y * 0.04, -0.3, 0.3), 0);
         setDeltaMovement(getDeltaMovement().scale(0.6).add(dir.scale(0.4)));
         move(MoverType.SELF, getDeltaMovement());
     }
