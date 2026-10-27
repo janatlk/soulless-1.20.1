@@ -150,11 +150,12 @@ public class LeviathanEntity extends Monster implements GeoEntity {
         noCulling = true;
         setNoGravity(true);
         xpReward = 500;
-        head = new LeviathanPart(this, "head", 3.2F, 2.6F);
+        head = new LeviathanPart(this, "head", 4.0F, 3.2F);
         for (int i = 0; i < SEGMENTS; i++) {
             float f = i / (SEGMENTS - 1F);
-            float w = (46 - f * 34) / 16F, h = (40 - f * 30) / 16F;
-            body[i] = new LeviathanPart(this, "body_" + i, Math.max(w, h), h);
+            // a little larger than the body and overlapping along it (no gaps to swing through, even at the thin tail)
+            float w = (46 - f * 34) / 16F * 1.3F, h = Math.max((40 - f * 30) / 16F * 1.3F, 1.6F);
+            body[i] = new LeviathanPart(this, "body_" + i, Math.max(Math.max(w, h), SEG_LEN * 1.15F), h);
         }
         parts = new LeviathanPart[SEGMENTS + 1];
         parts[0] = head;
